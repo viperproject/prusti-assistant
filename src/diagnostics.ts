@@ -67,10 +67,10 @@ function parseSpanRange(span: Span): vscode.Range {
     );
 }
 
-function parseStdin(stdin: string): [Message] {
+function parseStdout(stdout: string): [Message] {
     let messages: [Message] = <[Message]>new Array();
     let seen = new Set();
-    stdin.split("\n").forEach((line) => {
+    stdout.split("\n").forEach((line) => {
         // Remove duplicate lines.
         if (!line || seen.has(line)) {
             return;
@@ -99,7 +99,7 @@ export class DiagnosticsManager {
     public async refreshDiagnostics() {
         vscode.window.setStatusBarMessage('Running cargo check...');
         const output = await util.spawn('cargo', ['check', '--all-targets', '--message-format=json'], { cwd: this.root_path });
-        parseStdin(output.stdout).forEach((msg) => {
+        parseStdout(output.stdout).forEach((msg) => {
             this.parseMessage(msg);
         });
         this.render();
