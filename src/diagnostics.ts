@@ -116,7 +116,7 @@ export class DiagnosticsManager {
 
             let message = '';
             if (span.label) {
-                message += `${span.label}.\n\nCaused by: `;
+                message += `${span.label} \n\nCaused by: `;
             }
             message += `${msg.message}.`;
 
