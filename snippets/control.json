@@ -1,0 +1,65 @@
+{
+    "if-let": {
+        "prefix": "if let",
+        "body": [
+            "if let ${1:Some(pat)} = ${2:expr} {",
+            "\t${3:unimplemented!();}",
+            "}"
+        ],
+        "description": "Unwrap Option with if let"
+    },
+    "if": {
+        "prefix": "if",
+        "body": [
+            "if ${1:condition} {",
+            "\t${2:unimplemented!();}",
+            "}"
+        ],
+        "description": "Insert if"
+    },
+    "else": {
+        "prefix": "else",
+        "body": [
+            "else {",
+            "\t${1:unimplemented!();}",
+            "}"
+        ],
+        "description": "Insert else"
+    },
+    "loop": {
+        "prefix": "loop",
+        "body": [
+            "loop {",
+            "\t${2:unimplemented!();}",
+            "}"
+        ],
+        "description": "Insert loop"
+    },
+    "for": {
+        "prefix": "for",
+        "body": [
+            "for ${1:pat} in ${2:expr} {",
+            "\t${3:unimplemented!();}",
+            "}"
+        ],
+        "description": "Insert for loop"
+    },
+    "while-let": {
+        "prefix": "while let",
+        "body": [
+            "while let ${1:Some(pat)} = ${2:expr} {",
+            "\t${3:unimplemented!();}",
+            "}"
+        ],
+        "description": "Insert for while let loop"
+    },
+    "while": {
+        "prefix": "while",
+        "body": [
+            "while ${1:condition} {",
+            "\t${2:unimplemented!();}",
+            "}"
+        ],
+        "description": "Insert for while loop"
+    }
+}

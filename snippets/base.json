@@ -1,0 +1,49 @@
+{
+    "Err": {
+        "prefix": "Err",
+        "body": [
+            "Err(${1})"
+        ],
+        "description": "Insert Err(...)"
+    },
+    "Ok": {
+        "prefix": "Ok",
+        "body": [
+            "Ok(${1:result})"
+        ],
+        "description": "Insert Ok(...)"
+    },
+    "Some": {
+        "prefix": "Some",
+        "body": [
+            "Some(${1})"
+        ],
+        "description": "Insert Some(...)"
+    },
+    "fn": {
+        "prefix": "fn",
+        "body": [
+            "fn ${1:name}(${2:arg}: ${3:Type}) -> ${4:RetType} {",
+            "\t${5:unimplemented!();}",
+            "}"
+        ],
+        "description": "Insert fn"
+    },
+    "extern crate": {
+        "prefix": "extern crate",
+        "body": [
+            "extern crate ${1:name};$0"
+        ],
+        "description": "Insert extern crate"
+    },
+    "enum": {
+        "prefix": "enum",
+        "body": [
+            "#[derive(Debug)]",
+            "enum ${1:Name} {",
+            "\t${2:Variant},",
+            "}"
+        ],
+        "description": "Insert enum"
+    }
+}

@@ -1,0 +1,86 @@
+{
+    "name": "rust-assist",
+    "displayName": "rust-assist",
+    "description": "Provides inline error reporting for Rust lang using 'cargo check'.",
+    "version": "0.1.0",
+    "publisher": "mooman219",
+    "engines": {
+        "vscode": "^1.22.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "keywords": [
+        "rust",
+        "rust-lang"
+    ],
+    "activationEvents": [
+        "onLanguage:rust",
+        "workspaceContains:Cargo.toml",
+        "onCommand:rust-assist.check"
+    ],
+    "contributes": {
+        "languages": [
+            {
+                "id": "rust",
+                "extensions": [
+                    ".rs"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "snippets": [
+            {
+                "language": "rust",
+                "path": "./snippets/base.json"
+            },
+            {
+                "language": "rust",
+                "path": "./snippets/control.json"
+            },
+            {
+                "language": "rust",
+                "path": "./snippets/macros.json"
+            }
+        ],
+        "commands": [
+            {
+                "command": "rust-assist.check",
+                "title": "Cargo check",
+                "description": "Run cargo check manually.",
+                "category": "Rust"
+            }
+        ],
+        "configuration": {
+            "type": "object",
+            "title": "rust-assist configuration",
+            "properties": {
+                "rust-assist.checkOnStartup": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Specifies if to run cargo check on startup."
+                },
+                "rust-assist.checkOnSave": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Specifies if to run cargo check on save."
+                }
+            }
+        }
+    },
+    "main": "./out/extension",
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "postinstall": "node ./node_modules/vscode/bin/install",
+        "test": "npm run compile && node ./node_modules/vscode/bin/test"
+    },
+    "devDependencies": {
+        "typescript": "^2.6.1",
+        "vscode": "^1.1.6",
+        "tslint": "^5.8.0",
+        "@types/node": "^7.0.43",
+        "@types/mocha": "^2.2.42"
+    }
+}

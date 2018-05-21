@@ -1,0 +1,22 @@
+{
+    "rules": {
+        "no-string-throw": true,
+        "no-unused-expression": true,
+        "no-duplicate-variable": true,
+        "no-non-null-assertion": true,
+        "no-var-keyword": true,
+        "curly": true,
+        "class-name": true,
+        "semicolon": [
+            true,
+            "always"
+        ],
+        "indent": [
+            true,
+            "spaces",
+            4
+        ],
+        "triple-equals": true
+    },
+    "defaultSeverity": "error"
+}
