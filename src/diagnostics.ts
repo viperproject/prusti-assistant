@@ -149,9 +149,7 @@ export class DiagnosticsManager {
     private add(path: string, diagnostic: vscode.Diagnostic) {
         let set = this.pending.get(path);
         if (set !== undefined) {
-            if (set.indexOf(diagnostic) === -1) {
-                set.push(diagnostic);
-            }
+            set.push(diagnostic);
         } else {
             this.pending.set(path, [diagnostic]);
         }
