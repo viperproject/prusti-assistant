@@ -18,10 +18,8 @@ export async function activate(context: vscode.ExtensionContext) {
     if (config.checkOnSave()) {
         context.subscriptions.push(
             vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {
-                switch (document.languageId) {
-                    case 'rust':
-                    case 'toml':
-                        await diagnostic_manager.refreshDiagnostics();
+                if (document.languageId === 'rust') {
+                    await diagnostic_manager.refreshDiagnostics();
                 }
             })
         );
