@@ -5,7 +5,6 @@ import * as config from './config';
 import * as diagnostic from './diagnostics';
 
 export function activate(context: vscode.ExtensionContext) {
-    console.log('rust-assist is active!');
     const rust_diagnostics = vscode.languages.createDiagnosticCollection("rust");
 
     context.subscriptions.push(
@@ -17,7 +16,11 @@ export function activate(context: vscode.ExtensionContext) {
     if (config.checkOnSave()) {
         context.subscriptions.push(
             vscode.workspace.onDidSaveTextDocument((document: vscode.TextDocument) => {
-                diagnostic.refreshDiagnostics(rust_diagnostics);
+                switch (document.languageId) {
+                    case 'rust':
+                    case 'toml':
+                        diagnostic.refreshDiagnostics(rust_diagnostics);
+                }
             })
         );
     }
