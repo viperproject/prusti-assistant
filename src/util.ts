@@ -1,4 +1,5 @@
 import * as child_process from 'child_process';
+import * as vscode from 'vscode';
 
 export interface Output {
     stdout: string;
@@ -22,4 +23,12 @@ export function spawn(
         proc.on('close', (code) => resolve({ stdout, stderr, code }));
         proc.on('error', (err) => reject(err));
     });
+}
+
+export async function getRootPath(): Promise<string> {
+    let find = await vscode.workspace.findFiles('**/Cargo.toml');
+    if (find.length > 0) {
+        return find[0].fsPath.replace(/Cargo\.toml$/, '');
+    }
+    return vscode.workspace.rootPath || './';
 }
