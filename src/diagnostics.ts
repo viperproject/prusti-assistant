@@ -2,7 +2,6 @@
 
 import * as util from './util';
 import * as vscode from 'vscode';
-import * as path from 'path';
 
 // ========================================================
 // JSON Schemas
@@ -12,6 +11,7 @@ type Diagnostic = MessageDiagnostic | {};
 
 interface MessageDiagnostic {
     message: Message;
+    target: Target;
 }
 
 interface Message {
@@ -20,6 +20,11 @@ interface Message {
     level: Level;
     message: string;
     spans: Span[];
+}
+
+interface Target {
+    name: string;
+    src_path: string;
 }
 
 interface Code {
@@ -67,8 +72,8 @@ function parseSpanRange(span: Span): vscode.Range {
     );
 }
 
-function parseStdout(stdout: string): [Message] {
-    let messages: [Message] = <[Message]>new Array();
+function parseStdout(stdout: string): [MessageDiagnostic] {
+    let messages: [MessageDiagnostic] = <[MessageDiagnostic]>new Array();
     let seen = new Set();
     stdout.split("\n").forEach((line) => {
         // Remove duplicate lines.
@@ -80,7 +85,7 @@ function parseStdout(stdout: string): [Message] {
         // Parse the message into a diagnostic.
         let diag: Diagnostic = JSON.parse(line);
         if ((<MessageDiagnostic>diag).message !== undefined) {
-            messages.push((<MessageDiagnostic>diag).message);
+            messages.push(<MessageDiagnostic>diag);
         }
     });
     return messages;
@@ -100,13 +105,13 @@ export class DiagnosticsManager {
         vscode.window.setStatusBarMessage('Running cargo check...');
         const output = await util.spawn('cargo', ['check', '--all-targets', '--message-format=json'], { cwd: this.root_path });
         parseStdout(output.stdout).forEach((msg) => {
-            this.parseMessage(msg);
+            this.parseMessage(msg.message, msg.target.src_path);
         });
         this.render();
         vscode.window.setStatusBarMessage('');
     }
 
-    private parseMessage(msg: Message) {
+    private parseMessage(msg: Message, src_path: string) {
         // Parse all valid spans.
         msg.spans.forEach(span => {
             let level = parseMessageLevel(msg.level);
@@ -127,13 +132,12 @@ export class DiagnosticsManager {
                 level
             );
 
-            let file = path.join(this.root_path, span.file_name);
-            this.add(file, diagnostic);
+            this.add(src_path, diagnostic);
         });
 
         // Recursively parse child messages. 
         msg.children.forEach(child => {
-            this.parseMessage(child);
+            this.parseMessage(child, src_path);
         });
     }
 
