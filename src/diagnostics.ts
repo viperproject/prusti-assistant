@@ -1,6 +1,6 @@
 'use strict';
 
-import * as child_process from 'child_process';
+import * as util from './util';
 import * as vscode from 'vscode';
 import * as path from 'path';
 
@@ -48,6 +48,44 @@ interface Span {
 // Diagnostic Handling
 // ========================================================
 
+function parseMessageLevel(level: Level): vscode.DiagnosticSeverity {
+    switch (level) {
+        case Level.Error: return vscode.DiagnosticSeverity.Error;
+        case Level.Note: return vscode.DiagnosticSeverity.Information;
+        case Level.Help: return vscode.DiagnosticSeverity.Hint;
+        case Level.Warning: return vscode.DiagnosticSeverity.Warning;
+        default: return vscode.DiagnosticSeverity.Error;
+    }
+}
+
+function parseSpanRange(span: Span): vscode.Range {
+    return new vscode.Range(
+        span.line_start - 1,
+        span.column_start - 1,
+        span.line_end - 1,
+        span.column_end - 1,
+    );
+}
+
+function parseStdin(stdin: string): [Message] {
+    let messages: [Message] = <[Message]>new Array();
+    let seen = new Set();
+    stdin.split("\n").forEach((line) => {
+        // Remove duplicate lines.
+        if (!line || seen.has(line)) {
+            return;
+        }
+        seen.add(line);
+
+        // Parse the message into a diagnostic.
+        let diag: Diagnostic = JSON.parse(line);
+        if ((<MessageDiagnostic>diag).message !== undefined) {
+            messages.push((<MessageDiagnostic>diag).message);
+        }
+    });
+    return messages;
+}
+
 export class DiagnosticsManager {
     private pending: Map<string, vscode.Diagnostic[]> = new Map();
     private root_path: string;
@@ -58,58 +96,20 @@ export class DiagnosticsManager {
         this.target = target;
     }
 
-    private static parseMessageLevel(level: Level): vscode.DiagnosticSeverity {
-        switch (level) {
-            case Level.Error: return vscode.DiagnosticSeverity.Error;
-            case Level.Note: return vscode.DiagnosticSeverity.Information;
-            case Level.Help: return vscode.DiagnosticSeverity.Hint;
-            case Level.Warning: return vscode.DiagnosticSeverity.Warning;
-            default: return vscode.DiagnosticSeverity.Error;
-        }
-    }
-
-    private static parseSpanRange(span: Span): vscode.Range {
-        return new vscode.Range(
-            span.line_start - 1,
-            span.column_start - 1,
-            span.line_end - 1,
-            span.column_end - 1,
-        );
-    }
-
-    public refreshDiagnostics() {
+    public async refreshDiagnostics() {
         vscode.window.setStatusBarMessage('Running cargo check...');
-
-        const seen = new Set();
-        const child = child_process.spawn('cargo', ['check', '--all-targets', '--message-format=json'], {
-            cwd: this.root_path
+        const output = await util.spawn('cargo', ['check', '--all-targets', '--message-format=json'], { cwd: this.root_path });
+        parseStdin(output.stdout).forEach((msg) => {
+            this.parseMessage(msg);
         });
-
-        child.stdout.on('data', (data) => {
-            // Remove duplicate messages.
-            let message = data.toString();
-            if (seen.has(message)) {
-                return;
-            }
-            seen.add(message);
-
-            // Parse the message into a diagnostic.
-            let diag: Diagnostic = JSON.parse(message);
-            if ((<MessageDiagnostic>diag).message !== undefined) {
-                this.parseMessage((<MessageDiagnostic>diag).message);
-            }
-        });
-
-        child.on('exit', (code, signal) => {
-            this.render();
-            vscode.window.setStatusBarMessage('');
-        });
+        this.render();
+        vscode.window.setStatusBarMessage('');
     }
 
     private parseMessage(msg: Message) {
         // Parse all valid spans.
         msg.spans.forEach(span => {
-            let level = DiagnosticsManager.parseMessageLevel(msg.level);
+            let level = parseMessageLevel(msg.level);
             if (!span.is_primary) {
                 level = vscode.DiagnosticSeverity.Information;
             }
@@ -120,7 +120,7 @@ export class DiagnosticsManager {
             }
             message += `${msg.message}.`;
 
-            let range = DiagnosticsManager.parseSpanRange(span);
+            let range = parseSpanRange(span);
             let diagnostic = new vscode.Diagnostic(
                 range,
                 message,
