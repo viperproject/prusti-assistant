@@ -138,27 +138,35 @@ export class DiagnosticsManager {
         this.target = target;
     }
 
-    public async refresh() {
-        vscode.window.setStatusBarMessage('Running cargo check...');
-        for (let rootPath of this.rootPaths) {
-            const output = await util.spawn('cargo', ['check', '--all-targets', '--message-format=json'], { cwd: rootPath });
-            parseStdout(output.stdout).forEach(msg => {
-                parseMessage(msg.message, rootPath).forEach(diag => {
-                    this.add(diag);
-                });
+    private async populateRoot(rootPath: string) {
+        const output = await util.spawn('cargo', ['check', '--all-targets', '--message-format=json'], { cwd: rootPath });
+        parseStdout(output.stdout).forEach(msg => {
+            parseMessage(msg.message, rootPath).forEach(diag => {
+                this.add(diag);
             });
+        });
+    }
+
+    private async populateAll() {
+        for (let rootPath of this.rootPaths) {
+            await this.populateRoot(rootPath);
         }
+    }
+
+    public async refreshAll() {
+        vscode.window.setStatusBarMessage('Running cargo check...');
+        this.pending.clear();
+        this.target.clear();
+        await this.populateAll();
         this.render();
         vscode.window.setStatusBarMessage('');
     }
 
     private render() {
-        this.target.clear();
         for (let [path, file_diagnostic] of this.pending.entries()) {
             const uri = vscode.Uri.file(path);
             this.target.set(uri, file_diagnostic);
         }
-        this.pending.clear();
     }
 
     private add(diagnostic: Diagnostic) {

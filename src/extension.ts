@@ -12,7 +12,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.commands.registerCommand('rust-assist.check', async () => {
-            await diagnosticManager.refresh();
+            await diagnosticManager.refreshAll();
         })
     );
 
@@ -20,13 +20,14 @@ export async function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(
             vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {
                 if (document.languageId === 'rust') {
-                    await diagnosticManager.refresh();
+                    await diagnosticManager.refreshAll();
                 }
             })
         );
     }
 
     if (config.checkOnStartup()) {
-        await diagnosticManager.refresh();
+        // TODO: This doesn't work on large projects for some reason.
+        await diagnosticManager.refreshAll();
     }
 }
