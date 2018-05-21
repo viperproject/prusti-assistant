@@ -25,10 +25,13 @@ export function spawn(
     });
 }
 
-export async function getRootPath(): Promise<string> {
-    let find = await vscode.workspace.findFiles('**/Cargo.toml');
-    if (find.length > 0) {
-        return find[0].fsPath.replace(/Cargo\.toml$/, '');
+export async function getRootPaths(): Promise<Array<string>> {
+    let roots: Array<string> = [];
+    (await vscode.workspace.findFiles('**/Cargo.toml')).forEach(path => {
+        roots.push(path.fsPath.replace(/Cargo\.toml$/, ''));
+    });
+    if (roots.length === 0) {
+        roots.push(vscode.workspace.rootPath || './');
     }
-    return vscode.workspace.rootPath || './';
+    return roots;
 }

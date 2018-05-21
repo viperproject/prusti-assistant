@@ -130,22 +130,24 @@ function parseMessage(msg: Message, root_path: string): Array<Diagnostic> {
 
 export class DiagnosticsManager {
     private pending: Map<string, vscode.Diagnostic[]> = new Map();
-    private root_path: string;
+    private rootPaths: Array<string>;
     private target: vscode.DiagnosticCollection;
 
-    public constructor(root_path: string, target: vscode.DiagnosticCollection) {
-        this.root_path = root_path;
+    public constructor(rootPaths: Array<string>, target: vscode.DiagnosticCollection) {
+        this.rootPaths = rootPaths;
         this.target = target;
     }
 
     public async refresh() {
         vscode.window.setStatusBarMessage('Running cargo check...');
-        const output = await util.spawn('cargo', ['check', '--all-targets', '--message-format=json'], { cwd: this.root_path });
-        parseStdout(output.stdout).forEach(msg => {
-            parseMessage(msg.message, this.root_path).forEach(diag => {
-                this.add(diag);
+        for (let rootPath of this.rootPaths) {
+            const output = await util.spawn('cargo', ['check', '--all-targets', '--message-format=json'], { cwd: rootPath });
+            parseStdout(output.stdout).forEach(msg => {
+                parseMessage(msg.message, rootPath).forEach(diag => {
+                    this.add(diag);
+                });
             });
-        });
+        }
         this.render();
         vscode.window.setStatusBarMessage('');
     }
