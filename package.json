@@ -1,6 +1,6 @@
 {
     "name": "rust-assist",
-    "displayName": "rust-assist",
+    "displayName": "Rust Assist",
     "description": "Provides inline error reporting for Rust lang using 'cargo check'.",
     "version": "0.1.1",
     "publisher": "mooman219",
