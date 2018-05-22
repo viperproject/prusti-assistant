@@ -25,6 +25,5 @@ The extension will search for `Cargo.toml` files in the workspace and use them a
 
 ## Release Notes
 
-### 0.1.0
-
-Initial release.
+### 0.1.1 - 2018-05-22
+- Update the logo
