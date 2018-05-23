@@ -1,4 +1,4 @@
-# Rust Assist README
+# ![Rust Assist logo](https://github.com/mooman219/rust-assist/blob/master/logo.png?raw=true) Rust Assist README
 
 Simple VSCode diagnostic integration. Provides: code diagnostics and snippets.
 

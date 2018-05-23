@@ -17,7 +17,8 @@
         "vscode": "^1.22.0"
     },
     "categories": [
-        "Programming Languages"
+        "Programming Languages",
+        "Snippets"
     ],
     "keywords": [
         "rust",
