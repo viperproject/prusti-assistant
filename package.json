@@ -47,9 +47,8 @@
         ],
         "commands": [
             {
-                "command": "rust-assist.check",
-                "title": "Cargo check",
-                "description": "Run cargo check manually.",
+                "command": "rust-assist.refresh",
+                "title": "Refresh diagnostics manually",
                 "category": "Rust"
             }
         ],

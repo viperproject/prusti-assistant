@@ -16,7 +16,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const diagnosticManager = new diagnostics.DiagnosticsManager(rootPaths, rustDiagnostics);
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('rust-assist.check', async () => {
+        vscode.commands.registerCommand('rust-assist.refresh', async () => {
             await diagnosticManager.refreshAll();
         })
     );
