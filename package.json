@@ -55,7 +55,7 @@
         ],
         "commands": [
             {
-                "command": "rust-assist.refresh",
+                "command": "rust-assist.refreshDiagnostics",
                 "title": "Refresh diagnostics manually",
                 "category": "Rust"
             }
@@ -64,15 +64,15 @@
             "type": "object",
             "title": "rust-assist configuration",
             "properties": {
-                "rust-assist.checkOnStartup": {
+                "rust-assist.diagnosticsOnStartup": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Specifies if to run cargo check on startup."
+                    "description": "Specifies if diagnostics should be generated on startup."
                 },
-                "rust-assist.checkOnSave": {
+                "rust-assist.diagnosticsOnSave": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Specifies if to run cargo check on save."
+                    "description": "Specifies if diagnostics should be generated on save."
                 }
             }
         }

@@ -5,9 +5,9 @@ function config(): vscode.WorkspaceConfiguration {
 }
 
 export function checkOnStartup(): boolean {
-    return config().get('checkOnStartup', true);
+    return config().get('diagnosticsOnStartup', true);
 }
 
 export function checkOnSave(): boolean {
-    return config().get('checkOnSave', true);
+    return config().get('diagnosticsOnSave', true);
 }
