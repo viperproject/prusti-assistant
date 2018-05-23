@@ -30,8 +30,5 @@ export async function getRootPaths(): Promise<Array<string>> {
     (await vscode.workspace.findFiles('**/Cargo.toml')).forEach(path => {
         roots.push(path.fsPath.replace(/Cargo\.toml$/, ''));
     });
-    if (roots.length === 0) {
-        roots.push(vscode.workspace.rootPath || './');
-    }
     return roots;
 }
