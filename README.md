@@ -1,4 +1,5 @@
 # ![Rust Assist logo](https://github.com/mooman219/rust-assist/blob/master/logo.png?raw=true) Rust Assist README
+[![](https://vsmarketplacebadge.apphb.com/version/mooman219.rust-assist.svg)](https://marketplace.visualstudio.com/items?itemName=mooman219.rust-assist)
 
 Simple VSCode diagnostic integration. Provides: code diagnostics and snippets.
 
