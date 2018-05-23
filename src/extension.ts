@@ -6,8 +6,13 @@ import * as util from './util';
 import * as diagnostics from './diagnostics';
 
 export async function activate(context: vscode.ExtensionContext) {
-    const rustDiagnostics = vscode.languages.createDiagnosticCollection("rust");
     const rootPaths = await util.getRootPaths();
+
+    if (rootPaths.length === 0) {
+        vscode.window.showWarningMessage('Rust Assist: No `Cargo.toml` files were found in the workspace.');
+    }
+
+    const rustDiagnostics = vscode.languages.createDiagnosticCollection("rust");
     const diagnosticManager = new diagnostics.DiagnosticsManager(rootPaths, rustDiagnostics);
 
     context.subscriptions.push(
@@ -27,7 +32,6 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 
     if (config.checkOnStartup()) {
-        // TODO: This doesn't work on large projects for some reason.
         await diagnosticManager.refreshAll();
     }
 }
