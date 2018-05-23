@@ -21,7 +21,7 @@ export async function activate(context: vscode.ExtensionContext) {
         })
     );
 
-    if (config.checkOnSave()) {
+    if (config.diagnosticsOnSave()) {
         context.subscriptions.push(
             vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {
                 if (document.languageId === 'rust') {
@@ -31,7 +31,7 @@ export async function activate(context: vscode.ExtensionContext) {
         );
     }
 
-    if (config.checkOnStartup()) {
+    if (config.diagnosticsOnStartup()) {
         await diagnosticManager.refreshAll();
     }
 }

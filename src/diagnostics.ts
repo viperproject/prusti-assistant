@@ -71,11 +71,12 @@ function parseSpanRange(span: Span): vscode.Range {
     );
 }
 
-function parseStdout(stdout: string): Array<MessageDiagnostic> {
-    let messages: Array<MessageDiagnostic> = [];
+function parseStdout(stdout: string): Array<Message> {
+    let messages: Array<Message> = [];
     let seen = new Set();
     for (const line of stdout.split("\n")) {
-        // Remove duplicate lines.
+        // Remove duplicate lines. Running '--all-targets' can generate
+        // duplicate errors.
         if (!line || seen.has(line)) {
             continue;
         }
@@ -84,15 +85,21 @@ function parseStdout(stdout: string): Array<MessageDiagnostic> {
         // Parse the message into a diagnostic.
         let diag: MessageDiagnostic = JSON.parse(line);
         if (diag.message !== undefined) {
-            messages.push(diag);
+            messages.push(diag.message);
         }
     }
     return messages;
 }
 
-function parseMessage(msg: Message, root_path: string): Array<Diagnostic> {
-    let diagnostics: Array<Diagnostic> = [];
-
+/**
+ * Parses a message into diagnostics.
+ * 
+ * @param bucket The array to store parsed diagnostics in.
+ * @param msg The message to parse.
+ * @param rootPath The root path of the rust project the message was generated
+ * for.
+ */
+function parseMessage(bucket: Array<Diagnostic>, msg: Message, rootPath: string) {
     // Parse all valid spans.
     for (const span of msg.spans) {
         let level = parseMessageLevel(msg.level);
@@ -113,41 +120,54 @@ function parseMessage(msg: Message, root_path: string): Array<Diagnostic> {
             level
         );
 
-        let file_path = path.join(root_path, span.file_name);
-        diagnostics.push({ file_path: file_path, diagnostic: diagnostic });
+        let file_path = path.join(rootPath, span.file_name);
+        bucket.push({ file_path: file_path, diagnostic: diagnostic });
     }
 
     // Recursively parse child messages.
     for (const child of msg.children) {
-        diagnostics.concat(parseMessage(child, root_path));
+        parseMessage(bucket, child, rootPath);
     }
+}
 
+/**
+ * Removes rust's metadata in the specified project folder. This is a work
+ * around for `cargo check` not reissuing warning information for libs.
+ * 
+ * @param rootPath The root path of a rust project.
+ */
+async function removeDiagnosticMetadata(rootPath: string) {
+    let pattern = new vscode.RelativePattern(path.join(rootPath, 'target', 'debug'), '*.rmeta');
+    let files = (await vscode.workspace.findFiles(pattern));
+    for (const file of files) {
+        await fs.unlink(file.fsPath, error => {
+            if (error !== null) {
+                console.warn('Unlink failed', error);
+            }
+        });
+    }
+}
+
+/**
+ * Queries for the diagnostics of a rust project.
+ * 
+ * @param rootPath The root path of a rust project.
+ * @returns An array of diagnostics for the given rust project.
+ */
+async function queryDiagnostics(rootPath: string): Promise<Array<Diagnostic>> {
+    // FIXME: Workaround for warning generation for libs.
+    await removeDiagnosticMetadata(rootPath);
+    const output = await util.spawn('cargo', ['check', '--all-targets', '--message-format=json'], { cwd: rootPath });
+    let diagnostics: Array<Diagnostic> = [];
+    for (const messages of parseStdout(output.stdout)) {
+        parseMessage(diagnostics, messages, rootPath);
+    }
     return diagnostics;
 }
 
 // ========================================================
 // Diagnostic Management
 // ========================================================
-
-/**
- * Removes rust's metadata in the specified project folders. This is a work
- * around for `cargo check` not reissuing warning information for libs.
- * 
- * @param rootPaths An array for root paths of rust projects.
- */
-export async function removeDiagnosticMetadata(rootPaths: Array<string>) {
-    for (let rootPath of rootPaths) {
-        let pattern = new vscode.RelativePattern(path.join(rootPath, 'target', 'debug'), '*.rmeta');
-        let files = (await vscode.workspace.findFiles(pattern));
-        for (const file of files) {
-            fs.unlink(file.fsPath, error => {
-                if (error !== null) {
-                    console.warn('Unlink failed', error);
-                }
-            });
-        }
-    }
-}
 
 export class DiagnosticsManager {
     private pending: Map<string, vscode.Diagnostic[]> = new Map();
@@ -159,28 +179,13 @@ export class DiagnosticsManager {
         this.target = target;
     }
 
-    private async populateRoot(rootPath: string) {
-        const output = await util.spawn('cargo', ['check', '--all-targets', '--message-format=json'], { cwd: rootPath });
-        for (const msg of parseStdout(output.stdout)) {
-            for (const diag of parseMessage(msg.message, rootPath)) {
-                this.add(diag);
-            }
-        }
-    }
-
-    private async populateAll() {
-        for (let rootPath of this.rootPaths) {
-            await this.populateRoot(rootPath);
-        }
-    }
-
     public async refreshAll() {
         vscode.window.setStatusBarMessage('Running cargo check...');
-        // FIXME: Workaround for warning generation for libs.
-        await removeDiagnosticMetadata(this.rootPaths);
         this.pending.clear();
         this.target.clear();
-        await this.populateAll();
+        for (const rootPath of this.rootPaths) {
+            this.addAll(await queryDiagnostics(rootPath));
+        }
         this.render();
         vscode.window.setStatusBarMessage('');
     }
@@ -189,6 +194,12 @@ export class DiagnosticsManager {
         for (let [path, file_diagnostic] of this.pending.entries()) {
             const uri = vscode.Uri.file(path);
             this.target.set(uri, file_diagnostic);
+        }
+    }
+
+    private addAll(diagnostic: Array<Diagnostic>) {
+        for (const diag of diagnostic) {
+            this.add(diag);
         }
     }
 
