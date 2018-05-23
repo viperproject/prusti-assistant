@@ -4,7 +4,14 @@
     "description": "Provides inline error reporting for Rust lang using 'cargo check'.",
     "version": "0.1.2",
     "publisher": "mooman219",
-    "repository": "https://github.com/mooman219/rust-assist",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/mooman219/rust-assist/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/mooman219/rust-assist"
+    },
     "icon": "logo.png",
     "engines": {
         "vscode": "^1.22.0"
