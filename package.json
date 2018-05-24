@@ -1,7 +1,7 @@
 {
     "name": "rust-assist",
     "displayName": "Rust Assist",
-    "description": "Rust language support: code diagnostics, snippets",
+    "description": "Rust language support: code diagnostics, formatting, snippets",
     "version": "0.1.2",
     "publisher": "mooman219",
     "license": "MIT",
@@ -73,6 +73,20 @@
                     "type": "boolean",
                     "default": true,
                     "description": "Specifies if diagnostics should be generated on save."
+                },
+                "rust-assist.formatOnSave": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Specifies if the file should be formatted on save."
+                },
+                "rust-assist.formatMode": {
+                    "type": "string",
+                    "enum": [
+                        "replace",
+                        "overwrite"
+                    ],
+                    "default": "overwrite",
+                    "description": "The format mode to write in. Replace generates backups, overwrite does not."
                 }
             }
         }

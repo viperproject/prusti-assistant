@@ -1,7 +1,7 @@
-# ![Rust Assist logo](https://github.com/mooman219/rust-assist/blob/master/logo.png?raw=true) Rust Assist README
+# ![Rust Assist logo](https://github.com/mooman219/rust-assist/blob/master/logo.png?raw=true) Rust Assist
 [![](https://vsmarketplacebadge.apphb.com/version/mooman219.rust-assist.svg)](https://marketplace.visualstudio.com/items?itemName=mooman219.rust-assist)
 
-Simple VSCode diagnostic integration. Provides: code diagnostics and snippets.
+Simple VSCode diagnostic integration. Provides: code diagnostics, formatting, and snippets.
 
 This extension is for if the RLS is causing you issues. If it is not, I recommend trying out the official [Rust VSCode Extension](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust).
 
@@ -13,6 +13,12 @@ This extension automatically provides inline diagnostics for Rust by calling `ca
 
 By default, this runs on save and on startup.
 
+### Formatting
+
+Formatting is supported through the `rustfmt` tool. Formatting style can be configured by creating a `rustfmt.toml` file in the same directory as your `Cargo.toml` file. Possible configuration settings can be found [here](https://github.com/rust-lang-nursery/rustfmt/blob/master/Configurations.md). More information about the `rustfmt` tool can be found [here](https://github.com/rust-lang-nursery/rustfmt).
+
+By default, this runs on save.
+
 ### Supports Multiple Rust Projects
 
 It supports multiple rust projects in the same workspace. The extension will search for `Cargo.toml` files in the workspace and use them as the root directories to generate diagnostics for.
@@ -23,14 +29,29 @@ Basic snippets are provided for Rust.
 
 ## Requirements
 
-* Cargo is required on your path.
+* `cargo` is required on your path.
+* `rustfmt` is required on your path.
+
+### Installation
+
+Make sure you have rustup installed. Instructions for installing rustup can be found [here](https://rustup.rs/).
+
+Install `rustfmt` by running:
+
+```
+rustup component add rustfmt-preview
+```
 
 ## Extension Settings
 
 This extension contributes the following settings:
 
-* `rust-assist.checkOnStartup`: Enable generating diagnostic on startup.
-* `rust-assist.checkOnSave`: Enable generating diagnostic data on save.
+| Setting                            | Description                                                                 | Default     |
+| ---------------------------------- | --------------------------------------------------------------------------- | ----------- |
+| `rust-assist.diagnosticsOnStartup` | Specifies if diagnostics should be generated on startup.                    | `true`      |
+| `rust-assist.diagnosticsOnSave`    | Specifies if diagnostics should be generated on save.                       | `true`      |
+| `rust-assist.formatOnSave`         | Specifies if the file should be formatted on save.                          | `true`      |
+| `rust-assist.formatMode`           | The format mode to write in. Replace generates backups, overwrite does not. | `overwrite` |
 
 ## Known Issues
 
@@ -38,6 +59,6 @@ If a `Cargo.toml` file is not found, the extension will not provide diagnostic d
 
 ## Release Notes
 
-### 0.1.2 - 2018-05-23
-- Fix issue with warnings not being reissued for lib projects
-- Update the logo
+### 0.2.0 - 2018-05-23
+- Make configuration names more descriptive
+- Add formatting support through `rustfmt`

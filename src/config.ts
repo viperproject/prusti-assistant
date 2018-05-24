@@ -11,3 +11,16 @@ export function diagnosticsOnStartup(): boolean {
 export function diagnosticsOnSave(): boolean {
     return config().get('diagnosticsOnSave', true);
 }
+
+export function formatOnSave(): boolean {
+    return config().get('formatOnSave', true);
+}
+
+export enum FormatMode {
+    Replace = 'replace',
+    Overwrite = 'overwrite'
+}
+
+export function formatMode(): FormatMode {
+    return config().get('formatMode', FormatMode.Overwrite);
+}
