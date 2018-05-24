@@ -28,7 +28,7 @@ export function spawn(
 export async function getRootPaths(): Promise<Array<string>> {
     let roots: Array<string> = [];
     (await vscode.workspace.findFiles('**/Cargo.toml')).forEach(path => {
-        roots.push(path.fsPath.replace(/Cargo\.toml$/, ''));
+        roots.push(path.fsPath.replace(/[/\\]?Cargo\.toml$/, ''));
     });
     return roots;
 }
