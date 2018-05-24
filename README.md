@@ -17,7 +17,7 @@ By default, this runs on save and on startup.
 
 Formatting is supported through the `rustfmt` tool. Formatting style can be configured by creating a `rustfmt.toml` file in the same directory as your `Cargo.toml` file. Possible configuration settings can be found [here](https://github.com/rust-lang-nursery/rustfmt/blob/master/Configurations.md). More information about the `rustfmt` tool can be found [here](https://github.com/rust-lang-nursery/rustfmt).
 
-By default, this runs on save.
+By default, formatting is not enabled.
 
 ### Supports Multiple Rust Projects
 
@@ -50,7 +50,7 @@ This extension contributes the following settings:
 | ---------------------------------- | --------------------------------------------------------------------------- | ----------- |
 | `rust-assist.diagnosticsOnStartup` | Specifies if diagnostics should be generated on startup.                    | `true`      |
 | `rust-assist.diagnosticsOnSave`    | Specifies if diagnostics should be generated on save.                       | `true`      |
-| `rust-assist.formatOnSave`         | Specifies if the file should be formatted on save.                          | `true`      |
+| `rust-assist.formatOnSave`         | Specifies if the file should be formatted on save.                          | `false`     |
 | `rust-assist.formatMode`           | The format mode to write in. Replace generates backups, overwrite does not. | `overwrite` |
 
 ## Known Issues
