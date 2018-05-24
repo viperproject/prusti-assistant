@@ -2,7 +2,7 @@
     "name": "rust-assist",
     "displayName": "Rust Assist",
     "description": "Rust language support: code diagnostics, formatting, snippets",
-    "version": "0.1.2",
+    "version": "0.2.0",
     "publisher": "mooman219",
     "license": "MIT",
     "bugs": {
