@@ -169,6 +169,15 @@ async function queryDiagnostics(rootPath: string): Promise<Array<Diagnostic>> {
 // Diagnostic Management
 // ========================================================
 
+export async function hasPrerequisites(): Promise<boolean> {
+    try {
+        await util.spawn('cargo', [`--version`]);
+        return true;
+    } catch (error) {
+        return false;
+    }
+}
+
 export class DiagnosticsManager {
     private pending: Map<string, vscode.Diagnostic[]> = new Map();
     private rootPaths: Array<string>;

@@ -18,27 +18,31 @@ export async function activate(context: vscode.ExtensionContext) {
     // Diagnostics
     // ====================================================
 
-    const rustDiagnostics = vscode.languages.createDiagnosticCollection("rust");
-    const diagnosticManager = new diagnostics.DiagnosticsManager(rootPaths, rustDiagnostics);
+    if (await diagnostics.hasPrerequisites()) {
+        const rustDiagnostics = vscode.languages.createDiagnosticCollection("rust");
+        const diagnosticManager = new diagnostics.DiagnosticsManager(rootPaths, rustDiagnostics);
 
-    context.subscriptions.push(
-        vscode.commands.registerCommand('rust-assist.refreshDiagnostics', async () => {
-            diagnosticManager.refreshAll();
-        })
-    );
-
-    if (config.diagnosticsOnSave()) {
         context.subscriptions.push(
-            vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {
-                if (document.languageId === 'rust') {
-                    diagnosticManager.refreshAll();
-                }
+            vscode.commands.registerCommand('rust-assist.refreshDiagnostics', async () => {
+                diagnosticManager.refreshAll();
             })
         );
-    }
 
-    if (config.diagnosticsOnStartup()) {
-        diagnosticManager.refreshAll();
+        if (config.diagnosticsOnSave()) {
+            context.subscriptions.push(
+                vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {
+                    if (document.languageId === 'rust') {
+                        diagnosticManager.refreshAll();
+                    }
+                })
+            );
+        }
+
+        if (config.diagnosticsOnStartup()) {
+            diagnosticManager.refreshAll();
+        }
+    } else {
+        vscode.window.showWarningMessage('Rust Assist: Cargo not found on path, code diagnostics are disabled.');
     }
 
     // ====================================================
