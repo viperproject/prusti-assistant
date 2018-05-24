@@ -45,15 +45,19 @@ export async function activate(context: vscode.ExtensionContext) {
     // Formatting
     // ====================================================
 
-    const formatManager = new format.FormatManager(rootPaths, config.formatMode());
+    if (await format.hasPrerequisites()) {
+        const formatManager = new format.FormatManager(rootPaths, config.formatMode());
 
-    if (config.formatOnSave()) {
-        context.subscriptions.push(
-            vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {
-                if (document.languageId === 'rust') {
-                    formatManager.format(document.uri.fsPath);
-                }
-            })
-        );
+        if (config.formatOnSave()) {
+            context.subscriptions.push(
+                vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {
+                    if (document.languageId === 'rust') {
+                        formatManager.format(document.uri.fsPath);
+                    }
+                })
+            );
+        }
+    } else {
+        vscode.window.showWarningMessage('Rust Assist: Rustfmt not found on path, formatting is disabled.');
     }
 }

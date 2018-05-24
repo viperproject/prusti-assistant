@@ -14,6 +14,15 @@ async function formatFile(rootPath: string, filePath: string, formatMode: Format
 // Format Management
 // ========================================================
 
+export async function hasPrerequisites(): Promise<boolean> {
+    try {
+        await util.spawn('rustfmt', [`--version`]);
+        return true;
+    } catch (error) {
+        return false;
+    }
+}
+
 export class FormatManager {
     private rootPaths: Array<string>;
     private formatMode: FormatMode;
@@ -28,7 +37,7 @@ export class FormatManager {
         if (root !== undefined) {
             await formatFile(root, filePath, this.formatMode);
         } else {
-            vscode.window.showErrorMessage('Rust Assist: Unable to find root path for file.');
+            vscode.window.showErrorMessage('Rust Assist: Unable to find root path for file, unable to format.');
         }
     }
 }
