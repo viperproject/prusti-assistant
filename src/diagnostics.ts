@@ -193,7 +193,6 @@ export class DiagnosticsManager {
     public async refreshAll() {
         vscode.window.setStatusBarMessage('Running cargo check...');
         this.pending.clear();
-        this.target.clear();
         for (const rootPath of this.rootPaths) {
             this.addAll(await queryDiagnostics(rootPath));
         }
@@ -202,6 +201,7 @@ export class DiagnosticsManager {
     }
 
     private render() {
+        this.target.clear();
         for (let [path, file_diagnostic] of this.pending.entries()) {
             const uri = vscode.Uri.file(path);
             this.target.set(uri, file_diagnostic);
