@@ -13,7 +13,7 @@ export function diagnosticsOnSave(): boolean {
 }
 
 export function formatOnSave(): boolean {
-    return config().get('formatOnSave', true);
+    return config().get('formatOnSave', false);
 }
 
 export enum FormatMode {
