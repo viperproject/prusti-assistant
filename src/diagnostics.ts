@@ -107,11 +107,13 @@ function parseMessage(bucket: Array<Diagnostic>, msg: Message, rootPath: string)
             level = vscode.DiagnosticSeverity.Information;
         }
 
-        let message = '';
-        if (span.label) {
-            message += `${span.label} \n\nCaused by: `;
+        let message = msg.message;
+        if (msg.code) {
+            message = `[${msg.code.code}] ${message}.`;
         }
-        message += `${msg.message}.`;
+        if (span.label) {
+            message = `${message} \n[Note] ${span.label}`;
+        }
 
         let range = parseSpanRange(span);
         let diagnostic = new vscode.Diagnostic(
