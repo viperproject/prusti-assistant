@@ -27,17 +27,20 @@ It supports multiple rust projects in the same workspace. The extension will sea
 
 Basic snippets are provided for Rust.
 
-## Requirements
+## Installation
+
+### Requirements
 
 * [`cargo`](https://github.com/rust-lang/cargo) is required on your path.
 * [`rustfmt`](https://github.com/rust-lang-nursery/rustfmt) is required on your path.
 
-### Installation
+### Installing `rustfmt`
 
 Make sure you have rustup installed. Instructions for installing rustup can be found [here](https://rustup.rs/).
 
-Install `rustfmt` by running:
+If you have already installed `rustfmt` via cargo, you will need to delete it from your cargo bin directory. Using `rustfmt` through cargo may break when switching toolchains or updating the compiler.
 
+Install `rustfmt` by running:
 ```
 rustup component add rustfmt-preview
 ```
