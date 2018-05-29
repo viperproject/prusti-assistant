@@ -17,7 +17,7 @@ export function formatOnSave(): boolean {
 }
 
 export enum FormatMode {
-    Replace = 'replace',
+    Backup = 'backup',
     Overwrite = 'overwrite'
 }
 

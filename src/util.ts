@@ -9,7 +9,7 @@ export interface Output {
 
 export function spawn(
     cmd: string,
-    args?: string[],
+    args?: Array<string>,
     options?: child_process.SpawnOptions
 ): Promise<Output> {
     return new Promise((resolve, reject) => {

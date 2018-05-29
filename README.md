@@ -29,8 +29,8 @@ Basic snippets are provided for Rust.
 
 ## Requirements
 
-* `cargo` is required on your path.
-* `rustfmt` is required on your path.
+* [`cargo`](https://github.com/rust-lang/cargo) is required on your path.
+* [`rustfmt`](https://github.com/rust-lang-nursery/rustfmt) is required on your path.
 
 ### Installation
 
@@ -46,12 +46,12 @@ rustup component add rustfmt-preview
 
 This extension contributes the following settings:
 
-| Setting                            | Description                                                                 | Default     |
-| ---------------------------------- | --------------------------------------------------------------------------- | ----------- |
-| `rust-assist.diagnosticsOnStartup` | Specifies if diagnostics should be generated on startup.                    | `true`      |
-| `rust-assist.diagnosticsOnSave`    | Specifies if diagnostics should be generated on save.                       | `true`      |
-| `rust-assist.formatOnSave`         | Specifies if the file should be formatted on save.                          | `false`     |
-| `rust-assist.formatMode`           | The format mode to write in. Replace generates backups, overwrite does not. | `overwrite` |
+| Setting                            | Description                                                                | Default     |
+| ---------------------------------- | -------------------------------------------------------------------------- | ----------- |
+| `rust-assist.diagnosticsOnStartup` | Specifies if diagnostics should be generated on startup.                   | `true`      |
+| `rust-assist.diagnosticsOnSave`    | Specifies if diagnostics should be generated on save.                      | `true`      |
+| `rust-assist.formatOnSave`         | Specifies if the file should be formatted on save.                         | `false`     |
+| `rust-assist.formatMode`           | The format mode to write in. Backup generates backups, overwrite does not. | `overwrite` |
 
 ## Known Issues
 

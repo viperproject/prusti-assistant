@@ -7,7 +7,11 @@ import * as vscode from 'vscode';
 // ========================================================
 
 async function formatFile(rootPath: string, filePath: string, formatMode: FormatMode) {
-    await util.spawn('rustfmt', [`--write-mode=${formatMode}`, `--config-path=${rootPath}`, filePath], { cwd: rootPath });
+    let args = [`--config-path=${rootPath}`, filePath];
+    if (formatMode === FormatMode.Backup) {
+        args.unshift('--backup');
+    }
+    await util.spawn('rustfmt', args, { cwd: rootPath });
 }
 
 // ========================================================
