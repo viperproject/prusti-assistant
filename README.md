@@ -1,5 +1,5 @@
-# ![Rust Assist logo](https://github.com/mooman219/rust-assist/blob/master/logo.png?raw=true) Rust Assist
-[![](https://vsmarketplacebadge.apphb.com/version/mooman219.rust-assist.svg)](https://marketplace.visualstudio.com/items?itemName=mooman219.rust-assist)
+![Rust Assist logo](https://github.com/mooman219/rust-assist/blob/master/logo.png?raw=true)
+# Rust Assist [![](https://vsmarketplacebadge.apphb.com/version/mooman219.rust-assist.svg)](https://marketplace.visualstudio.com/items?itemName=mooman219.rust-assist)
 
 Simple VSCode diagnostic integration. Provides: code diagnostics, formatting, and snippets.
 
@@ -59,9 +59,3 @@ This extension contributes the following settings:
 ## Known Issues
 
 If a `Cargo.toml` file is not found, the extension will not provide diagnostic data.
-
-## Release Notes
-
-### 0.2.1 - 2018-05-28
-- Fix how `rustfmt` is called to match the arguments required by `rustfmt-preview`. Update the readme and configuration to reflect these changes.
-- Improve the percieved performance of diagnostics by not removing the old diagnostics until fresh ones have been generated.
