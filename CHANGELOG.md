@@ -1,5 +1,6 @@
 ### 0.2.2 - 2018-06-07
 - Fix formatting when `rustfmt.toml` isn't present.
+- Add derive snippet
 
 ### 0.2.1 - 2018-05-28
 - Fix how `rustfmt` is called to match the arguments required by `rustfmt-preview`. Update the readme and configuration to reflect these changes.
