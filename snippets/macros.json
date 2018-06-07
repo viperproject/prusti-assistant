@@ -1,4 +1,11 @@
 {
+    "derive": {
+        "prefix": "derive",
+        "body": [
+            "#[derive(${1})]"
+        ],
+        "description": "Insert #![derive(...)]"
+    },
     "allow": {
         "prefix": "allow",
         "body": [
