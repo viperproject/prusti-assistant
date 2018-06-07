@@ -59,3 +59,9 @@ This extension contributes the following settings:
 ## Known Issues
 
 If a `Cargo.toml` file is not found, the extension will not provide diagnostic data.
+
+## Release Notes
+
+### 0.2.2 - 2018-06-07
+- Fix formatting when `rustfmt.toml` isn't present.
+- Add derive snippet
