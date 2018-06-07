@@ -182,19 +182,19 @@ export async function hasPrerequisites(): Promise<boolean> {
 
 export class DiagnosticsManager {
     private pending: Map<string, vscode.Diagnostic[]> = new Map();
-    private rootPaths: Array<string>;
+    private projectList: util.ProjectList;
     private target: vscode.DiagnosticCollection;
 
-    public constructor(rootPaths: Array<string>, target: vscode.DiagnosticCollection) {
-        this.rootPaths = rootPaths;
+    public constructor(projectList: util.ProjectList, target: vscode.DiagnosticCollection) {
+        this.projectList = projectList;
         this.target = target;
     }
 
     public async refreshAll() {
         vscode.window.setStatusBarMessage('Running cargo check...');
         this.pending.clear();
-        for (const rootPath of this.rootPaths) {
-            this.addAll(await queryDiagnostics(rootPath));
+        for (const project of this.projectList.projects) {
+            this.addAll(await queryDiagnostics(project.path));
         }
         this.render();
         vscode.window.setStatusBarMessage('');

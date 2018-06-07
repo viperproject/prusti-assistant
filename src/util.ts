@@ -1,5 +1,7 @@
 import * as child_process from 'child_process';
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export interface Output {
     stdout: string;
@@ -12,6 +14,7 @@ export function spawn(
     args?: Array<string>,
     options?: child_process.SpawnOptions
 ): Promise<Output> {
+    console.log(`Rust Assist: Running '${cmd} ${args ? args.join(' ') : ''}'`);
     return new Promise((resolve, reject) => {
         let stdout = '';
         let stderr = '';
@@ -25,24 +28,59 @@ export function spawn(
     });
 }
 
-/**
- * Find all paths in the workspace that contain a Cargo.toml file.
- * 
- * @returns An array of paths.
- */
-export async function findRootPaths(): Promise<Array<string>> {
-    let roots: Array<string> = [];
-    (await vscode.workspace.findFiles('**/Cargo.toml')).forEach(path => {
-        roots.push(path.fsPath.replace(/[/\\]?Cargo\.toml$/, ''));
-    });
-    return roots;
+export class Project {
+    private _path: string;
+
+    public constructor(path: string) {
+        this._path = path;
+    }
+
+    public get path() {
+        return this._path;
+    }
+
+    public hasRootFile(fileName: string): Promise<boolean> {
+        let filePath = path.join(this._path, fileName);
+        return new Promise((resolve, reject) => {
+            fs.access(filePath, fs.constants.F_OK, (err) => resolve(err ? false : true));
+        });
+    }
 }
 
-export function findMatchingRoot(roots: Array<string>, key: string) {
-    for (const root of roots) {
-        if (key.startsWith(root)) {
-            return root;
-        }
+export class ProjectList {
+    private _projects: Array<Project>;
+
+    public constructor(projects: Array<Project>) {
+        this._projects = projects;
     }
-    return undefined;
+
+    public get projects() {
+        return this._projects;
+    }
+
+    public hasProjects() {
+        return this._projects.length > 0;
+    }
+
+    public getParent(file: string) {
+        for (const project of this._projects) {
+            if (file.startsWith(project.path)) {
+                return project;
+            }
+        }
+        return undefined;
+    }
+}
+
+/**
+ * Find all projects in the workspace that contain a Cargo.toml file.
+ * 
+ * @returns A project list.
+ */
+export async function findProjects(): Promise<ProjectList> {
+    let projects: Array<Project> = [];
+    (await vscode.workspace.findFiles('**/Cargo.toml')).forEach(path => {
+        projects.push(new Project(path.fsPath.replace(/[/\\]?Cargo\.toml$/, '')));
+    });
+    return new ProjectList(projects);
 }

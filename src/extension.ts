@@ -7,9 +7,9 @@ import * as diagnostics from './diagnostics';
 import * as format from './format';
 
 export async function activate(context: vscode.ExtensionContext) {
-    const rootPaths = await util.findRootPaths();
+    const projects = await util.findProjects();
 
-    if (rootPaths.length === 0) {
+    if (!projects.hasProjects()) {
         vscode.window.showWarningMessage('Rust Assist: No `Cargo.toml` files were found in the workspace, unable to start plugin.');
         return;
     }
@@ -21,7 +21,7 @@ export async function activate(context: vscode.ExtensionContext) {
     diagnostics.hasPrerequisites().then(result => {
         if (result) {
             const rustDiagnostics = vscode.languages.createDiagnosticCollection("rust");
-            const diagnosticManager = new diagnostics.DiagnosticsManager(rootPaths, rustDiagnostics);
+            const diagnosticManager = new diagnostics.DiagnosticsManager(projects, rustDiagnostics);
 
             context.subscriptions.push(
                 vscode.commands.registerCommand('rust-assist.refreshDiagnostics', async () => {
@@ -53,13 +53,16 @@ export async function activate(context: vscode.ExtensionContext) {
 
     format.hasPrerequisites().then(result => {
         if (result) {
-            const formatManager = new format.FormatManager(rootPaths, config.formatMode());
+            const formatManager = new format.FormatManager(config.formatMode());
 
             if (config.formatOnSave()) {
                 context.subscriptions.push(
                     vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {
                         if (document.languageId === 'rust') {
-                            formatManager.format(document.uri.fsPath);
+                            formatManager.formatFile(
+                                projects.getParent(document.uri.fsPath),
+                                document.uri.fsPath
+                            );
                         }
                     })
                 );
