@@ -1,5 +1,6 @@
 ### 0.2.2 - 2018-06-07
 - Fix formatting when `rustfmt.toml` isn't present.
+- Fix issue where diagnostics are generated before the file is formatted
 - Add derive snippet
 
 ### 0.2.1 - 2018-05-28
