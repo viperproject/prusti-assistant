@@ -64,4 +64,5 @@ If a `Cargo.toml` file is not found, the extension will not provide diagnostic d
 
 ### 0.2.2 - 2018-06-07
 - Fix formatting when `rustfmt.toml` isn't present.
+- Fix issue where diagnostics are generated before the file is formatted
 - Add derive snippet
