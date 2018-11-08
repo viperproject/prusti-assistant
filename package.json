@@ -62,7 +62,7 @@
         ],
         "configuration": {
             "type": "object",
-            "title": "rust-assist configuration",
+            "title": "Rust Assist",
             "properties": {
                 "rust-assist.diagnosticsOnStartup": {
                     "type": "boolean",
