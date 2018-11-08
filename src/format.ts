@@ -32,7 +32,12 @@ export class FormatManager {
                 args.push('--backup');
             }
             args.push(filePath);
-            await util.spawn('rustfmt', args, { cwd: project.path });
+
+            const result = await util.spawn('rustfmt', args, { cwd: project.path });
+
+            if (result.stderr) {
+                vscode.window.showErrorMessage(`Rust Assist: Format error. ${result.stderr}`);
+            }
         } else {
             vscode.window.showErrorMessage('Rust Assist: Unable to find root path for file, unable to format.');
         }
