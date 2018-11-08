@@ -1,3 +1,6 @@
+### 0.2.3 - 2018-11-07
+- Display an error when there's an configuration error in `rustfmt.toml`. 
+
 ### 0.2.2 - 2018-06-07
 - Fix formatting when `rustfmt.toml` isn't present.
 - Fix issue where diagnostics are generated before the file is formatted
