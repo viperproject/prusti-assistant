@@ -18,8 +18,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Prerequisites checks
 
-    let canDiagnostics = await diagnostics.hasPrerequisites();
-    let canFormat = await format.hasPrerequisites();
+    const canDiagnostics = await diagnostics.hasPrerequisites();
+    const canFormat = await format.hasPrerequisites();
 
     if (!canDiagnostics) {
         vscode.window.showWarningMessage('Rust Assist: Cargo not found on path, code diagnostics are disabled.');
