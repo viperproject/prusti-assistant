@@ -1,26 +1,21 @@
 import * as vscode from 'vscode';
 
 function config(): vscode.WorkspaceConfiguration {
-    return vscode.workspace.getConfiguration('rust-assist');
+    return vscode.workspace.getConfiguration('prusti-assistant');
 }
 
-export function diagnosticsOnStartup(): boolean {
-    return config().get('diagnosticsOnStartup', true);
+export function cargoPrustiPath(): string {
+    return config().get('cargoPrustiPath', 'cargo-prusti');
 }
 
-export function diagnosticsOnSave(): boolean {
-    return config().get('diagnosticsOnSave', true);
+export function verifyOnSave(): boolean {
+    return config().get('verifyOnSave', true);
 }
 
-export function formatOnSave(): boolean {
-    return config().get('formatOnSave', false);
+export function verifyOnStartup(): boolean {
+    return config().get('verifyOnStartup', true);
 }
 
-export enum FormatMode {
-    Backup = 'backup',
-    Overwrite = 'overwrite'
-}
-
-export function formatMode(): FormatMode {
-    return config().get('formatMode', FormatMode.Overwrite);
+export function reportErrorsOnly(): boolean {
+    return config().get('reportErrorsOnly', true);
 }

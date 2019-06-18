@@ -1,97 +1,68 @@
 {
-    "name": "rust-assist",
-    "displayName": "Rust Assist",
-    "description": "Rust language support: code diagnostics, formatting, snippets",
-    "version": "0.2.3",
-    "publisher": "mooman219",
+    "name": "prusti-assistant",
+    "displayName": "Prusti Assistant",
+    "description": "VSCode diagnostic integration for the Prusti verifier",
+    "version": "0.1.4",
+    "publisher": "fpoli",
+    "repository": "https://github.com/viperproject/prusti-assistant",
     "license": "MIT",
-    "bugs": {
-        "url": "https://github.com/mooman219/rust-assist/issues"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/mooman219/rust-assist"
-    },
-    "icon": "logo.png",
     "engines": {
-        "vscode": "^1.22.0"
+        "vscode": "^1.35.0"
     },
     "categories": [
-        "Programming Languages",
-        "Snippets"
+        "Programming Languages"
     ],
     "keywords": [
         "rust",
-        "rust-lang"
+        "rust-lang",
+        "prusti"
     ],
     "activationEvents": [
         "onLanguage:rust",
-        "workspaceContains:Cargo.toml",
-        "onCommand:rust-assist.check"
+        "onCommand:prusti-assistant.verify"
     ],
+    "main": "./out/extension.js",
     "contributes": {
-        "languages": [
-            {
-                "id": "rust",
-                "extensions": [
-                    ".rs"
-                ],
-                "configuration": "./language-configuration.json"
-            }
-        ],
         "snippets": [
             {
                 "language": "rust",
-                "path": "./snippets/base.json"
-            },
-            {
-                "language": "rust",
-                "path": "./snippets/control.json"
-            },
-            {
-                "language": "rust",
-                "path": "./snippets/macros.json"
+                "path": "./snippets/specs.json"
             }
         ],
         "commands": [
             {
-                "command": "rust-assist.refreshDiagnostics",
-                "title": "Refresh diagnostics manually",
-                "category": "Rust"
+                "command": "prusti-assistant.verify",
+                "title": "Verify the program manually",
+                "category": "Prusti"
             }
         ],
         "configuration": {
             "type": "object",
-            "title": "Rust Assist",
+            "title": "Prusti Assistant",
             "properties": {
-                "rust-assist.diagnosticsOnStartup": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Specifies if diagnostics should be generated on startup."
-                },
-                "rust-assist.diagnosticsOnSave": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Specifies if diagnostics should be generated on save."
-                },
-                "rust-assist.formatOnSave": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Specifies if the file should be formatted on save."
-                },
-                "rust-assist.formatMode": {
+                "prusti-assistant.cargoPrustiPath": {
                     "type": "string",
-                    "enum": [
-                        "backup",
-                        "overwrite"
-                    ],
-                    "default": "overwrite",
-                    "description": "The format mode to write in. Backup generates backups, overwrite does not."
+                    "default": "cargo-prusti",
+                    "description": "The path to the cargo-prusti binary to be used."
+                },
+                "prusti-assistant.verifyOnSave": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Specifies if the program should be verified on save."
+                },
+                "prusti-assistant.verifyOnStartup": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Specifies if the program should be verified on startup."
+                },
+                "prusti-assistant.reportErrorsOnly": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Specifies if only error messages should be reported."
                 }
             }
         }
     },
-    "main": "./out/extension",
     "scripts": {
         "vscode:prepublish": "npm run compile",
         "compile": "tsc -p ./",
@@ -100,12 +71,11 @@
         "test": "npm run compile && node ./node_modules/vscode/bin/test"
     },
     "devDependencies": {
-        "@types/mocha": "^2.2.42",
-        "@types/node": "^7.0.43",
-        "@types/tmp": "0.0.33",
-        "tslint": "^5.8.0",
-        "typescript": "^2.6.1",
-        "vscode": "^1.1.21"
+        "typescript": "^3.3.1",
+        "vscode": "^1.1.28",
+        "tslint": "^5.12.1",
+        "@types/node": "^10.12.21",
+        "@types/mocha": "^2.2.42"
     },
     "dependencies": {
         "tmp": "0.0.33"

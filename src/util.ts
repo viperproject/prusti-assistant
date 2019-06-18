@@ -3,6 +3,14 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 
+let _channel: vscode.OutputChannel;
+export function getOutputChannel(): vscode.OutputChannel {
+    if (!_channel) {
+        _channel = vscode.window.createOutputChannel('Prusti Assistant');
+    }
+    return _channel;
+}
+
 export interface Output {
     stdout: string;
     stderr: string;
@@ -14,7 +22,7 @@ export function spawn(
     args?: Array<string>,
     options?: child_process.SpawnOptions
 ): Promise<Output> {
-    console.log(`Rust Assist: Running '${cmd} ${args ? args.join(' ') : ''}'`);
+    getOutputChannel().appendLine(`Prusti Assistant: Running '${cmd} ${args ? args.join(' ') : ''}'`);
     return new Promise((resolve, reject) => {
         let stdout = '';
         let stderr = '';
@@ -23,8 +31,24 @@ export function spawn(
 
         proc.stdout.on('data', (data) => stdout += data);
         proc.stderr.on('data', (data) => stderr += data);
-        proc.on('close', (code) => resolve({ stdout, stderr, code }));
-        proc.on('error', (err) => reject(err));
+        proc.on('close', (code) => {
+            getOutputChannel().appendLine("===== Begin stdout =====");
+            getOutputChannel().append(stdout);
+            getOutputChannel().appendLine("===== End stdout =====");
+            getOutputChannel().appendLine("===== Begin stderr =====");
+            getOutputChannel().append(stderr);
+            getOutputChannel().appendLine("===== End stderr =====");
+            resolve({ stdout, stderr, code })
+        });
+        proc.on('error', (err) => {
+            getOutputChannel().appendLine("===== Begin stdout =====");
+            getOutputChannel().append(stdout);
+            getOutputChannel().appendLine("===== End stdout =====");
+            getOutputChannel().appendLine("===== Begin stderr =====");
+            getOutputChannel().append(stderr);
+            getOutputChannel().appendLine("===== End stderr =====");
+            reject(err)
+        });
     });
 }
 
@@ -74,12 +98,12 @@ export class ProjectList {
 
 /**
  * Find all projects in the workspace that contain a Cargo.toml file.
- * 
+ *
  * @returns A project list.
  */
 export async function findProjects(): Promise<ProjectList> {
     let projects: Array<Project> = [];
-    (await vscode.workspace.findFiles('**/Cargo.toml')).forEach(path => {
+    (await vscode.workspace.findFiles('**/Cargo.toml')).forEach((path: any) => {
         projects.push(new Project(path.fsPath.replace(/[/\\]?Cargo\.toml$/, '')));
     });
     return new ProjectList(projects);

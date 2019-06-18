@@ -1,0 +1,23 @@
+{
+    "requires": {
+        "prefix": "requires",
+        "body": [
+            "requires=\"${1}\""
+        ],
+        "description": "Insert requires=\"...\""
+    },
+    "ensures": {
+        "prefix": "ensures",
+        "body": [
+            "ensures=\"${1}\""
+        ],
+        "description": "Insert ensures=\"...\""
+    },
+    "invariant": {
+        "prefix": "invariant",
+        "body": [
+            "invariant=\"${1}\""
+        ],
+        "description": "Insert invariant=\"...\""
+    }
+}
