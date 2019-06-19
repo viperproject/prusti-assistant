@@ -83,9 +83,9 @@ function parseStdout(stdout: string): Array<Message> {
     for (const line of stdout.split("\n")) {
         // Remove duplicate lines. Running '--all-targets' can generate
         // duplicate errors.
-        if (!line || seen.has(line)) {
-            continue;
-        }
+        //if (!line || seen.has(line)) {
+        //    continue;
+        //}
         seen.add(line);
 
         // Parse the message into a diagnostic.
