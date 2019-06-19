@@ -81,11 +81,9 @@ function parseStdout(stdout: string): Array<Message> {
     let messages: Array<Message> = [];
     let seen = new Set();
     for (const line of stdout.split("\n")) {
-        // Remove duplicate lines. Running '--all-targets' can generate
-        // duplicate errors.
-        //if (!line || seen.has(line)) {
-        //    continue;
-        //}
+        if (!line) {
+            continue;
+        }
         seen.add(line);
 
         // Parse the message into a diagnostic.
@@ -242,7 +240,7 @@ async function queryDiagnostics(rootPath: string): Promise<Array<Diagnostic>> {
 // ========================================================
 
 export function hasPrerequisites(): [boolean, null | string] {
-    if (config.cargoPrustiPath() === "") {
+    if (!config.cargoPrustiPath()) {
         return [false, "Prusti's path is empty. Please fix the 'cargoPrustiPath' setting."];
     }
     try {
@@ -325,7 +323,7 @@ export class DiagnosticsManager {
             set.push(diagnostic.diagnostic);
         } else {
             let file_path = diagnostic.file_path;
-            if (file_path === "") {
+            if (!file_path) {
                 // TODO: report the error on the main file of the project, not
                 // on the active tab
                 file_path = vscode.window.activeTextEditor.document.fileName;
