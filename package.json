@@ -2,7 +2,7 @@
     "name": "prusti-assistant",
     "displayName": "Prusti Assistant",
     "description": "VSCode diagnostic integration for the Prusti verifier",
-    "version": "0.1.5",
+    "version": "0.1.6",
     "publisher": "fpoli",
     "repository": "https://github.com/viperproject/prusti-assistant",
     "license": "MIT",
