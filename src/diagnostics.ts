@@ -288,7 +288,7 @@ export class DiagnosticsManager {
                     file_path: "",
                     diagnostic: new vscode.Diagnostic(
                         dummyRange(),
-                        "Exception in parsing Prusti's output",
+                        "Error in parsing Prusti's output. See the log for more details.",
                         vscode.DiagnosticSeverity.Error
                     )
                 });
