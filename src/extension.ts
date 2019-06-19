@@ -8,17 +8,7 @@ import * as diagnostics from './diagnostics';
 export async function activate(context: vscode.ExtensionContext) {
     util.getOutputChannel().appendLine('Start Prusti Assistant');
 
-    // Startup
-
-    const projects = await util.findProjects();
-
-    if (!projects.hasProjects()) {
-        vscode.window.showWarningMessage('Prusti Assistant: No `Cargo.toml` files were found in the workspace, unable to start plugin.');
-        return;
-    }
-
     // Prerequisites checks
-
     const [canDiagnostics, errorMessage] = diagnostics.hasPrerequisites();
 
     if (!canDiagnostics) {
@@ -26,23 +16,35 @@ export async function activate(context: vscode.ExtensionContext) {
         return;
     }
 
-    // Managers
+    // Shared collection of diagnostics
+    const diagnosticCollection = vscode.languages.createDiagnosticCollection("prusti");
 
-    const diagnosticManager = new diagnostics.DiagnosticsManager(
-        projects,
-        vscode.languages.createDiagnosticCollection("prusti")
-    );
+    // Define verification function
+    async function runVerification() {
+        const projects = await util.findProjects();
+
+        if (!projects.hasProjects()) {
+            vscode.window.showWarningMessage('Prusti Assistant: No `Cargo.toml` files were found in the workspace.');
+        }
+
+        const diagnosticManager = new diagnostics.DiagnosticsManager(
+            projects,
+            diagnosticCollection
+        );
+
+        diagnosticManager.run();
+    }
 
     // Verify on command
     context.subscriptions.push(
         vscode.commands.registerCommand('prusti-assistant.verify', async () => {
-            diagnosticManager.refreshAll();
+            await runVerification();
         })
     );
 
     // Verify on startup
     if (config.verifyOnStartup()) {
-        diagnosticManager.refreshAll();
+        await runVerification();
     }
     
     // On save logic
@@ -51,7 +53,7 @@ export async function activate(context: vscode.ExtensionContext) {
             if (document.languageId === 'rust') {
                 // Verify on save
                 if (config.verifyOnSave()) {
-                    diagnosticManager.refreshAll();
+                    await runVerification();
                 }
             }
         })

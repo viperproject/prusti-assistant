@@ -12,6 +12,11 @@ import * as fs from 'fs';
 
 interface MessageDiagnostic {
     message: Message;
+    target: Target;
+}
+
+interface Target {
+    src_path: string;
 }
 
 interface Message {
@@ -32,6 +37,7 @@ enum Level {
     Help = "help",
     Note = "note",
     Warning = "warning",
+    Empty = "",
 }
 
 interface Span {
@@ -60,6 +66,7 @@ function parseMessageLevel(level: Level): vscode.DiagnosticSeverity {
         case Level.Note: return vscode.DiagnosticSeverity.Information;
         case Level.Help: return vscode.DiagnosticSeverity.Hint;
         case Level.Warning: return vscode.DiagnosticSeverity.Warning;
+        case Level.Empty: return vscode.DiagnosticSeverity.Information;
         default: return vscode.DiagnosticSeverity.Error;
     }
 }
@@ -77,8 +84,8 @@ function parseSpanRange(span: Span): vscode.Range {
     );
 }
 
-function parseStdout(stdout: string): Array<Message> {
-    let messages: Array<Message> = [];
+function parseStdout(stdout: string): Array<MessageDiagnostic> {
+    let messages: Array<MessageDiagnostic> = [];
     let seen = new Set();
     for (const line of stdout.split("\n")) {
         if (!line) {
@@ -90,7 +97,7 @@ function parseStdout(stdout: string): Array<Message> {
         console.log("Parse JSON", line);
         let diag: MessageDiagnostic = JSON.parse(line);
         if (diag.message !== undefined) {
-            messages.push(diag.message);
+            messages.push(diag);
         }
     }
     return messages;
@@ -110,7 +117,9 @@ function getCallSiteSpan(span: Span): Span {
  * @param rootPath The root path of the rust project the message was generated
  * for.
  */
-function parseMessage(msg: Message, rootPath: string): Diagnostic {
+function parseMessage(msgDiag: MessageDiagnostic, rootPath: string): Diagnostic {
+    const mainFilePath = msgDiag.target.src_path;
+    const msg = msgDiag.message;
     const level = parseMessageLevel(msg.level);
     
     // Parse primary span
@@ -123,7 +132,7 @@ function parseMessage(msg: Message, rootPath: string): Diagnostic {
     }
     if (primarySpan === undefined) {
         return {
-            file_path: "",
+            file_path: mainFilePath,
             diagnostic: new vscode.Diagnostic(
                 dummyRange(),
                 msg.message,
@@ -175,7 +184,8 @@ function parseMessage(msg: Message, rootPath: string): Diagnostic {
 
     // Recursively parse child messages.
     for (const child of msg.children) {
-        const { file_path, diagnostic } = parseMessage(child, rootPath);
+        const childMsgDiag = { target: msgDiag.target, message: child };
+        const { file_path, diagnostic } = parseMessage(childMsgDiag, rootPath);
         const fileUri = vscode.Uri.file(file_path);
 
         relatedInformation.push(
@@ -226,6 +236,9 @@ async function queryDiagnostics(rootPath: string): Promise<Array<Diagnostic>> {
     // FIXME: Workaround for warning generation for libs.
     await removeDiagnosticMetadata(rootPath);
     const output = await util.spawn(config.cargoPrustiPath(), ['--message-format=json'], { cwd: rootPath });
+    if (output.stderr.match(/error: internal compiler error/)) {
+        throw new Error("Prusti or the compiler crashed");
+    }
     let diagnostics: Array<Diagnostic> = [];
     for (const messages of parseStdout(output.stdout)) {
         diagnostics.push(
@@ -273,35 +286,71 @@ export class DiagnosticsManager {
         this.target = target;
     }
 
-    public async refreshAll() {
-        vscode.window.setStatusBarMessage('Running Prusti...');
+    public async run() {
+        let numCrates = this.projectList.projects.length;
+        if (numCrates === 0) {
+            util.getOutputChannel().appendLine("No projects to verify");
+            return;
+        } else if (numCrates === 1) {
+            vscode.window.setStatusBarMessage(`Running Prusti...`);
+        } else {
+            vscode.window.setStatusBarMessage(`Running Prusti on ${numCrates} crates...`);
+        }
         this.pending.clear();
+        let crashedCrates = 0;
+        let incorrectCrates = 0;
+        let correctCrates = 0;
         for (const project of this.projectList.projects) {
             try {
-                this.addAll(await queryDiagnostics(project.path));
+                let diagnosis = await queryDiagnostics(project.path);
+                if (diagnosis.length > 0) {
+                    incorrectCrates += 1;
+                } else {
+                    correctCrates += 1;
+                }
+                this.addAll(diagnosis);
             } catch (err) {
+                crashedCrates += 1;
                 console.error(err);
                 util.getOutputChannel().appendLine(`Error: ${err}`);
+                const errorMessage = err.message || err.toString();
                 this.add({
-                    file_path: "",
+                    file_path: path.join(project.path, "Cargo.toml"),
                     diagnostic: new vscode.Diagnostic(
                         dummyRange(),
-                        "Error in parsing Prusti's output. See the log for more details.",
+                        `Unexpected error: ${errorMessage}. See the log for more details.`,
                         vscode.DiagnosticSeverity.Error
                     )
                 });
             }
         }
-        this.render();
-        vscode.window.setStatusBarMessage('');
-    }
-
-    private render() {
+        // Render
         this.target.clear();
         for (let [path, file_diagnostic] of this.pending.entries()) {
             const uri = vscode.Uri.file(path);
             this.target.set(uri, file_diagnostic);
         }
+        // Output result
+        let statusBarMessage = "";
+        if (correctCrates) {
+            if (statusBarMessage) {
+                statusBarMessage += ", ";
+            }
+            statusBarMessage += `${correctCrates} ok`;
+        }
+        if (incorrectCrates) {
+            if (statusBarMessage) {
+                statusBarMessage += ", ";
+            }
+            statusBarMessage += `${incorrectCrates} with errors`;
+        }
+        if (crashedCrates) {
+            if (statusBarMessage) {
+                statusBarMessage += ", ";
+            }
+            statusBarMessage += `${crashedCrates} crashed`;
+        }
+        vscode.window.setStatusBarMessage(`Verification results per crates: ${statusBarMessage}`);
     }
 
     private addAll(diagnostic: Array<Diagnostic>) {
@@ -316,6 +365,10 @@ export class DiagnosticsManager {
                 console.log("Ignore non-error diagnostic", diagnostic);
                 return;
             }
+            if (diagnostic.diagnostic.message.match(/^aborting due to ([0-9]+ |)previous error(s|)$/)) {
+                console.log("Ignore non-error diagnostic", diagnostic);
+                return;
+            }
         }
 
         let set = this.pending.get(diagnostic.file_path);
@@ -323,11 +376,6 @@ export class DiagnosticsManager {
             set.push(diagnostic.diagnostic);
         } else {
             let file_path = diagnostic.file_path;
-            if (!file_path) {
-                // TODO: report the error on the main file of the project, not
-                // on the active tab
-                file_path = vscode.window.activeTextEditor.document.fileName;
-            }
             this.pending.set(file_path, [diagnostic.diagnostic]);
         }
     }

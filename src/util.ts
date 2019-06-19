@@ -19,8 +19,8 @@ export interface Output {
 
 export function spawn(
     cmd: string,
-    args?: Array<string>,
-    options?: child_process.SpawnOptions
+    args?: Array<string> | undefined,
+    options?: child_process.SpawnOptionsWithoutStdio | undefined
 ): Promise<Output> {
     getOutputChannel().appendLine(`Prusti Assistant: Running '${cmd} ${args ? args.join(' ') : ''}'`);
     return new Promise((resolve, reject) => {

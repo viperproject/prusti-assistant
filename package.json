@@ -2,12 +2,20 @@
     "name": "prusti-assistant",
     "displayName": "Prusti Assistant",
     "description": "VSCode diagnostic integration for the Prusti verifier",
-    "version": "0.1.10",
+    "version": "0.1.11",
     "publisher": "fpoli",
-    "repository": "https://github.com/viperproject/prusti-assistant",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/viperproject/prusti-assistant.git"
+    },
     "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/viperproject/prusti-assistant/issues"
+    },
+    "homepage": "https://github.com/viperproject/prusti-assistant",
     "engines": {
-        "vscode": "^1.35.0"
+        "vscode": "^1.35.1",
+        "node": "*"
     },
     "categories": [
         "Programming Languages"
@@ -47,12 +55,12 @@
                 },
                 "prusti-assistant.verifyOnSave": {
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "description": "Specifies if the program should be verified on save."
                 },
                 "prusti-assistant.verifyOnStartup": {
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "description": "Specifies if the program should be verified on startup."
                 },
                 "prusti-assistant.reportErrorsOnly": {
@@ -71,13 +79,13 @@
         "test": "npm run compile && node ./node_modules/vscode/bin/test"
     },
     "devDependencies": {
-        "typescript": "^3.3.1",
-        "vscode": "^1.1.28",
-        "tslint": "^5.12.1",
-        "@types/node": "^10.12.21",
-        "@types/mocha": "^2.2.42"
+        "typescript": "^3.5.2",
+        "vscode": "^1.1.34",
+        "tslint": "^5.17.0",
+        "@types/node": "^12.0.8",
+        "@types/mocha": "^5.2.7"
     },
     "dependencies": {
-        "tmp": "0.0.33"
+        "tmp": "0.1.0"
     }
 }
