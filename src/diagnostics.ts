@@ -119,7 +119,7 @@ function parseMessage(msg: Message, rootPath: string): Diagnostic {
     for (const span of msg.spans) {
         if (span.is_primary) {
             primarySpan = span;
-            break
+            break;
         }
     }
     if (primarySpan === undefined) {
@@ -154,7 +154,7 @@ function parseMessage(msg: Message, rootPath: string): Diagnostic {
     let relatedInformation = [];
     for (const span of msg.spans) {
         if (span.is_primary) {
-            continue
+            continue;
         }
 
         let message = "";
@@ -177,7 +177,7 @@ function parseMessage(msg: Message, rootPath: string): Diagnostic {
     // Recursively parse child messages.
     for (const child of msg.children) {
         const { file_path, diagnostic } = parseMessage(child, rootPath);
-        const fileUri = vscode.Uri.file(file_path)
+        const fileUri = vscode.Uri.file(file_path);
 
         relatedInformation.push(
             new vscode.DiagnosticRelatedInformation(
@@ -241,7 +241,7 @@ async function queryDiagnostics(rootPath: string): Promise<Array<Diagnostic>> {
 // ========================================================
 
 export function hasPrerequisites(): [boolean, null | string] {
-    if (config.cargoPrustiPath() == "") {
+    if (config.cargoPrustiPath() === "") {
         return [false, "Prusti's path is empty. Please fix the 'cargoPrustiPath' setting."];
     }
     try {
@@ -257,7 +257,7 @@ export function hasPrerequisites(): [boolean, null | string] {
         util.spawn(config.cargoPrustiPath(), [`--help`]);
         return [true, null];
     } catch (error) {
-        console.error(error)
+        console.error(error);
         return [false, "Prusti's path looks wrong. Please check the 'cargoPrustiPath' setting."];
     }
 }
@@ -298,7 +298,7 @@ export class DiagnosticsManager {
 
     private add(diagnostic: Diagnostic) {
         if (config.reportErrorsOnly()) {
-            if (diagnostic.diagnostic.severity != vscode.DiagnosticSeverity.Error) {
+            if (diagnostic.diagnostic.severity !== vscode.DiagnosticSeverity.Error) {
                 console.log("Ignore non-error diagnostic", diagnostic);
                 return;
             }
@@ -308,11 +308,11 @@ export class DiagnosticsManager {
         if (set !== undefined) {
             set.push(diagnostic.diagnostic);
         } else {
-            if (diagnostic.file_path != "") {
-                this.pending.set(diagnostic.file_path, [diagnostic.diagnostic]);
-            } else {
-                console.log("Ignore diagnostic without filename", diagnostic);
+            let file_path = diagnostic.file_path;
+            if (file_path === "") {
+                file_path = vscode.window.activeTextEditor.document.fileName;
             }
+            this.pending.set(file_path, [diagnostic.diagnostic]);
         }
     }
 }
