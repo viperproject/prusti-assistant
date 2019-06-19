@@ -89,6 +89,7 @@ function parseStdout(stdout: string): Array<Message> {
         seen.add(line);
 
         // Parse the message into a diagnostic.
+        console.log("Parse JSON", line);
         let diag: MessageDiagnostic = JSON.parse(line);
         if (diag.message !== undefined) {
             messages.push(diag.message);
@@ -249,15 +250,17 @@ export function hasPrerequisites(): [boolean, null | string] {
         if (!exists) {
             return [false, "Prusti's path does not point to a valid file. Please fix the 'cargoPrustiPath' setting."];
         }
-    } catch (error) {
-        console.error(error);
+    } catch (err) {
+        console.error(err);
+        util.getOutputChannel().appendLine(`Error: ${err}`);
         return [false, "Prusti's path looks wrong. Please check the 'cargoPrustiPath' setting."];
     }
     try {
         util.spawn(config.cargoPrustiPath(), [`--help`]);
         return [true, null];
-    } catch (error) {
-        console.error(error);
+    } catch (err) {
+        console.error(err);
+        util.getOutputChannel().appendLine(`Error: ${err}`);
         return [false, "Prusti's path looks wrong. Please check the 'cargoPrustiPath' setting."];
     }
 }
@@ -276,7 +279,20 @@ export class DiagnosticsManager {
         vscode.window.setStatusBarMessage('Running Prusti...');
         this.pending.clear();
         for (const project of this.projectList.projects) {
-            this.addAll(await queryDiagnostics(project.path));
+            try {
+                this.addAll(await queryDiagnostics(project.path));
+            } catch (err) {
+                console.error(err);
+                util.getOutputChannel().appendLine(`Error: ${err}`);
+                this.add({
+                    file_path: "",
+                    diagnostic: new vscode.Diagnostic(
+                        dummyRange(),
+                        "Exception in parsing Prusti's output",
+                        vscode.DiagnosticSeverity.Error
+                    )
+                });
+            }
         }
         this.render();
         vscode.window.setStatusBarMessage('');
@@ -310,6 +326,8 @@ export class DiagnosticsManager {
         } else {
             let file_path = diagnostic.file_path;
             if (file_path === "") {
+                // TODO: report the error on the main file of the project, not
+                // on the active tab
                 file_path = vscode.window.activeTextEditor.document.fileName;
             }
             this.pending.set(file_path, [diagnostic.diagnostic]);

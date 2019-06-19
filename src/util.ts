@@ -38,7 +38,7 @@ export function spawn(
             getOutputChannel().appendLine("===== Begin stderr =====");
             getOutputChannel().append(stderr);
             getOutputChannel().appendLine("===== End stderr =====");
-            resolve({ stdout, stderr, code })
+            resolve({ stdout, stderr, code });
         });
         proc.on('error', (err) => {
             getOutputChannel().appendLine("===== Begin stdout =====");
@@ -47,7 +47,9 @@ export function spawn(
             getOutputChannel().appendLine("===== Begin stderr =====");
             getOutputChannel().append(stderr);
             getOutputChannel().appendLine("===== End stderr =====");
-            reject(err)
+            console.log(err);
+            getOutputChannel().appendLine(`Error: ${err}`);
+            reject(err);
         });
     });
 }

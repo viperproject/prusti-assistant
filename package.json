@@ -2,7 +2,7 @@
     "name": "prusti-assistant",
     "displayName": "Prusti Assistant",
     "description": "VSCode diagnostic integration for the Prusti verifier",
-    "version": "0.1.7",
+    "version": "0.1.8",
     "publisher": "fpoli",
     "repository": "https://github.com/viperproject/prusti-assistant",
     "license": "MIT",
@@ -32,7 +32,7 @@
         "commands": [
             {
                 "command": "prusti-assistant.verify",
-                "title": "Verify the program manually",
+                "title": "Verify the program",
                 "category": "Prusti"
             }
         ],
