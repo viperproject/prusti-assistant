@@ -88,7 +88,7 @@ function parseStdout(stdout: string): Array<MessageDiagnostic> {
     let messages: Array<MessageDiagnostic> = [];
     let seen = new Set();
     for (const line of stdout.split("\n")) {
-        if (!line) {
+        if (line[0] !== "{") {
             continue;
         }
         seen.add(line);
@@ -252,30 +252,6 @@ async function queryDiagnostics(rootPath: string): Promise<Array<Diagnostic>> {
 // Diagnostic Management
 // ========================================================
 
-export function hasPrerequisites(): [boolean, null | string] {
-    if (!config.cargoPrustiPath()) {
-        return [false, "Prusti's path is empty. Please fix the 'cargoPrustiPath' setting."];
-    }
-    try {
-        const exists = fs.existsSync(config.cargoPrustiPath());
-        if (!exists) {
-            return [false, "Prusti's path does not point to a valid file. Please fix the 'cargoPrustiPath' setting."];
-        }
-    } catch (err) {
-        console.error(err);
-        util.getOutputChannel().appendLine(`Error: ${err}`);
-        return [false, "Prusti's path looks wrong. Please check the 'cargoPrustiPath' setting."];
-    }
-    try {
-        util.spawn(config.cargoPrustiPath(), [`--help`]);
-        return [true, null];
-    } catch (err) {
-        console.error(err);
-        util.getOutputChannel().appendLine(`Error: ${err}`);
-        return [false, "Prusti's path looks wrong. Please check the 'cargoPrustiPath' setting."];
-    }
-}
-
 export class DiagnosticsManager {
     private pending: Map<string, vscode.Diagnostic[]> = new Map();
     private projectList: util.ProjectList;
@@ -289,7 +265,7 @@ export class DiagnosticsManager {
     public async run() {
         let numCrates = this.projectList.projects.length;
         if (numCrates === 0) {
-            util.getOutputChannel().appendLine("No projects to verify");
+            util.log("No projects to verify");
             return;
         } else if (numCrates === 1) {
             vscode.window.setStatusBarMessage(`Running Prusti...`);
@@ -298,21 +274,14 @@ export class DiagnosticsManager {
         }
         this.pending.clear();
         let crashedCrates = 0;
-        let incorrectCrates = 0;
-        let correctCrates = 0;
         for (const project of this.projectList.projects) {
             try {
                 let diagnosis = await queryDiagnostics(project.path);
-                if (diagnosis.length > 0) {
-                    incorrectCrates += 1;
-                } else {
-                    correctCrates += 1;
-                }
                 this.addAll(diagnosis);
             } catch (err) {
                 crashedCrates += 1;
                 console.error(err);
-                util.getOutputChannel().appendLine(`Error: ${err}`);
+                util.log(`Error: ${err}`);
                 const errorMessage = err.message || err.toString();
                 this.add({
                     file_path: path.join(project.path, "Cargo.toml"),
@@ -331,26 +300,7 @@ export class DiagnosticsManager {
             this.target.set(uri, file_diagnostic);
         }
         // Output result
-        let statusBarMessage = "";
-        if (correctCrates) {
-            if (statusBarMessage) {
-                statusBarMessage += ", ";
-            }
-            statusBarMessage += `${correctCrates} ok`;
-        }
-        if (incorrectCrates) {
-            if (statusBarMessage) {
-                statusBarMessage += ", ";
-            }
-            statusBarMessage += `${incorrectCrates} with errors`;
-        }
-        if (crashedCrates) {
-            if (statusBarMessage) {
-                statusBarMessage += ", ";
-            }
-            statusBarMessage += `${crashedCrates} crashed`;
-        }
-        vscode.window.setStatusBarMessage(`Verification results per crates: ${statusBarMessage}`);
+        vscode.window.setStatusBarMessage("Prusti terminated");
     }
 
     private addAll(diagnostic: Array<Diagnostic>) {

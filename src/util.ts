@@ -4,11 +4,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 let _channel: vscode.OutputChannel;
-export function getOutputChannel(): vscode.OutputChannel {
+export function log(message: string) {
     if (!_channel) {
         _channel = vscode.window.createOutputChannel('Prusti Assistant');
     }
-    return _channel;
+    _channel.appendLine(message);
 }
 
 export interface Output {
@@ -22,7 +22,7 @@ export function spawn(
     args?: Array<string> | undefined,
     options?: child_process.SpawnOptionsWithoutStdio | undefined
 ): Promise<Output> {
-    getOutputChannel().appendLine(`Prusti Assistant: Running '${cmd} ${args ? args.join(' ') : ''}'`);
+    log(`Prusti Assistant: Running '${cmd} ${args ? args.join(' ') : ''}'`);
     return new Promise((resolve, reject) => {
         let stdout = '';
         let stderr = '';
@@ -32,23 +32,23 @@ export function spawn(
         proc.stdout.on('data', (data) => stdout += data);
         proc.stderr.on('data', (data) => stderr += data);
         proc.on('close', (code) => {
-            getOutputChannel().appendLine("===== Begin stdout =====");
-            getOutputChannel().append(stdout);
-            getOutputChannel().appendLine("===== End stdout =====");
-            getOutputChannel().appendLine("===== Begin stderr =====");
-            getOutputChannel().append(stderr);
-            getOutputChannel().appendLine("===== End stderr =====");
+            log("===== Begin stdout =====");
+            log(stdout);
+            log("===== End stdout =====");
+            log("===== Begin stderr =====");
+            log(stderr);
+            log("===== End stderr =====");
             resolve({ stdout, stderr, code });
         });
         proc.on('error', (err) => {
-            getOutputChannel().appendLine("===== Begin stdout =====");
-            getOutputChannel().append(stdout);
-            getOutputChannel().appendLine("===== End stdout =====");
-            getOutputChannel().appendLine("===== Begin stderr =====");
-            getOutputChannel().append(stderr);
-            getOutputChannel().appendLine("===== End stderr =====");
+            log("===== Begin stdout =====");
+            log(stdout);
+            log("===== End stdout =====");
+            log("===== Begin stderr =====");
+            log(stderr);
+            log("===== End stderr =====");
             console.log(err);
-            getOutputChannel().appendLine(`Error: ${err}`);
+            log(`Error: ${err}`);
             reject(err);
         });
     });

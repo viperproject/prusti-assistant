@@ -4,15 +4,15 @@ import * as vscode from 'vscode';
 import * as config from './config';
 import * as util from './util';
 import * as diagnostics from './diagnostics';
+import * as prerequisites from './prerequisites';
 
 export async function activate(context: vscode.ExtensionContext) {
-    util.getOutputChannel().appendLine('Start Prusti Assistant');
+    util.log('Start Prusti Assistant');
 
     // Prerequisites checks
-    const [canDiagnostics, errorMessage] = diagnostics.hasPrerequisites();
-
-    if (!canDiagnostics) {
-        vscode.window.showErrorMessage(`Prusti Assistant: ${errorMessage}`);
+    if (!await prerequisites.hasPrerequisites()) {
+        util.log("Prusti Assistant's prerequisites are not satisfied.");
+        util.log("Stopping plugin. Restart the IDE to retry.");
         return;
     }
 
