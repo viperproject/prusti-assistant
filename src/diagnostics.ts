@@ -48,7 +48,11 @@ interface Span {
     label: string | null;
     line_end: number;
     line_start: number;
-    expansion: Span | null;
+    expansion: Span | Expansion | null;
+}
+
+interface Expansion {
+    span: Span;
 }
 
 // ========================================================
@@ -105,7 +109,15 @@ function parseStdout(stdout: string): Array<MessageDiagnostic> {
 
 function getCallSiteSpan(span: Span): Span {
     while (span.expansion) {
-        span = span.expansion;
+        // Apparently, the json on Linux and Windows is different
+        // @ts-ignore
+        if (span.expansion.span) {
+            // @ts-ignore
+            span = span.expansion.span;
+        } else {
+            // @ts-ignore
+            span = span.expansion;
+        }
     }
     return span;
 }
@@ -242,10 +254,12 @@ async function queryDiagnostics(rootPath: string): Promise<Array<Diagnostic>> {
         {
             cwd: rootPath,
             env: {
+                RUST_BACKTRACE: "1",
                 JAVA_HOME: config.javaHome(),
                 VIPER_HOME: config.viperHome(),
                 Z3_EXE: config.z3Exe(),
-                BOOGIE_EXE: config.boogieExe()
+                BOOGIE_EXE: config.boogieExe(),
+                PATH: process.env.PATH
             }
         }
     );
@@ -288,6 +302,9 @@ export class DiagnosticsManager {
         this.pending.clear();
         let crashedCrates = 0;
         for (const project of this.projectList.projects) {
+            if (!project.path) {
+                continue;
+            }
             try {
                 let diagnosis = await queryDiagnostics(project.path);
                 this.addAll(diagnosis);
