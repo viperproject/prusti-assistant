@@ -10,9 +10,13 @@ export async function activate(context: vscode.ExtensionContext) {
     util.log('Start Prusti Assistant');
 
     // Prerequisites checks
-    if (!await prerequisites.hasPrerequisites()) {
+    let [hasPrerequisites, errorMessage] = await prerequisites.hasPrerequisites()
+    if (!hasPrerequisites) {
         util.log("Prusti Assistant's prerequisites are not satisfied.");
+        util.log(errorMessage);
         util.log("Stopping plugin. Restart the IDE to retry.");
+        vscode.window.showErrorMessage(errorMessage);
+        vscode.window.setStatusBarMessage(errorMessage);
         return;
     }
 

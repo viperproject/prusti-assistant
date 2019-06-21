@@ -235,7 +235,19 @@ async function removeDiagnosticMetadata(rootPath: string) {
 async function queryDiagnostics(rootPath: string): Promise<Array<Diagnostic>> {
     // FIXME: Workaround for warning generation for libs.
     await removeDiagnosticMetadata(rootPath);
-    const output = await util.spawn(config.cargoPrustiPath(), ['--message-format=json'], { cwd: rootPath });
+    const cargoPrustiPath = path.join(config.prustiHome(), "cargo-prusti");
+    const output = await util.spawn(
+        cargoPrustiPath,
+        ['--message-format=json'],
+        {
+            cwd: rootPath,
+            env: {
+                JAVA_HOME: config.javaHome(),
+                VIPER_HOME: config.viperHome(),
+                Z3_EXE: config.z3Exe()
+            }
+        }
+    );
     if (output.stderr.match(/error: internal compiler error/)) {
         throw new Error("Prusti or the compiler crashed");
     }
@@ -300,7 +312,7 @@ export class DiagnosticsManager {
             this.target.set(uri, file_diagnostic);
         }
         // Output result
-        vscode.window.setStatusBarMessage("Prusti terminated");
+        vscode.window.setStatusBarMessage("Prusti terminated", 30000);
     }
 
     private addAll(diagnostic: Array<Diagnostic>) {

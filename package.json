@@ -2,7 +2,7 @@
     "name": "prusti-assistant",
     "displayName": "Prusti Assistant",
     "description": "VSCode diagnostic integration for the Prusti verifier",
-    "version": "0.1.12",
+    "version": "0.1.13",
     "publisher": "fpoli",
     "repository": {
         "type": "git",
@@ -48,10 +48,10 @@
             "type": "object",
             "title": "Prusti Assistant",
             "properties": {
-                "prusti-assistant.cargoPrustiPath": {
+                "prusti-assistant.prustiHome": {
                     "type": "string",
-                    "default": "cargo-prusti",
-                    "description": "The path to the cargo-prusti binary to be used."
+                    "default": "",
+                    "description": "Specifies the path of the Prusti home."
                 },
                 "prusti-assistant.verifyOnSave": {
                     "type": "boolean",
@@ -67,6 +67,21 @@
                     "type": "boolean",
                     "default": true,
                     "description": "Specifies if only error messages should be reported."
+                },
+                "prusti-assistant.javaHome": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Specifies the path of the Java home folder (optional if the JAVA_HOME envaironment variable is set)."
+                },
+                "prusti-assistant.viperHome": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Specifies the path of the Viper home folder (optional if the VIPER_HOME envaironment variable is set)."
+                },
+                "prusti-assistant.z3Exe": {
+                    "type": "string",
+                    "default": "z3",
+                    "description": "Specifies the path of the Z3 program to be used (optional if the Z3_EXE envaironment variable is set)."
                 }
             }
         }

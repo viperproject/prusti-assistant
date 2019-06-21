@@ -23,18 +23,12 @@ Basic code-completion snippets are provided for Prusti annotations.
 
 ## Requirements
 
-* [`cargo-prusti`](http://www.pm.inf.ethz.ch/research/prusti.html) is required on your path. Alternatively, edit the `cargoPrustiPath` setting.
-
-## Extension Settings
-
-This extension contributes the following settings:
-
-| Setting                             | Description                                                                | Default        |
-| ----------------------------------- | -------------------------------------------------------------------------- | -------------- |
-| `prusti-assistant.cargoPrustiPath`  | Specifies the path to the Cargo-Prusti binary.                             | `cargo-prusti` |
-| `prusti-assistant.verifyOnSave`     | Specifies if the program should be verified on save.                       | `true`         |
-| `prusti-assistant.verifyOnStartup`  | Specifies if the program should be verified on startup.                    | `true`         |
-| `prusti-assistant.reportErrorsOnly` | Specifies if only error messages should be reported.                       | `true`         |
+* [Rustup](https://rustup.rs/)
+* [Java Runtime Environment, 64 bit](https://www.java.com/en/download/)
+* [Visual C++ Build Tools 2015](https://go.microsoft.com/fwlink/?LinkId=691126)
+* [Prusti](http://www.pm.inf.ethz.ch/research/prusti.html)
+* [Viper](http://viper.ethz.ch/downloads/)
+* Configure the paths in the settings
 
 ## Known Issues
 
