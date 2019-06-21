@@ -244,7 +244,8 @@ async function queryDiagnostics(rootPath: string): Promise<Array<Diagnostic>> {
             env: {
                 JAVA_HOME: config.javaHome(),
                 VIPER_HOME: config.viperHome(),
-                Z3_EXE: config.z3Exe()
+                Z3_EXE: config.z3Exe(),
+                BOOGIE_EXE: config.boogieExe()
             }
         }
     );

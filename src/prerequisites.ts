@@ -69,8 +69,8 @@ export async function hasPrerequisites(): Promise<[boolean, string]> {
         return [false, msg];
     }
     try {
-        const cargoPrustiPath = path.join(config.prustiHome(), "cargo-prusti");
-        await util.spawn(cargoPrustiPath, ["--help"]);
+        const prustiRustcPath = path.join(config.prustiHome(), "prusti-rustc");
+        await util.spawn(prustiRustcPath, ["--version"]);
     } catch (err) {
         console.error(err);
         util.log(`Error: ${err}`);

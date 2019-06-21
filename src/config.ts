@@ -31,3 +31,7 @@ export function viperHome(): string {
 export function z3Exe(): string {
     return config().get("z3Exe") || process.env.Z3_EXE || "z3";
 }
+
+export function boogieExe(): string {
+    return config().get("boogieExe") || process.env.BOOGIE_EXE || "boogie";
+}
