@@ -48,7 +48,7 @@ interface Span {
     label: string | null;
     line_end: number;
     line_start: number;
-    expansion: Span | Expansion | null;
+    expansion: Expansion | null;
 }
 
 interface Expansion {
@@ -100,6 +100,7 @@ function parseStdout(stdout: string): Array<MessageDiagnostic> {
         // Parse the message into a diagnostic.
         console.log("Parse JSON", line);
         let diag: MessageDiagnostic = JSON.parse(line);
+        console.log("Parsed JSON", diag);
         if (diag.message !== undefined) {
             messages.push(diag);
         }
@@ -109,15 +110,7 @@ function parseStdout(stdout: string): Array<MessageDiagnostic> {
 
 function getCallSiteSpan(span: Span): Span {
     while (span.expansion) {
-        // Apparently, the json on Linux and Windows is different
-        // @ts-ignore
-        if (span.expansion.span) {
-            // @ts-ignore
-            span = span.expansion.span;
-        } else {
-            // @ts-ignore
-            span = span.expansion;
-        }
+        span = span.expansion.span;
     }
     return span;
 }
