@@ -1,7 +1,7 @@
 Prusti Assistant
 ================
 
-VSCode plugin to verify Rust crates with the [Prusti](http://www.pm.inf.ethz.ch/research/prusti.html) verifier.
+VSCode plugin to verify Rust programs with the [Prusti](http://www.pm.inf.ethz.ch/research/prusti.html) verifier.
 
 This plugin is based on a fork of [Rust Assist](https://github.com/mooman219/rust-assist).
 
@@ -9,13 +9,9 @@ This plugin is based on a fork of [Rust Assist](https://github.com/mooman219/rus
 
 ### Inline Code Diagnostics
 
-This extension automatically provides inline diagnostics for Rust by calling `cargo-prusti` and parsing the output.
+This extension automatically provides inline diagnostics for Rust by calling `prusti-rustc` and parsing the output.
 
-By default, this runs on save and on startup.
-
-### Supports Multiple Rust Projects
-
-It supports multiple rust projects in the same workspace. The extension will search for `Cargo.toml` files in the workspace and use them as the root directories to generate diagnostics for.
+This can automatically run on save and on startup. See the related flag in the settings.
 
 ### Snippets
 
@@ -29,7 +25,3 @@ Basic code-completion snippets are provided for Prusti annotations.
 * [Prusti](http://www.pm.inf.ethz.ch/research/prusti.html)
 * [Viper](http://viper.ethz.ch/downloads/)
 * Configure the paths in the settings
-
-## Known Issues
-
-If a `Cargo.toml` file is not found, the extension will not provide diagnostic data.

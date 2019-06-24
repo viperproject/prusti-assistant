@@ -47,7 +47,7 @@ export function spawn(
             log("===== Begin stderr =====");
             log(stderr);
             log("===== End stderr =====");
-            console.log(err);
+            console.log("Error", err);
             log(`Error: ${err}`);
             reject(err);
         });

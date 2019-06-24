@@ -82,10 +82,24 @@ export async function hasPrerequisites(): Promise<[boolean, string]> {
         return [false, msg];
     }
     try {
+        const prustiRustcPath = path.join(config.prustiHome(), "prusti-rustc");
+        await util.spawn(prustiRustcPath, ["--version"]);
+    } catch (err) {
+        console.error(err);
+        util.log("Could not run prusti-rustc");
+        util.log(`Error: ${err}`);
+        const msg = (
+            "Could not run Prusti. Please check that the 'prustiHome' " +
+            "setting points to the correct folder, then restart the IDE."
+        );
+        return [false, msg];
+    }
+    try {
         const prustiRustcPath = path.join(config.prustiHome(), "cargo-prusti");
         await util.spawn(prustiRustcPath, ["--help"]);
     } catch (err) {
         console.error(err);
+        util.log("Could not run cargo-prusti");
         util.log(`Error: ${err}`);
         const msg = (
             "Could not run Prusti. Please check that the 'prustiHome' " +

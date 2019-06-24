@@ -1,8 +1,8 @@
 {
     "name": "prusti-assistant",
     "displayName": "Prusti Assistant",
-    "description": "VSCode diagnostic integration for the Prusti verifier",
-    "version": "0.1.16",
+    "description": "VSCode integration to verify Rust code with Prusti",
+    "version": "0.2.0",
     "publisher": "fpoli",
     "repository": {
         "type": "git",
@@ -40,7 +40,7 @@
         "commands": [
             {
                 "command": "prusti-assistant.verify",
-                "title": "Verify all crates in the workspace",
+                "title": "Run Prusti",
                 "category": "Prusti"
             }
         ],
@@ -66,7 +66,7 @@
                 "prusti-assistant.reportErrorsOnly": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Specifies if only error messages should be reported."
+                    "description": "Specifies if only error messages should be reported, hiding Rust warnings."
                 },
                 "prusti-assistant.javaHome": {
                     "type": "string",

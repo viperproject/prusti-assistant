@@ -4,6 +4,18 @@ function config(): vscode.WorkspaceConfiguration {
     return vscode.workspace.getConfiguration("prusti-assistant");
 }
 
+export enum VerificationMode {
+    CurrentProgram,
+    AllCratesInWorkspace
+}
+
+export function verificationMode(): VerificationMode {
+    // Convert string to enum. See https://stackoverflow.com/a/17381004/2491528
+    return (<any>VerificationMode)[
+        config().get("verificationMode", "CurrentProgram")
+    ];
+}
+
 export function prustiHome(): string {
     return config().get("prustiHome", "");
 }
