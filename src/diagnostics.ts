@@ -345,13 +345,19 @@ async function removeDiagnosticMetadata(rootPath: string) {
     }
 }
 
+enum VerificationStatus {
+    Crash,
+    Verified,
+    Errors
+}
+
 /**
  * Queries for the diagnostics of a rust project using cargo-prusti.
  * 
  * @param rootPath The root path of a rust project.
  * @returns An array of diagnostics for the given rust project.
  */
-async function queryCrateDiagnostics(rootPath: string): Promise<Array<Diagnostic>> {
+async function queryCrateDiagnostics(rootPath: string): Promise<[Array<Diagnostic>, VerificationStatus]> {
     // FIXME: Workaround for warning generation for libs.
     await removeDiagnosticMetadata(rootPath);
     const cargoPrustiPath = path.join(config.prustiHome(), "cargo-prusti");
@@ -370,8 +376,12 @@ async function queryCrateDiagnostics(rootPath: string): Promise<Array<Diagnostic
             }
         }
     );
+    let status = VerificationStatus.Errors;
+    if (output.code === 0) {
+        status = VerificationStatus.Verified;
+    }
     if (output.stderr.match(/error: internal compiler error/)) {
-        throw new Error("Prusti or the compiler crashed");
+        status = VerificationStatus.Crash;
     }
     let diagnostics: Array<Diagnostic> = [];
     for (const messages of parseCargoOutput(output.stdout)) {
@@ -379,7 +389,7 @@ async function queryCrateDiagnostics(rootPath: string): Promise<Array<Diagnostic
             parseCargoMessage(messages, rootPath)
         );
     }
-    return diagnostics;
+    return [diagnostics, status];
 }
 
 /**
@@ -388,7 +398,7 @@ async function queryCrateDiagnostics(rootPath: string): Promise<Array<Diagnostic
  * @param programPath The root path of a rust program.
  * @returns An array of diagnostics for the given rust project.
  */
-async function queryProgramDiagnostics(programPath: string): Promise<Array<Diagnostic>> {
+async function queryProgramDiagnostics(programPath: string): Promise<[Array<Diagnostic>, VerificationStatus]> {
     const prustiRustcPath = path.join(config.prustiHome(), "prusti-rustc");
     const output = await util.spawn(
         prustiRustcPath,
@@ -405,8 +415,12 @@ async function queryProgramDiagnostics(programPath: string): Promise<Array<Diagn
             }
         }
     );
+    let status = VerificationStatus.Errors;
+    if (output.code === 0) {
+        status = VerificationStatus.Verified;
+    }
     if (output.stderr.match(/error: internal compiler error/)) {
-        throw new Error("Prusti or the compiler crashed");
+        status = VerificationStatus.Crash;
     }
     let diagnostics: Array<Diagnostic> = [];
     for (const messages of parseRustcOutput(output.stderr)) {
@@ -414,7 +428,7 @@ async function queryProgramDiagnostics(programPath: string): Promise<Array<Diagn
             parseRustcMessage(messages, programPath)
         );
     }
-    return diagnostics;
+    return [diagnostics, status];
 }
 
 // ========================================================
@@ -479,8 +493,18 @@ export async function generatesCratesDiagnostics(projectList: util.ProjectList):
             continue; // FIXME: why this?
         }
         try {
-            let diagnostics = await queryCrateDiagnostics(project.path);
+            let [diagnostics, status] = await queryCrateDiagnostics(project.path);
             resultDiagnostics.addAll(diagnostics);
+            if (status === VerificationStatus.Crash) {
+                resultDiagnostics.add({
+                    file_path: path.join(project.path, "Cargo.toml"),
+                    diagnostic: new vscode.Diagnostic(
+                        dummyRange(),
+                        "Unexpected error: Prusti or the Rust compiler crashed. See the log and other reported errors for more details.",
+                        vscode.DiagnosticSeverity.Error
+                    )
+                });
+            }
         } catch (err) {
             console.error(err);
             util.log(`Error: ${err}`);
@@ -504,8 +528,18 @@ export async function generatesProgramDiagnostics(programPath: string): Promise<
     let resultDiagnostics = new DiagnosticsSet();
 
     try {
-        let diagnostics = await queryProgramDiagnostics(programPath);
+        let [diagnostics, status] = await queryProgramDiagnostics(programPath);
         resultDiagnostics.addAll(diagnostics);
+        if (status === VerificationStatus.Crash) {
+            resultDiagnostics.add({
+                file_path: programPath,
+                diagnostic: new vscode.Diagnostic(
+                    dummyRange(),
+                    "Unexpected error: Prusti or the Rust compiler crashed. See the log and other reported errors for more details.",
+                    vscode.DiagnosticSeverity.Error
+                )
+            });
+        }
     } catch (err) {
         console.error(err);
         util.log(`Error: ${err}`);
