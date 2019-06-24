@@ -1,6 +1,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
+import { performance } from 'perf_hooks';
 import * as config from './config';
 import * as util from './util';
 import * as diagnostics from './diagnostics';
@@ -33,13 +34,17 @@ export async function activate(context: vscode.ExtensionContext) {
                 let currentDocument = vscode.window.activeTextEditor.document;
                 if (currentDocument.languageId === "rust") {
                     vscode.window.setStatusBarMessage("Running Prusti...");
+                    const start = performance.now();
 
                     const programDiagnostics = await diagnostics.generatesProgramDiagnostics(
                         currentDocument.uri.fsPath
                     );
                     programDiagnostics.render(prustiProgramDiagnostics);
 
-                    vscode.window.setStatusBarMessage("Prusti terminated", 10000);
+                    vscode.window.setStatusBarMessage(""); // with no timeout
+                    vscode.window.setStatusBarMessage("Prusti terminated.", 30000);
+                    //const duration = Math.round((performance.now() - start) / 100) / 10;
+                    //vscode.window.setStatusBarMessage(`Prusti terminated (${duration} s)`, 30000);
                 } else {
                     util.log(
                         "The current tab is not a Rust program, thus Prusti will not run on it."
@@ -53,6 +58,7 @@ export async function activate(context: vscode.ExtensionContext) {
         // Verify all crates in workspace
         if (config.verificationMode() === config.VerificationMode.AllCratesInWorkspace) {
             vscode.window.setStatusBarMessage("Running Prusti...");
+            const start = performance.now();
 
             const projects = await util.findProjects();
             if (!projects.hasProjects()) {
@@ -64,7 +70,10 @@ export async function activate(context: vscode.ExtensionContext) {
             const crateDiagnostics = await diagnostics.generatesCratesDiagnostics(projects);
             crateDiagnostics.render(prustiCratesDiagnostics);
 
-            vscode.window.setStatusBarMessage("Prusti terminated", 10000);
+            vscode.window.setStatusBarMessage(""); // with no timeout
+            vscode.window.setStatusBarMessage("Prusti terminated.", 30000);
+            //const duration = Math.round((performance.now() - start) / 100) / 10;
+            //vscode.window.setStatusBarMessage(`Prusti terminated (${duration} s)`, 30000);
         }
     }
 

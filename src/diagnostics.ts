@@ -240,7 +240,7 @@ function parseCargoMessage(msgDiag: CargoMessage, rootPath: string): Diagnostic 
  * @param rootPath The root path of the rust project the message was generated
  * for.
  */
-function parseRustcMessage(msg: Message, rootPath: string, mainFilePath: string): Diagnostic {
+function parseRustcMessage(msg: Message, mainFilePath: string): Diagnostic {
     const level = parseMessageLevel(msg.level);
 
     // Parse primary span
@@ -286,7 +286,7 @@ function parseRustcMessage(msg: Message, rootPath: string, mainFilePath: string)
             continue;
         }
 
-        let message = "";
+        let message = "[Note] related expression";
         if (span.label) {
             message = `[Note] ${span.label}`;
         }
@@ -305,8 +305,17 @@ function parseRustcMessage(msg: Message, rootPath: string, mainFilePath: string)
 
     // Recursively parse child messages.
     for (const child of msg.children) {
-        // TODO: is this possible?
-        console.log("TODO", child);
+        const { file_path, diagnostic } = parseRustcMessage(child, mainFilePath);
+        const fileUri = vscode.Uri.file(file_path);
+        relatedInformation.push(
+            new vscode.DiagnosticRelatedInformation(
+                new vscode.Location(
+                    fileUri,
+                    diagnostic.range
+                ),
+                diagnostic.message
+            )
+        );
     }
 
     // Set related information
@@ -381,12 +390,11 @@ async function queryCrateDiagnostics(rootPath: string): Promise<Array<Diagnostic
  */
 async function queryProgramDiagnostics(programPath: string): Promise<Array<Diagnostic>> {
     const prustiRustcPath = path.join(config.prustiHome(), "prusti-rustc");
-    const rootPath = path.dirname(programPath);
     const output = await util.spawn(
         prustiRustcPath,
         ["--error-format=json", programPath],
         {
-            cwd: rootPath,
+            cwd: path.dirname(programPath),
             env: {
                 RUST_BACKTRACE: "1",
                 JAVA_HOME: config.javaHome(),
@@ -403,7 +411,7 @@ async function queryProgramDiagnostics(programPath: string): Promise<Array<Diagn
     let diagnostics: Array<Diagnostic> = [];
     for (const messages of parseRustcOutput(output.stderr)) {
         diagnostics.push(
-            parseRustcMessage(messages, rootPath, prustiRustcPath)
+            parseRustcMessage(messages, programPath)
         );
     }
     return diagnostics;
