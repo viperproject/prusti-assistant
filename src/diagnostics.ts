@@ -457,6 +457,10 @@ export class DiagnosticsSet {
         return true;
     }
 
+    public isEmpty(): boolean {
+        return this.diagnostics.size === 0;
+    }
+
     public addAll(diagnostics: Array<Diagnostic>) {
         for (const diag of diagnostics) {
             this.add(diag);
@@ -477,6 +481,7 @@ export class DiagnosticsSet {
     }
 
     public render(diagnosticsCollection: vscode.DiagnosticCollection) {
+        diagnosticsCollection.clear();
         for (let [path, fileDiagnostics] of this.diagnostics.entries()) {
             const uri = vscode.Uri.file(path);
             console.log("Render diagnostics", uri, fileDiagnostics);

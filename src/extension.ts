@@ -41,10 +41,12 @@ export async function activate(context: vscode.ExtensionContext) {
                     );
                     programDiagnostics.render(prustiProgramDiagnostics);
 
-                    vscode.window.setStatusBarMessage(""); // with no timeout
-                    vscode.window.setStatusBarMessage("Prusti terminated.", 30000);
-                    //const duration = Math.round((performance.now() - start) / 100) / 10;
-                    //vscode.window.setStatusBarMessage(`Prusti terminated (${duration} s)`, 30000);
+                    const duration = Math.round((performance.now() - start) / 100) / 10;
+                    if (programDiagnostics.isEmpty()) {
+                        vscode.window.setStatusBarMessage(`Verification succeeded (${duration} s)`);
+                    } else {
+                        vscode.window.setStatusBarMessage(`Verification failed (${duration} s)`);
+                    }
                 } else {
                     util.log(
                         "The current tab is not a Rust program, thus Prusti will not run on it."
@@ -70,10 +72,12 @@ export async function activate(context: vscode.ExtensionContext) {
             const crateDiagnostics = await diagnostics.generatesCratesDiagnostics(projects);
             crateDiagnostics.render(prustiCratesDiagnostics);
 
-            vscode.window.setStatusBarMessage(""); // with no timeout
-            vscode.window.setStatusBarMessage("Prusti terminated.", 30000);
-            //const duration = Math.round((performance.now() - start) / 100) / 10;
-            //vscode.window.setStatusBarMessage(`Prusti terminated (${duration} s)`, 30000);
+            const duration = Math.round((performance.now() - start) / 100) / 10;
+            if (crateDiagnostics.isEmpty()) {
+                vscode.window.setStatusBarMessage(`Verification of all crates succeeded (${duration} s)`);
+            } else {
+                vscode.window.setStatusBarMessage(`Verification of some crate failed (${duration} s)`);
+            }
         }
     }
 
