@@ -1,6 +1,7 @@
 Prusti Assistant
 ================
 
+[![](https://vsmarketplacebadge.apphb.com/version/fpoli.prusti-assistant.svg)](https://marketplace.visualstudio.com/items?itemName=fpoli.prusti-assistant)
 [![Build Status](https://travis-ci.org/viperproject/prusti-assistant.svg?branch=master)](https://travis-ci.org/viperproject/prusti-assistant)
 
 VSCode plugin to verify Rust programs with the [Prusti](http://www.pm.inf.ethz.ch/research/prusti.html) verifier.
