@@ -3,3 +3,8 @@ node_modules
 .vscode-test/
 *.vsix
 .idea/
+
+# Prusti temporary files
+log/
+nll-facts/
+report.csv

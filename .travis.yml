@@ -1,0 +1,15 @@
+dist: xenial
+
+os:
+  - linux
+  - osx
+  - windows
+
+language: node_js
+
+node_js:
+  - 10.5
+
+script:
+  - npm run compile
+  - npm run test
