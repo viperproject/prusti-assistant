@@ -19,7 +19,7 @@ export interface Output {
 
 export function spawn(
     cmd: string,
-    args?: Array<string> | undefined,
+    args?: string[] | undefined,
     options?: child_process.SpawnOptionsWithoutStdio | undefined
 ): Promise<Output> {
     log(`Prusti Assistant: Running '${cmd} ${args ? args.join(' ') : ''}'`);
@@ -66,7 +66,7 @@ export class Project {
     }
 
     public hasRootFile(fileName: string): Promise<boolean> {
-        let filePath = path.join(this._path, fileName);
+        const filePath = path.join(this._path, fileName);
         return new Promise((resolve, reject) => {
             fs.access(filePath, fs.constants.F_OK, (err) => resolve(err ? false : true));
         });
@@ -74,9 +74,9 @@ export class Project {
 }
 
 export class ProjectList {
-    private _projects: Array<Project>;
+    private _projects: Project[];
 
-    public constructor(projects: Array<Project>) {
+    public constructor(projects: Project[]) {
         this._projects = projects;
     }
 
@@ -104,8 +104,8 @@ export class ProjectList {
  * @returns A project list.
  */
 export async function findProjects(): Promise<ProjectList> {
-    let projects: Array<Project> = [];
-    (await vscode.workspace.findFiles('**/Cargo.toml')).forEach((path: any) => {
+    const projects: Project[] = [];
+    (await vscode.workspace.findFiles('**/Cargo.toml')).forEach((path: vscode.Uri) => {
         projects.push(new Project(path.fsPath.replace(/[/\\]?Cargo\.toml$/, '')));
     });
     return new ProjectList(projects);

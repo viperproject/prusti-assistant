@@ -88,9 +88,9 @@ function parseSpanRange(span: Span): vscode.Range {
     );
 }
 
-function parseCargoOutput(output: string): Array<CargoMessage> {
-    let messages: Array<CargoMessage> = [];
-    let seen = new Set();
+function parseCargoOutput(output: string): CargoMessage[] {
+    const messages: CargoMessage[] = [];
+    const seen = new Set();
     for (const line of output.split("\n")) {
         if (line[0] !== "{") {
             continue;
@@ -99,7 +99,7 @@ function parseCargoOutput(output: string): Array<CargoMessage> {
 
         // Parse the message into a diagnostic.
         console.log("Parse JSON", line);
-        let diag: CargoMessage = JSON.parse(line);
+        const diag: CargoMessage = JSON.parse(line);
         console.log("Parsed JSON", diag);
         if (diag.message !== undefined) {
             messages.push(diag);
@@ -108,9 +108,9 @@ function parseCargoOutput(output: string): Array<CargoMessage> {
     return messages;
 }
 
-function parseRustcOutput(output: string): Array<Message> {
-    let messages: Array<Message> = [];
-    let seen = new Set();
+function parseRustcOutput(output: string): Message[] {
+    const messages: Message[] = [];
+    const seen = new Set();
     for (const line of output.split("\n")) {
         if (line[0] !== "{") {
             continue;
@@ -119,7 +119,7 @@ function parseRustcOutput(output: string): Array<Message> {
 
         // Parse the message into a diagnostic.
         console.log("Parse JSON", line);
-        let diag: Message = JSON.parse(line);
+        const diag: Message = JSON.parse(line);
         console.log("Parsed JSON", diag);
         if (diag.message !== undefined) {
             messages.push(diag);
@@ -148,7 +148,7 @@ function parseCargoMessage(msgDiag: CargoMessage, rootPath: string): Diagnostic 
     const level = parseMessageLevel(msg.level);
 
     // Parse primary span
-    let primarySpan = undefined;
+    let primarySpan;
     for (const span of msg.spans) {
         if (span.is_primary) {
             primarySpan = span;
@@ -173,18 +173,18 @@ function parseCargoMessage(msgDiag: CargoMessage, rootPath: string): Diagnostic 
     if (primarySpan.label) {
         primaryMessage = `${primaryMessage} \n[Note] ${primarySpan.label}`;
     }
-    let primaryCallSiteSpan = getCallSiteSpan(primarySpan);
+    const primaryCallSiteSpan = getCallSiteSpan(primarySpan);
     const primaryRange = parseSpanRange(primaryCallSiteSpan);
     const primaryFilePath = path.join(rootPath, primaryCallSiteSpan.file_name);
 
-    let diagnostic = new vscode.Diagnostic(
+    const diagnostic = new vscode.Diagnostic(
         primaryRange,
         primaryMessage,
         level
     );
 
     // Parse all non-primary spans
-    let relatedInformation = [];
+    const relatedInformation = [];
     for (const span of msg.spans) {
         if (span.is_primary) {
             continue;
@@ -194,7 +194,7 @@ function parseCargoMessage(msgDiag: CargoMessage, rootPath: string): Diagnostic 
         if (span.label) {
             message = `[Note] ${span.label}`;
         }
-        let callSiteSpan = getCallSiteSpan(span);
+        const callSiteSpan = getCallSiteSpan(span);
         const range = parseSpanRange(callSiteSpan);
         const filePath = path.join(rootPath, callSiteSpan.file_name);
         const fileUri = vscode.Uri.file(filePath);
@@ -229,7 +229,7 @@ function parseCargoMessage(msgDiag: CargoMessage, rootPath: string): Diagnostic 
 
     return {
         file_path: primaryFilePath,
-        diagnostic: diagnostic
+        diagnostic
     };
 }
 
@@ -244,7 +244,7 @@ function parseRustcMessage(msg: Message, mainFilePath: string): Diagnostic {
     const level = parseMessageLevel(msg.level);
 
     // Parse primary span
-    let primarySpan = undefined;
+    let primarySpan;
     for (const span of msg.spans) {
         if (span.is_primary) {
             primarySpan = span;
@@ -269,18 +269,18 @@ function parseRustcMessage(msg: Message, mainFilePath: string): Diagnostic {
     if (primarySpan.label) {
         primaryMessage = `${primaryMessage} \n[Note] ${primarySpan.label}`;
     }
-    let primaryCallSiteSpan = getCallSiteSpan(primarySpan);
+    const primaryCallSiteSpan = getCallSiteSpan(primarySpan);
     const primaryRange = parseSpanRange(primaryCallSiteSpan);
     const primaryFilePath = primaryCallSiteSpan.file_name;
 
-    let diagnostic = new vscode.Diagnostic(
+    const diagnostic = new vscode.Diagnostic(
         primaryRange,
         primaryMessage,
         level
     );
 
     // Parse all non-primary spans
-    let relatedInformation = [];
+    const relatedInformation = [];
     for (const span of msg.spans) {
         if (span.is_primary) {
             continue;
@@ -290,7 +290,7 @@ function parseRustcMessage(msg: Message, mainFilePath: string): Diagnostic {
         if (span.label) {
             message = `[Note] ${span.label}`;
         }
-        let callSiteSpan = getCallSiteSpan(span);
+        const callSiteSpan = getCallSiteSpan(span);
         const range = parseSpanRange(callSiteSpan);
         const filePath = callSiteSpan.file_name;
         const fileUri = vscode.Uri.file(filePath);
@@ -323,7 +323,7 @@ function parseRustcMessage(msg: Message, mainFilePath: string): Diagnostic {
 
     return {
         file_path: primaryFilePath,
-        diagnostic: diagnostic
+        diagnostic
     };
 }
 
@@ -334,8 +334,8 @@ function parseRustcMessage(msg: Message, mainFilePath: string): Diagnostic {
  * @param rootPath The root path of a rust project.
  */
 async function removeDiagnosticMetadata(rootPath: string) {
-    let pattern = new vscode.RelativePattern(path.join(rootPath, 'target', 'debug'), '*.rmeta');
-    let files = (await vscode.workspace.findFiles(pattern));
+    const pattern = new vscode.RelativePattern(path.join(rootPath, 'target', 'debug'), '*.rmeta');
+    const files = (await vscode.workspace.findFiles(pattern));
     for (const file of files) {
         await fs.unlink(file.fsPath, error => {
             if (error !== null) {
@@ -357,7 +357,7 @@ enum VerificationStatus {
  * @param rootPath The root path of a rust project.
  * @returns An array of diagnostics for the given rust project.
  */
-async function queryCrateDiagnostics(rootPath: string): Promise<[Array<Diagnostic>, VerificationStatus]> {
+async function queryCrateDiagnostics(rootPath: string): Promise<[Diagnostic[], VerificationStatus]> {
     // FIXME: Workaround for warning generation for libs.
     await removeDiagnosticMetadata(rootPath);
     const cargoPrustiPath = path.join(config.prustiHome(), "cargo-prusti");
@@ -383,7 +383,7 @@ async function queryCrateDiagnostics(rootPath: string): Promise<[Array<Diagnosti
     if (output.stderr.match(/error: internal compiler error/)) {
         status = VerificationStatus.Crash;
     }
-    let diagnostics: Array<Diagnostic> = [];
+    const diagnostics: Diagnostic[] = [];
     for (const messages of parseCargoOutput(output.stdout)) {
         diagnostics.push(
             parseCargoMessage(messages, rootPath)
@@ -398,7 +398,7 @@ async function queryCrateDiagnostics(rootPath: string): Promise<[Array<Diagnosti
  * @param programPath The root path of a rust program.
  * @returns An array of diagnostics for the given rust project.
  */
-async function queryProgramDiagnostics(programPath: string): Promise<[Array<Diagnostic>, VerificationStatus]> {
+async function queryProgramDiagnostics(programPath: string): Promise<[Diagnostic[], VerificationStatus]> {
     const prustiRustcPath = path.join(config.prustiHome(), "prusti-rustc");
     const output = await util.spawn(
         prustiRustcPath,
@@ -422,7 +422,7 @@ async function queryProgramDiagnostics(programPath: string): Promise<[Array<Diag
     if (output.stderr.match(/error: internal compiler error/)) {
         status = VerificationStatus.Crash;
     }
-    let diagnostics: Array<Diagnostic> = [];
+    const diagnostics: Diagnostic[] = [];
     for (const messages of parseRustcOutput(output.stderr)) {
         diagnostics.push(
             parseRustcMessage(messages, programPath)
@@ -436,10 +436,42 @@ async function queryProgramDiagnostics(programPath: string): Promise<[Array<Diag
 // ========================================================
 
 export class DiagnosticsSet {
-    diagnostics: Map<string, vscode.Diagnostic[]>;
+    private diagnostics: Map<string, vscode.Diagnostic[]>;
     
     constructor() {
         this.diagnostics = new Map();
+    }
+
+    public isEmpty(): boolean {
+        return this.diagnostics.size === 0;
+    }
+
+    public addAll(diagnostics: Diagnostic[]) {
+        for (const diag of diagnostics) {
+            this.add(diag);
+        }
+    }
+
+    public add(diagnostic: Diagnostic) {
+        if (this.reportDiagnostic(diagnostic)) {
+            const set = this.diagnostics.get(diagnostic.file_path);
+            if (set !== undefined) {
+                set.push(diagnostic.diagnostic);
+            } else {
+                this.diagnostics.set(diagnostic.file_path, [diagnostic.diagnostic]);
+            }
+        } else {
+            console.log("Hide diagnostics", diagnostic);
+        }
+    }
+
+    public render(diagnosticsCollection: vscode.DiagnosticCollection) {
+        diagnosticsCollection.clear();
+        for (const [path, fileDiagnostics] of this.diagnostics.entries()) {
+            const uri = vscode.Uri.file(path);
+            console.log("Render diagnostics", uri, fileDiagnostics);
+            diagnosticsCollection.set(uri, fileDiagnostics);
+        }
     }
 
     /// Returns false if the diagnostic should be ignored
@@ -456,49 +488,17 @@ export class DiagnosticsSet {
         }
         return true;
     }
-
-    public isEmpty(): boolean {
-        return this.diagnostics.size === 0;
-    }
-
-    public addAll(diagnostics: Array<Diagnostic>) {
-        for (const diag of diagnostics) {
-            this.add(diag);
-        }
-    }
-
-    public add(diagnostic: Diagnostic) {
-        if (this.reportDiagnostic(diagnostic)) {
-            let set = this.diagnostics.get(diagnostic.file_path);
-            if (set !== undefined) {
-                set.push(diagnostic.diagnostic);
-            } else {
-                this.diagnostics.set(diagnostic.file_path, [diagnostic.diagnostic]);
-            }
-        } else {
-            console.log("Hide diagnostics", diagnostic);
-        }
-    }
-
-    public render(diagnosticsCollection: vscode.DiagnosticCollection) {
-        diagnosticsCollection.clear();
-        for (let [path, fileDiagnostics] of this.diagnostics.entries()) {
-            const uri = vscode.Uri.file(path);
-            console.log("Render diagnostics", uri, fileDiagnostics);
-            diagnosticsCollection.set(uri, fileDiagnostics);
-        }
-    }
 }
 
 export async function generatesCratesDiagnostics(projectList: util.ProjectList): Promise<DiagnosticsSet> {
-    let resultDiagnostics = new DiagnosticsSet();
+    const resultDiagnostics = new DiagnosticsSet();
 
     for (const project of projectList.projects) {
         if (!project.path) {
             continue; // FIXME: why this?
         }
         try {
-            let [diagnostics, status] = await queryCrateDiagnostics(project.path);
+            const [diagnostics, status] = await queryCrateDiagnostics(project.path);
             resultDiagnostics.addAll(diagnostics);
             if (status === VerificationStatus.Crash) {
                 resultDiagnostics.add({
@@ -530,10 +530,10 @@ export async function generatesCratesDiagnostics(projectList: util.ProjectList):
 
 
 export async function generatesProgramDiagnostics(programPath: string): Promise<DiagnosticsSet> {
-    let resultDiagnostics = new DiagnosticsSet();
+    const resultDiagnostics = new DiagnosticsSet();
 
     try {
-        let [diagnostics, status] = await queryProgramDiagnostics(programPath);
+        const [diagnostics, status] = await queryProgramDiagnostics(programPath);
         resultDiagnostics.addAll(diagnostics);
         if (status === VerificationStatus.Crash) {
             resultDiagnostics.add({

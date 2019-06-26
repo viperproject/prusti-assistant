@@ -12,4 +12,5 @@ node_js:
 
 script:
   - npm run compile
+  - npm run lint
   - npm run test

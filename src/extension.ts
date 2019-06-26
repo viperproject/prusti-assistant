@@ -11,7 +11,7 @@ export async function activate(context: vscode.ExtensionContext) {
     util.log("Start Prusti Assistant");
 
     // Prerequisites checks
-    let [hasPrerequisites, errorMessage] = await prerequisites.hasPrerequisites();
+    const [hasPrerequisites, errorMessage] = await prerequisites.hasPrerequisites();
     if (!hasPrerequisites) {
         util.log("Prusti Assistant's prerequisites are not satisfied.");
         util.log(errorMessage);
@@ -31,7 +31,7 @@ export async function activate(context: vscode.ExtensionContext) {
         // Verify current program
         if (config.verificationMode() === config.VerificationMode.CurrentProgram) {
             if (vscode.window.activeTextEditor) {
-                let currentDocument = vscode.window.activeTextEditor.document;
+                const currentDocument = vscode.window.activeTextEditor.document;
                 if (currentDocument.languageId === "rust") {
                     vscode.window.setStatusBarMessage("Running Prusti...");
                     const start = performance.now();

@@ -11,8 +11,9 @@ export enum VerificationMode {
 
 export function verificationMode(): VerificationMode {
     // Convert string to enum. See https://stackoverflow.com/a/17381004/2491528
-    return (<any>VerificationMode)[
-        config().get("verificationMode", "CurrentProgram")
+    return VerificationMode[
+        config().get("verificationMode", "CurrentProgram") as
+        keyof typeof VerificationMode
     ];
 }
 
