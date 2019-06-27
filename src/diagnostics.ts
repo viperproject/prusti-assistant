@@ -376,9 +376,12 @@ async function queryCrateDiagnostics(rootPath: string): Promise<[Diagnostic[], V
             }
         }
     );
-    let status = VerificationStatus.Errors;
+    let status = VerificationStatus.Crash;
     if (output.code === 0) {
         status = VerificationStatus.Verified;
+    }
+    if (output.code === 101) {
+        status = VerificationStatus.Errors;
     }
     if (output.stderr.match(/error: internal compiler error/)) {
         status = VerificationStatus.Crash;
@@ -415,9 +418,12 @@ async function queryProgramDiagnostics(programPath: string): Promise<[Diagnostic
             }
         }
     );
-    let status = VerificationStatus.Errors;
+    let status = VerificationStatus.Crash;
     if (output.code === 0) {
         status = VerificationStatus.Verified;
+    }
+    if (output.code === 101) {
+        status = VerificationStatus.Errors;
     }
     if (output.stderr.match(/error: internal compiler error/)) {
         status = VerificationStatus.Crash;
@@ -477,7 +483,7 @@ export class DiagnosticsSet {
     /// Returns false if the diagnostic should be ignored
     private reportDiagnostic(diagnostic: Diagnostic): boolean {
         if (config.reportErrorsOnly()) {
-            if (diagnostic.diagnostic.severity !== vscode.DiagnosticSeverity.Error) {
+            if (diagnostic.diagnostic.severity !== vscode.DiagnosticSeverity.Error && !diagnostic.diagnostic.message.match(/^\[Prusti\]/)) {
                 console.log("Ignore non-error diagnostic", diagnostic);
                 return false;
             }
