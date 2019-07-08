@@ -42,10 +42,12 @@ export async function activate(context: vscode.ExtensionContext) {
                     programDiagnostics.render(prustiProgramDiagnostics);
 
                     const duration = Math.round((performance.now() - start) / 100) / 10;
-                    if (programDiagnostics.isEmpty()) {
-                        vscode.window.setStatusBarMessage(`Verification succeeded (${duration} s)`);
-                    } else {
+                    if (programDiagnostics.hasErros()) {
                         vscode.window.setStatusBarMessage(`Verification failed (${duration} s)`);
+                    } else if (programDiagnostics.hasWarnings()) {
+                        vscode.window.setStatusBarMessage(`Verification succeeded with warnings (${duration} s)`);
+                    } else {
+                        vscode.window.setStatusBarMessage(`Verification succeeded (${duration} s)`);
                     }
                 } else {
                     util.log(
@@ -73,10 +75,12 @@ export async function activate(context: vscode.ExtensionContext) {
             crateDiagnostics.render(prustiCratesDiagnostics);
 
             const duration = Math.round((performance.now() - start) / 100) / 10;
-            if (crateDiagnostics.isEmpty()) {
-                vscode.window.setStatusBarMessage(`Verification of all crates succeeded (${duration} s)`);
-            } else {
+            if (crateDiagnostics.hasErros()) {
                 vscode.window.setStatusBarMessage(`Verification of some crate failed (${duration} s)`);
+            } else if (crateDiagnostics.hasWarnings()) {
+                vscode.window.setStatusBarMessage(`Verification of all crates succeeded with warnings (${duration} s)`);
+            } else {
+                vscode.window.setStatusBarMessage(`Verification of all crates succeeded (${duration} s)`);
             }
         }
     }

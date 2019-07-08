@@ -448,6 +448,30 @@ export class DiagnosticsSet {
         this.diagnostics = new Map();
     }
 
+    public hasErros(): boolean {
+        let count = 0;
+        this.diagnostics.forEach((value: vscode.Diagnostic[], _: string) => {
+            value.forEach((value: vscode.Diagnostic) => {
+                if (value.severity === vscode.DiagnosticSeverity.Error) {
+                    count += 1;
+                }
+            });
+        });
+        return count > 0;
+    }
+
+    public hasWarnings(): boolean {
+        let count = 0;
+        this.diagnostics.forEach((value: vscode.Diagnostic[], _: string) => {
+            value.forEach((value: vscode.Diagnostic) => {
+                if (value.severity === vscode.DiagnosticSeverity.Warning) {
+                    count += 1;
+                }
+            });
+        });
+        return count > 0;
+    }
+
     public isEmpty(): boolean {
         return this.diagnostics.size === 0;
     }
