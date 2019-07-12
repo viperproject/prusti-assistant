@@ -12,14 +12,19 @@ async function findJavaHome(): Promise<string | null> {
                 version: ">=1.8",
                 mustBe64Bit: true
             };
-            locate_java_home(options, (err, javaHomes) => {
+            locate_java_home.default(options, (err, javaHomes) => {
                 if (err) {
                     console.error(err.message);
                     resolve(null);
                 } else {
-                    const javaHome = javaHomes[0];
-                    console.log("Using Java home", javaHome);
-                    resolve(javaHome.path);
+                    if (!javaHomes) {
+                        console.log("Could not find Java home");
+                        resolve(null);
+                    } else {
+                        const javaHome = javaHomes[0];
+                        console.log("Using Java home", javaHome);
+                        resolve(javaHome.path);
+                    }
                 }
             });
         }
