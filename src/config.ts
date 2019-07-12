@@ -64,6 +64,10 @@ export function prustiHome(context: vscode.ExtensionContext): string {
     return path.join(context.globalStoragePath, "prusti");
 }
 
+export function prustiDriverExe(context: vscode.ExtensionContext): string {
+    return path.join(prustiHome(context), "prusti-driver");
+}
+
 export function prustiRustcExe(context: vscode.ExtensionContext): string {
     return path.join(prustiHome(context), "prusti-rustc");
 }

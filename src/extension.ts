@@ -46,6 +46,7 @@ export async function activate(context: vscode.ExtensionContext) {
         }
 
         // Set execution flags (ignored on Windows)
+        fs.chmodSync(config.prustiDriverExe(context), "775");
         fs.chmodSync(config.prustiRustcExe(context), "775");
         fs.chmodSync(config.cargoPrustiExe(context), "775");
         fs.chmodSync(config.z3Exe(context), "775");
@@ -157,17 +158,6 @@ export async function activate(context: vscode.ExtensionContext) {
         })
     );
 
-    // Verify on open
-    if (config.verifyOnOpen()) {
-        context.subscriptions.push(
-            vscode.workspace.onDidOpenTextDocument(async (document: vscode.TextDocument) => {
-                if (document.languageId === "rust") {
-                    await runVerification(document);
-                }
-            })
-        );
-    }
-
     // Verify on save
     if (config.verifyOnSave()) {
         context.subscriptions.push(
@@ -177,5 +167,25 @@ export async function activate(context: vscode.ExtensionContext) {
                 }
             })
         );
+    }
+
+    // Verify on open
+    if (config.verifyOnOpen()) {
+        context.subscriptions.push(
+            vscode.workspace.onDidOpenTextDocument(async (document: vscode.TextDocument) => {
+                if (document.languageId === "rust") {
+                    await runVerification(document);
+                }
+            })
+        );
+
+        // Verify active document
+        if (vscode.window.activeTextEditor) {
+            await runVerification(
+                vscode.window.activeTextEditor.document
+            );
+        } else {
+            util.log("vscode.window.activeTextEditor is not ready yet.");
+        }
     }
 }
