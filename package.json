@@ -2,7 +2,7 @@
     "name": "prusti-assistant",
     "displayName": "Prusti Assistant",
     "description": "VSCode integration to verify Rust code with Prusti",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "publisher": "fpoli",
     "repository": {
         "type": "git",

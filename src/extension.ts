@@ -90,32 +90,28 @@ export async function activate(context: vscode.ExtensionContext) {
 
         // Verify provided document
         if (config.verificationMode() === config.VerificationMode.CurrentProgram) {
-            if (vscode.window.activeTextEditor) {
-                if (document.languageId === "rust") {
-                    vscode.window.setStatusBarMessage("Running Prusti...");
-                    const start = performance.now();
+            if (document.languageId === "rust") {
+                vscode.window.setStatusBarMessage("Running Prusti...");
+                const start = performance.now();
 
-                    const programDiagnostics = await diagnostics.generatesProgramDiagnostics(
-                        context,
-                        document.uri.fsPath
-                    );
-                    programDiagnostics.render(prustiProgramDiagnostics);
+                const programDiagnostics = await diagnostics.generatesProgramDiagnostics(
+                    context,
+                    document.uri.fsPath
+                );
+                programDiagnostics.render(prustiProgramDiagnostics);
 
-                    const duration = Math.round((performance.now() - start) / 100) / 10;
-                    if (programDiagnostics.hasErros()) {
-                        vscode.window.setStatusBarMessage(`Verification failed (${duration} s)`);
-                    } else if (programDiagnostics.hasWarnings()) {
-                        vscode.window.setStatusBarMessage(`Verification succeeded with warnings (${duration} s)`);
-                    } else {
-                        vscode.window.setStatusBarMessage(`Verification succeeded (${duration} s)`);
-                    }
+                const duration = Math.round((performance.now() - start) / 100) / 10;
+                if (programDiagnostics.hasErros()) {
+                    vscode.window.setStatusBarMessage(`Verification failed (${duration} s)`);
+                } else if (programDiagnostics.hasWarnings()) {
+                    vscode.window.setStatusBarMessage(`Verification succeeded with warnings (${duration} s)`);
                 } else {
-                    util.log(
-                        "The document is not a Rust program, thus Prusti will not run on it."
-                    );
+                    vscode.window.setStatusBarMessage(`Verification succeeded (${duration} s)`);
                 }
             } else {
-                util.log("Error: No active text editor");
+                util.log(
+                    "The document is not a Rust program, thus Prusti will not run on it."
+                );
             }
         }
 
