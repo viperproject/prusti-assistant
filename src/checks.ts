@@ -13,9 +13,8 @@ export async function hasDependencies(context: vscode.ExtensionContext): Promise
 export async function hasPrerequisites(context: vscode.ExtensionContext): Promise<[boolean, string]> {
     if (await config.javaHome() === null) {
         const msg = (
-            "[Prusti] Could not find Java home. Please set the 'javaHome' " +
-            "setting or the JAVA_HOME environment variable, then restart the " +
-            "IDE."
+            "[Prusti] Could not find Java home. Please install Java 1.8+ " +
+            "64bit or set the 'javaHome' setting, then restart the IDE."
         );
         return [false, msg];
     }
@@ -42,7 +41,7 @@ export async function hasPrerequisites(context: vscode.ExtensionContext): Promis
         console.error(err);
         util.log(`Error: ${err}`);
         const msg = (
-            "[Prusti] Could not run Java. Please install the 64bit version, " +
+            "[Prusti] Could not run Java. Please install Java 1.8+ 64bit, " +
             "then restart the IDE."
         );
         return [false, msg];

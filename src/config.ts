@@ -3,17 +3,23 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as os from 'os';
-import * as find_java_home from 'find-java-home';
+import * as locate_java_home from 'locate-java-home';
 
 async function findJavaHome(): Promise<string | null> {
     return new Promise((resolve, reject) => {
         try {
-            find_java_home((err, home) => {
+            const options = {
+                version: ">=1.8",
+                mustBe64Bit: true
+            };
+            locate_java_home(options, (err, javaHomes) => {
                 if (err) {
                     console.error(err.message);
                     resolve(null);
                 } else {
-                    resolve(home);
+                    const javaHome = javaHomes[0];
+                    console.log("Using Java home", javaHome);
+                    resolve(javaHome.path);
                 }
             });
         }
