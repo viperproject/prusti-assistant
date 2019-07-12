@@ -11,7 +11,7 @@ export async function hasDependencies(context: vscode.ExtensionContext): Promise
 }
 
 export async function hasPrerequisites(context: vscode.ExtensionContext): Promise<[boolean, string]> {
-    if (!config.javaHome()) {
+    if (await config.javaHome() === null) {
         const msg = (
             "[Prusti] Could not find Java home. Please set the 'javaHome' " +
             "setting or the JAVA_HOME environment variable, then restart the " +
@@ -32,7 +32,11 @@ export async function hasPrerequisites(context: vscode.ExtensionContext): Promis
         return [false, msg];
     }
     try {
-        const javaPath = path.join(config.javaHome(), "bin", "java");
+        const javaPath = path.join(
+            await config.javaHome(),
+            "bin",
+            "java" + config.exeExtension()
+        );
         await util.spawn(javaPath, ["-version"]);
     } catch (err) {
         console.error(err);

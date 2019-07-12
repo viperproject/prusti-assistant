@@ -3,6 +3,26 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as os from 'os';
+import * as find_java_home from 'find-java-home';
+
+async function findJavaHome(): Promise<string | null> {
+    return new Promise((resolve, reject) => {
+        try {
+            find_java_home((err, home) => {
+                if (err) {
+                    console.error(err.message);
+                    resolve(null);
+                } else {
+                    resolve(home);
+                }
+            });
+        }
+        catch (err) {
+            console.error(err.message);
+            resolve(null);
+        }
+    });
+}
 
 function config(): vscode.WorkspaceConfiguration {
     return vscode.workspace.getConfiguration("prusti-assistant");
@@ -33,8 +53,8 @@ export function reportErrorsOnly(): boolean {
     return config().get("reportErrorsOnly", true);
 }
 
-export function javaHome(): string {
-    return config().get("javaHome") || process.env.JAVA_HOME || "";
+export async function javaHome(): Promise<string> {
+    return config().get("javaHome") || (await findJavaHome()) || "";
 }
 
 // Hardcoded values

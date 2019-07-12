@@ -367,7 +367,7 @@ async function queryCrateDiagnostics(context: vscode.ExtensionContext, rootPath:
             cwd: rootPath,
             env: {
                 RUST_BACKTRACE: "1",
-                JAVA_HOME: config.javaHome(),
+                JAVA_HOME: await config.javaHome(),
                 VIPER_HOME: config.viperHome(context),
                 Z3_EXE: config.z3Exe(context),
                 BOOGIE_EXE: config.boogieExe(context),
@@ -414,7 +414,7 @@ async function queryProgramDiagnostics(context: vscode.ExtensionContext, program
             cwd: path.dirname(programPath),
             env: {
                 RUST_BACKTRACE: "1",
-                JAVA_HOME: config.javaHome(),
+                JAVA_HOME: await config.javaHome(),
                 VIPER_HOME: config.viperHome(context),
                 Z3_EXE: config.z3Exe(context),
                 BOOGIE_EXE: config.boogieExe(context),

@@ -2,7 +2,7 @@
     "name": "prusti-assistant",
     "displayName": "Prusti Assistant",
     "description": "VSCode integration to verify Rust code with Prusti",
-    "version": "0.3.2",
+    "version": "0.3.3",
     "publisher": "fpoli",
     "repository": {
         "type": "git",
@@ -92,7 +92,7 @@
                 "prusti-assistant.javaHome": {
                     "type": "string",
                     "default": "",
-                    "description": "Specifies the path of the Java home folder (leave empty to use the JAVA_HOME environment variable)."
+                    "description": "Specifies the path of the Java home folder (leave empty to autodetect)."
                 }
             }
         }
@@ -115,8 +115,10 @@
     },
     "dependencies": {
         "@types/extract-zip": "^1.6.2",
+        "@types/find-java-home": "^0.2.0",
         "@types/fs-extra": "^8.0.0",
         "extract-zip": "^1.6.2",
+        "find-java-home": "^0.2.0",
         "fs-extra": "^8.0.0"
     }
 }
