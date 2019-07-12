@@ -8,3 +8,8 @@ vsc-extension-quickstart.md
 **/tslint.json
 **/*.map
 **/*.ts
+
+# Prusti temporary files
+log/
+nll-facts/
+report.csv
