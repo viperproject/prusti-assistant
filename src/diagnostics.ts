@@ -379,10 +379,16 @@ async function queryCrateDiagnostics(context: vscode.ExtensionContext, rootPath:
     if (output.code === 0) {
         status = VerificationStatus.Verified;
     }
+    // TODO: after upgrading the Rust compiler:
+    // * exit code 1 --> error
+    // * exit code 101 --> crash
     if (output.code === 101) {
         status = VerificationStatus.Errors;
     }
     if (output.stderr.match(/error: internal compiler error/)) {
+        status = VerificationStatus.Crash;
+    }
+    if (output.stderr.match(/^thread '.*' panicked at/)) {
         status = VerificationStatus.Crash;
     }
     const diagnostics: Diagnostic[] = [];
@@ -420,10 +426,16 @@ async function queryProgramDiagnostics(context: vscode.ExtensionContext, program
     if (output.code === 0) {
         status = VerificationStatus.Verified;
     }
+    // TODO: after upgrading the Rust compiler:
+    // * exit code 1 --> error
+    // * exit code 101 --> crash
     if (output.code === 101) {
         status = VerificationStatus.Errors;
     }
     if (output.stderr.match(/error: internal compiler error/)) {
+        status = VerificationStatus.Crash;
+    }
+    if (output.stderr.match(/^thread '.*' panicked at/)) {
         status = VerificationStatus.Crash;
     }
     const diagnostics: Diagnostic[] = [];
