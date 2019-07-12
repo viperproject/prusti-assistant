@@ -25,6 +25,4 @@ Basic code-completion snippets are provided for Prusti annotations.
 * [Visual C++ Build Tools 2015](https://go.microsoft.com/fwlink/?LinkId=691126)
 * [Java Runtime Environment, 64 bit](https://www.java.com/en/download/)
 * [Rustup](https://rustup.rs/)
-* [Prusti](http://www.pm.inf.ethz.ch/research/prusti.html)
-* [Viper](http://viper.ethz.ch/downloads/)
-* Configure the paths in this plugin's settings
+* Configure Java home in the settings

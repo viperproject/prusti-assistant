@@ -2,7 +2,7 @@
     "name": "prusti-assistant",
     "displayName": "Prusti Assistant",
     "description": "VSCode integration to verify Rust code with Prusti",
-    "version": "0.2.6",
+    "version": "0.3.0",
     "publisher": "fpoli",
     "repository": {
         "type": "git",
@@ -22,12 +22,13 @@
     ],
     "keywords": [
         "rust",
-        "rust-lang",
-        "prusti"
+        "verifier",
+        "prusti",
+        "viper",
+        "eth"
     ],
     "activationEvents": [
-        "onLanguage:rust",
-        "onCommand:prusti-assistant.verify"
+        "onLanguage:rust"
     ],
     "main": "./out/extension.js",
     "contributes": {
@@ -39,49 +40,59 @@
         ],
         "commands": [
             {
-                "command": "prusti-assistant.verify",
-                "title": "Verify the Rust program",
+                "command": "prusti-assistant.update",
+                "title": "install or update dependencies",
                 "category": "Prusti"
+            },
+            {
+                "command": "prusti-assistant.verify",
+                "title": "verify this file",
+                "category": "Prusti"
+            }
+        ],
+        "menu": [
+            {
+                "command": "prusti-assistant.update",
+                "when": "resourceLangId == Rust",
+                "group": "Prusti"
+            },
+            {
+                "command": "prusti-assistant.verify",
+                "when": "resourceLangId == Rust",
+                "group": "Prusti"
+            }
+        ],
+        "keybindings": [
+            {
+                "command": "prusti-assistant.verify",
+                "key": "f5",
+                "mac": "f5",
+                "when": "resourceLangId == Rust"
             }
         ],
         "configuration": {
             "type": "object",
             "title": "Prusti Assistant",
             "properties": {
-                "prusti-assistant.prustiHome": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Specifies the path of the Prusti home."
-                },
                 "prusti-assistant.verifyOnSave": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Specifies if the program should be verified on save."
+                    "description": "Specifies if programs should be verified on save."
                 },
-                "prusti-assistant.verifyOnStartup": {
+                "prusti-assistant.verifyOnOpen": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Specifies if the program should be verified on startup."
+                    "description": "Specifies if programs should be verified when opened."
                 },
                 "prusti-assistant.reportErrorsOnly": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Specifies if only error messages should be reported, hiding Rust warnings."
+                    "description": "Specifies if only error messages should be reported, hiding compiler's warnings."
                 },
                 "prusti-assistant.javaHome": {
                     "type": "string",
                     "default": "",
-                    "description": "Specifies the path of the Java home folder (optional if the JAVA_HOME envaironment variable is set)."
-                },
-                "prusti-assistant.viperHome": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Specifies the path of the Viper home folder (optional if the VIPER_HOME envaironment variable is set)."
-                },
-                "prusti-assistant.z3Exe": {
-                    "type": "string",
-                    "default": "z3",
-                    "description": "Specifies the path of the Z3 program to be used (optional if the Z3_EXE envaironment variable is set)."
+                    "description": "Specifies the path of the Java home folder (leave empty to use the JAVA_HOME environment variable)."
                 }
             }
         }
@@ -102,5 +113,10 @@
         "@types/node": "^12.0.8",
         "@types/mocha": "^5.2.7"
     },
-    "dependencies": {}
+    "dependencies": {
+        "@types/extract-zip": "^1.6.2",
+        "@types/fs-extra": "^8.0.0",
+        "extract-zip": "^1.6.2",
+        "fs-extra": "^8.0.0"
+    }
 }

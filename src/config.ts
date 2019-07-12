@@ -1,4 +1,8 @@
+'use strict';
+
 import * as vscode from 'vscode';
+import * as path from 'path';
+import * as os from 'os';
 
 function config(): vscode.WorkspaceConfiguration {
     return vscode.workspace.getConfiguration("prusti-assistant");
@@ -17,16 +21,12 @@ export function verificationMode(): VerificationMode {
     ];
 }
 
-export function prustiHome(): string {
-    return config().get("prustiHome", "");
-}
-
 export function verifyOnSave(): boolean {
     return config().get("verifyOnSave", true);
 }
 
-export function verifyOnStartup(): boolean {
-    return config().get("verifyOnStartup", true);
+export function verifyOnOpen(): boolean {
+    return config().get("verifyOnOpen", true);
 }
 
 export function reportErrorsOnly(): boolean {
@@ -37,14 +37,49 @@ export function javaHome(): string {
     return config().get("javaHome") || process.env.JAVA_HOME || "";
 }
 
-export function viperHome(): string {
-    return config().get("viperHome") || process.env.VIPER_HOME || "";
+// Hardcoded values
+
+export function prustiToolsUrl(): string | null {
+    const platform = os.platform();
+    switch (platform) {
+        case "linux":
+            return "http://viper.ethz.ch/downloads/PrustiToolsLinux.zip";
+        case "win32":
+            return "http://viper.ethz.ch/downloads/PrustiToolsWin.zip";
+        case "darwin":
+            return "http://viper.ethz.ch/downloads/PrustiToolsMac.zip";
+        default:
+            console.log(`"Unsupported platform: ${platform}`);
+            return null;
+    }
 }
 
-export function z3Exe(): string {
-    return config().get("z3Exe") || process.env.Z3_EXE || "z3";
+// Paths
+
+export function prustiToolsZip(context: vscode.ExtensionContext): string {
+    return path.join(context.globalStoragePath, "PrustiTools.zip");
 }
 
-export function boogieExe(): string {
-    return config().get("boogieExe") || process.env.BOOGIE_EXE || "boogie";
+export function prustiHome(context: vscode.ExtensionContext): string {
+    return path.join(context.globalStoragePath, "prusti");
+}
+
+export function prustiRustcExe(context: vscode.ExtensionContext): string {
+    return path.join(prustiHome(context), "prusti-rustc");
+}
+
+export function cargoPrustiExe(context: vscode.ExtensionContext): string {
+    return path.join(prustiHome(context), "cargo-prusti");
+}
+
+export function viperHome(context: vscode.ExtensionContext): string {
+    return path.join(prustiHome(context), "viper");
+}
+
+export function z3Exe(context: vscode.ExtensionContext): string {
+    return path.join(prustiHome(context), "z3", "z3");
+}
+
+export function boogieExe(context: vscode.ExtensionContext): string {
+    return path.join(prustiHome(context), "boogie", "boogie");
 }

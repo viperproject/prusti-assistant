@@ -357,22 +357,21 @@ enum VerificationStatus {
  * @param rootPath The root path of a rust project.
  * @returns An array of diagnostics for the given rust project.
  */
-async function queryCrateDiagnostics(rootPath: string): Promise<[Diagnostic[], VerificationStatus]> {
+async function queryCrateDiagnostics(context: vscode.ExtensionContext, rootPath: string): Promise<[Diagnostic[], VerificationStatus]> {
     // FIXME: Workaround for warning generation for libs.
     await removeDiagnosticMetadata(rootPath);
-    const cargoPrustiPath = path.join(config.prustiHome(), "cargo-prusti");
     const output = await util.spawn(
-        cargoPrustiPath,
+        config.cargoPrustiExe(context),
         ["--message-format=json"],
         {
             cwd: rootPath,
             env: {
                 RUST_BACKTRACE: "1",
                 JAVA_HOME: config.javaHome(),
-                VIPER_HOME: config.viperHome(),
-                Z3_EXE: config.z3Exe(),
-                BOOGIE_EXE: config.boogieExe(),
-                PATH: process.env.PATH
+                VIPER_HOME: config.viperHome(context),
+                Z3_EXE: config.z3Exe(context),
+                BOOGIE_EXE: config.boogieExe(context),
+                PATH: process.env.PATH  // Needed e.g. to run Rustup
             }
         }
     );
@@ -401,20 +400,19 @@ async function queryCrateDiagnostics(rootPath: string): Promise<[Diagnostic[], V
  * @param programPath The root path of a rust program.
  * @returns An array of diagnostics for the given rust project.
  */
-async function queryProgramDiagnostics(programPath: string): Promise<[Diagnostic[], VerificationStatus]> {
-    const prustiRustcPath = path.join(config.prustiHome(), "prusti-rustc");
+async function queryProgramDiagnostics(context: vscode.ExtensionContext, programPath: string): Promise<[Diagnostic[], VerificationStatus]> {
     const output = await util.spawn(
-        prustiRustcPath,
+        config.prustiRustcExe(context),
         ["--error-format=json", programPath],
         {
             cwd: path.dirname(programPath),
             env: {
                 RUST_BACKTRACE: "1",
                 JAVA_HOME: config.javaHome(),
-                VIPER_HOME: config.viperHome(),
-                Z3_EXE: config.z3Exe(),
-                BOOGIE_EXE: config.boogieExe(),
-                PATH: process.env.PATH
+                VIPER_HOME: config.viperHome(context),
+                Z3_EXE: config.z3Exe(context),
+                BOOGIE_EXE: config.boogieExe(context),
+                PATH: process.env.PATH  // Needed e.g. to run Rustup
             }
         }
     );
@@ -520,7 +518,7 @@ export class DiagnosticsSet {
     }
 }
 
-export async function generatesCratesDiagnostics(projectList: util.ProjectList): Promise<DiagnosticsSet> {
+export async function generatesCratesDiagnostics(context: vscode.ExtensionContext, projectList: util.ProjectList): Promise<DiagnosticsSet> {
     const resultDiagnostics = new DiagnosticsSet();
 
     for (const project of projectList.projects) {
@@ -528,7 +526,7 @@ export async function generatesCratesDiagnostics(projectList: util.ProjectList):
             continue; // FIXME: why this?
         }
         try {
-            const [diagnostics, status] = await queryCrateDiagnostics(project.path);
+            const [diagnostics, status] = await queryCrateDiagnostics(context, project.path);
             resultDiagnostics.addAll(diagnostics);
             if (status === VerificationStatus.Crash) {
                 resultDiagnostics.add({
@@ -559,11 +557,11 @@ export async function generatesCratesDiagnostics(projectList: util.ProjectList):
 }
 
 
-export async function generatesProgramDiagnostics(programPath: string): Promise<DiagnosticsSet> {
+export async function generatesProgramDiagnostics(context: vscode.ExtensionContext, programPath: string): Promise<DiagnosticsSet> {
     const resultDiagnostics = new DiagnosticsSet();
 
     try {
-        const [diagnostics, status] = await queryProgramDiagnostics(programPath);
+        const [diagnostics, status] = await queryProgramDiagnostics(context, programPath);
         resultDiagnostics.addAll(diagnostics);
         if (status === VerificationStatus.Crash) {
             resultDiagnostics.add({

@@ -1,23 +1,82 @@
 'use strict';
 
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as fs_extra from 'fs-extra';
+import * as path from 'path';
 import { performance } from 'perf_hooks';
 import * as config from './config';
 import * as util from './util';
 import * as diagnostics from './diagnostics';
-import * as prerequisites from './prerequisites';
+import * as checks from './checks';
 
 export async function activate(context: vscode.ExtensionContext) {
     util.log("Start Prusti Assistant");
 
+    // Define update dependencies function
+    async function updateDependencies(update: boolean) {
+        // Download
+        util.userInfo("Downloading Prusti...");
+        const prustiToolsUrl = config.prustiToolsUrl();
+        if (prustiToolsUrl === null) {
+            util.userError(`Error downloading Prusti: OS detection failed.`);
+            return;
+        }
+        const prustiToolsZip = config.prustiToolsZip(context);
+        fs_extra.ensureDirSync(path.dirname(prustiToolsZip));
+        const [downloadSuccessful, downloadError] = await util.download(
+            prustiToolsUrl,
+            prustiToolsZip
+        );
+        if (!downloadSuccessful) {
+            util.userError(`Error downloading Prusti: ${downloadError}`);
+            return;
+        }
+
+        // Extract
+        util.userInfo("Extracting Prusti...", false);
+        fs_extra.emptyDirSync(config.prustiHome(context));
+        const [extractSuccessful, extractError] = await util.extract(
+            prustiToolsZip,
+            config.prustiHome(context)
+        );
+        if (!extractSuccessful) {
+            util.userError(`Error extracting Prusti: ${extractError}`);
+            return;
+        }
+
+        // Set execution flags (ignored on Windows)
+        fs.chmodSync(config.prustiRustcExe(context), "775");
+        fs.chmodSync(config.cargoPrustiExe(context), "775");
+        fs.chmodSync(config.z3Exe(context), "775");
+
+        if (update) {
+            util.userInfo("Prusti updated succesfully. Please restart the IDE.");
+        } else {
+            util.userInfo("Prusti downloaded succesfully.");
+        }
+    }
+
+    // Update dependencies on command
+    context.subscriptions.push(
+        vscode.commands.registerCommand("prusti-assistant.update", async () => {
+            await updateDependencies(true);
+        })
+    );
+
+    // Download dependencies
+    const hasDependencies = await checks.hasDependencies(context);
+    if (!hasDependencies) {
+        util.log("Dependencies are missing.");
+        await updateDependencies(false);
+    }
+
     // Prerequisites checks
-    const [hasPrerequisites, errorMessage] = await prerequisites.hasPrerequisites();
+    const [hasPrerequisites, errorMessage] = await checks.hasPrerequisites(context);
     if (!hasPrerequisites) {
         util.log("Prusti Assistant's prerequisites are not satisfied.");
-        util.log(errorMessage);
+        util.userError(errorMessage);
         util.log("Stopping plugin. Restart the IDE to retry.");
-        vscode.window.showErrorMessage(errorMessage);
-        vscode.window.setStatusBarMessage(errorMessage);
         return;
     }
 
@@ -26,18 +85,18 @@ export async function activate(context: vscode.ExtensionContext) {
     const prustiCratesDiagnostics = vscode.languages.createDiagnosticCollection("prusti-crates");
 
     // Define verification function
-    async function runVerification() {
+    async function runVerification(document: vscode.TextDocument) {
 
-        // Verify current program
+        // Verify provided document
         if (config.verificationMode() === config.VerificationMode.CurrentProgram) {
             if (vscode.window.activeTextEditor) {
-                const currentDocument = vscode.window.activeTextEditor.document;
-                if (currentDocument.languageId === "rust") {
+                if (document.languageId === "rust") {
                     vscode.window.setStatusBarMessage("Running Prusti...");
                     const start = performance.now();
 
                     const programDiagnostics = await diagnostics.generatesProgramDiagnostics(
-                        currentDocument.uri.fsPath
+                        context,
+                        document.uri.fsPath
                     );
                     programDiagnostics.render(prustiProgramDiagnostics);
 
@@ -51,7 +110,7 @@ export async function activate(context: vscode.ExtensionContext) {
                     }
                 } else {
                     util.log(
-                        "The current tab is not a Rust program, thus Prusti will not run on it."
+                        "The document is not a Rust program, thus Prusti will not run on it."
                     );
                 }
             } else {
@@ -67,11 +126,11 @@ export async function activate(context: vscode.ExtensionContext) {
             const projects = await util.findProjects();
             if (!projects.hasProjects()) {
                 vscode.window.showWarningMessage(
-                    "Prusti Assistant: No `Cargo.toml` files were found in the workspace."
+                    "Prusti Assistant: No 'Cargo.toml' files were found in the workspace."
                 );
             }
 
-            const crateDiagnostics = await diagnostics.generatesCratesDiagnostics(projects);
+            const crateDiagnostics = await diagnostics.generatesCratesDiagnostics(context, projects);
             crateDiagnostics.render(prustiCratesDiagnostics);
 
             const duration = Math.round((performance.now() - start) / 100) / 10;
@@ -88,24 +147,35 @@ export async function activate(context: vscode.ExtensionContext) {
     // Verify on command
     context.subscriptions.push(
         vscode.commands.registerCommand("prusti-assistant.verify", async () => {
-            await runVerification();
-        })
-    );
-
-    // Verify on startup
-    if (config.verifyOnStartup()) {
-        await runVerification();
-    }
-    
-    // On save logic
-    context.subscriptions.push(
-        vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {
-            if (document.languageId === "rust") {
-                // Verify on save
-                if (config.verifyOnSave()) {
-                    await runVerification();
-                }
+            if (vscode.window.activeTextEditor) {
+                await runVerification(
+                    vscode.window.activeTextEditor.document
+                );
+            } else {
+                util.log("vscode.window.activeTextEditor is not ready yet.");
             }
         })
     );
+
+    // Verify on open
+    if (config.verifyOnOpen()) {
+        context.subscriptions.push(
+            vscode.workspace.onDidOpenTextDocument(async (document: vscode.TextDocument) => {
+                if (document.languageId === "rust") {
+                    await runVerification(document);
+                }
+            })
+        );
+    }
+
+    // Verify on save
+    if (config.verifyOnSave()) {
+        context.subscriptions.push(
+            vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {
+                if (document.languageId === "rust") {
+                    await runVerification(document);
+                }
+            })
+        );
+    }
 }

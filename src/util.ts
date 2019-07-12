@@ -2,11 +2,37 @@ import * as child_process from 'child_process';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as http from 'http';
+import * as extract_zip from 'extract-zip';
+
+export function userInfo(message: string, popup = true) {
+    log(message);
+    vscode.window.setStatusBarMessage(message);
+    if (popup) {
+        vscode.window.showInformationMessage(message);
+    }
+}
+
+export function userWarn(message: string, popup = true) {
+    log(message);
+    vscode.window.setStatusBarMessage(message);
+    if (popup) {
+        vscode.window.showWarningMessage(message);
+    }
+}
+
+export function userError(message: string, popup = true) {
+    log(message);
+    vscode.window.setStatusBarMessage(message);
+    if (popup) {
+        vscode.window.showErrorMessage(message);
+    }
+}
 
 let _channel: vscode.OutputChannel;
 export function log(message: string) {
     if (!_channel) {
-        _channel = vscode.window.createOutputChannel('Prusti Assistant');
+        _channel = vscode.window.createOutputChannel("Prusti Assistant");
     }
     _channel.appendLine(message);
 }
@@ -109,4 +135,45 @@ export async function findProjects(): Promise<ProjectList> {
         projects.push(new Project(path.fsPath.replace(/[/\\]?Cargo\.toml$/, '')));
     });
     return new ProjectList(projects);
+}
+
+export async function download(url: string, filePath: string): Promise<[boolean, string | null]> {
+    return new Promise((resolve, reject) => {
+        try {
+            const file = fs.createWriteStream(filePath);
+            const request = http.get(url, (response) => {
+                response.pipe(file);
+                file.on("finish", () => {
+                    file.close();
+                    resolve([true, null]);
+                });
+                request.on("error", (err) => {
+                    fs.unlink(filePath, (_) => {
+                        log("Could not remove downloaded file.");
+                    });
+                    resolve([false, err.message]);
+                });
+            });
+        }
+        catch (err) {
+            resolve([false, err.message]);
+        }
+    });
+}
+
+export async function extract(filePath: string, targetDir: string): Promise<[boolean, string | null]> {
+    return new Promise((resolve, reject) => {
+        try {
+            extract_zip(filePath, { dir: targetDir }, (err) => {
+                if (err) {
+                    resolve([false, err.message]);
+                } else {
+                    resolve([true, null]);
+                }
+            });
+        }
+        catch (err) {
+            resolve([false, err.message]);
+        }
+    });
 }
