@@ -52,7 +52,7 @@ export async function activate(context: vscode.ExtensionContext) {
         fs.chmodSync(config.z3Exe(context), "775");
 
         if (update) {
-            util.userInfo("Prusti updated succesfully. Please restart the IDE.");
+            util.userInfo("Prusti updated succesfully. Please restart the IDE.", true, true);
         } else {
             util.userInfo("Prusti downloaded succesfully.");
         }
@@ -75,8 +75,8 @@ export async function activate(context: vscode.ExtensionContext) {
     // Prerequisites checks
     const [hasPrerequisites, errorMessage] = await checks.hasPrerequisites(context);
     if (!hasPrerequisites) {
-        util.log("Prusti Assistant's prerequisites are not satisfied.");
-        util.userError(errorMessage);
+        util.userError("Prusti Assistant's prerequisites are not satisfied.", false);
+        util.userError(errorMessage, true, true);
         util.log("Stopping plugin. Restart the IDE to retry.");
         return;
     }

@@ -5,11 +5,23 @@ import * as path from 'path';
 import * as http from 'http';
 import * as extract_zip from 'extract-zip';
 
-export function userInfo(message: string, popup = true) {
+export function userInfo(message: string, popup = true, restart = false) {
     log(message);
     vscode.window.setStatusBarMessage(message);
     if (popup) {
-        vscode.window.showInformationMessage(message);
+        if (restart) {
+            const action = "Restart Now";
+            vscode.window.showInformationMessage(message, action)
+                .then(selection => {
+                    if (selection === action) {
+                        vscode.commands.executeCommand(
+                            "workbench.action.reloadWindow"
+                        );
+                    }
+                });
+        } else {
+            vscode.window.showInformationMessage(message);
+        }
     }
 }
 
@@ -21,11 +33,23 @@ export function userWarn(message: string, popup = true) {
     }
 }
 
-export function userError(message: string, popup = true) {
+export function userError(message: string, popup = true, restart = false) {
     log(message);
     vscode.window.setStatusBarMessage(message);
     if (popup) {
-        vscode.window.showErrorMessage(message);
+        if (restart) {
+            const action = "Restart Now";
+            vscode.window.showInformationMessage(message, action)
+                .then(selection => {
+                    if (selection === action) {
+                        vscode.commands.executeCommand(
+                            "workbench.action.reloadWindow"
+                        );
+                    }
+                });
+        } else {
+            vscode.window.showInformationMessage(message);
+        }
     }
 }
 
