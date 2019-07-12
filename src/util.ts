@@ -4,7 +4,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as http from 'http';
 import * as extract_zip from 'extract-zip';
-import * as find_java_home from 'find-java-home';
 
 export function userInfo(message: string, popup = true) {
     log(message);
