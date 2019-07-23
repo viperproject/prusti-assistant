@@ -545,7 +545,7 @@ export async function generatesCratesDiagnostics(context: vscode.ExtensionContex
                     file_path: path.join(project.path, "Cargo.toml"),
                     diagnostic: new vscode.Diagnostic(
                         dummyRange(),
-                        "Unexpected error: Prusti or the Rust compiler crashed. See the log and other reported errors for more details.",
+                        "Prusti encountered an error. See other reported errors and the log (View -> Output -> Prusti Assistant) for more details.",
                         vscode.DiagnosticSeverity.Error
                     )
                 });
@@ -580,7 +580,7 @@ export async function generatesProgramDiagnostics(context: vscode.ExtensionConte
                 file_path: programPath,
                 diagnostic: new vscode.Diagnostic(
                     dummyRange(),
-                    "Unexpected error: Prusti or the Rust compiler crashed. See the log and other reported errors for more details.",
+                    "Prusti encountered an error. See other reported errors and the log (View -> Output -> Prusti Assistant) for more details.",
                     vscode.DiagnosticSeverity.Error
                 )
             });
