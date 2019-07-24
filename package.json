@@ -2,7 +2,7 @@
     "name": "prusti-assistant",
     "displayName": "Prusti Assistant",
     "description": "VSCode integration to verify Rust code with Prusti",
-    "version": "0.3.8",
+    "version": "0.3.9",
     "publisher": "fpoli",
     "repository": {
         "type": "git",
@@ -60,14 +60,6 @@
                 "command": "prusti-assistant.verify",
                 "when": "resourceLangId == Rust",
                 "group": "Prusti"
-            }
-        ],
-        "keybindings": [
-            {
-                "command": "prusti-assistant.verify",
-                "key": "f5",
-                "mac": "f5",
-                "when": "resourceLangId == Rust"
             }
         ],
         "configuration": {
