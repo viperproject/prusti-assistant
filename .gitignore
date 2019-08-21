@@ -8,3 +8,6 @@ node_modules
 log/
 nll-facts/
 report.csv
+
+# JVM core dump
+hs_err_pid*.log

@@ -9,17 +9,21 @@ import * as config from './config';
 import * as util from './util';
 import * as diagnostics from './diagnostics';
 import * as checks from './checks';
+import * as notifier from './notifier';
 
 export async function activate(context: vscode.ExtensionContext) {
+    notifier.notify(notifier.Event.StartExtensionActivation);
     util.log("Start Prusti Assistant");
 
     // Define update dependencies function
     async function updateDependencies(update: boolean) {
         // Download
+        notifier.notify(notifier.Event.StartPrustiUpdate);
         util.userInfo("Downloading Prusti...");
         const prustiToolsUrl = config.prustiToolsUrl();
         if (prustiToolsUrl === null) {
             util.userError(`Error downloading Prusti: OS detection failed.`);
+            notifier.notify(notifier.Event.EndPrustiUpdate);
             return;
         }
         const prustiToolsZip = config.prustiToolsZip(context);
@@ -30,6 +34,7 @@ export async function activate(context: vscode.ExtensionContext) {
         );
         if (!downloadSuccessful) {
             util.userError(`Error downloading Prusti: ${downloadError}`);
+            notifier.notify(notifier.Event.EndPrustiUpdate);
             return;
         }
 
@@ -42,6 +47,7 @@ export async function activate(context: vscode.ExtensionContext) {
         );
         if (!extractSuccessful) {
             util.userError(`Error extracting Prusti: ${extractError}`);
+            notifier.notify(notifier.Event.EndPrustiUpdate);
             return;
         }
 
@@ -56,6 +62,7 @@ export async function activate(context: vscode.ExtensionContext) {
         } else {
             util.userInfo("Prusti downloaded succesfully.");
         }
+        notifier.notify(notifier.Event.EndPrustiUpdate);
     }
 
     // Update dependencies on command
@@ -87,6 +94,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Define verification function
     async function runVerification(document: vscode.TextDocument) {
+        notifier.notify(notifier.Event.StartVerification);
+        util.log("Run verification...");
 
         // Verify provided document
         if (config.verificationMode() === config.VerificationMode.CurrentProgram) {
@@ -139,6 +148,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 vscode.window.setStatusBarMessage(`Verification of all crates succeeded (${duration} s)`);
             }
         }
+        notifier.notify(notifier.Event.EndVerification);
     }
 
     // Verify on command
@@ -184,4 +194,6 @@ export async function activate(context: vscode.ExtensionContext) {
             util.log("vscode.window.activeTextEditor is not ready yet.");
         }
     }
+
+    notifier.notify(notifier.Event.EndExtensionActivation);
 }

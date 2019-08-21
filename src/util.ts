@@ -55,6 +55,7 @@ export function userError(message: string, popup = true, restart = false) {
 
 let _channel: vscode.OutputChannel;
 export function log(message: string) {
+    console.log(message);
     if (!_channel) {
         _channel = vscode.window.createOutputChannel("Prusti Assistant");
     }
@@ -82,21 +83,21 @@ export function spawn(
         proc.stdout.on('data', (data) => stdout += data);
         proc.stderr.on('data', (data) => stderr += data);
         proc.on('close', (code) => {
-            log("===== Begin stdout =====");
+            log("┌──── Begin stdout ────┐");
             log(stdout);
-            log("===== End stdout =====");
-            log("===== Begin stderr =====");
+            log("└──── End stdout ──────┘");
+            log("┌──── Begin stderr ────┐");
             log(stderr);
-            log("===== End stderr =====");
+            log("└──── End stderr ──────┘");
             resolve({ stdout, stderr, code });
         });
         proc.on('error', (err) => {
-            log("===== Begin stdout =====");
+            log("┌──── Begin stdout ────┐");
             log(stdout);
-            log("===== End stdout =====");
-            log("===== Begin stderr =====");
+            log("└──── End stdout ──────┘");
+            log("┌──── Begin stderr ────┐");
             log(stderr);
-            log("===== End stderr =====");
+            log("└──── End stderr ──────┘");
             console.log("Error", err);
             log(`Error: ${err}`);
             reject(err);
