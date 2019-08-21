@@ -1,8 +1,6 @@
-dist: xenial
-
 os:
   - linux
-  - osx
+#  - osx
 #  - windows
 
 language: node_js
@@ -10,8 +8,21 @@ language: node_js
 node_js:
   - 10.5
 
+addons:
+  apt:
+    packages:
+      - openjdk-8-jdk
+
 services:
   - xvfb # Required for VSCode extension tests
+
+before_install:
+  - java -version
+  # Install Rustup
+  - curl https://sh.rustup.rs -sSf | sh -s -- -y --no-modify-path
+  - source $HOME/.cargo/env
+  - rustup --version
+  - rustup install nightly-2018-06-27
 
 script:
   - npm run compile
