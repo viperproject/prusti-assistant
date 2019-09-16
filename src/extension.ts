@@ -155,6 +155,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand("prusti-assistant.verify", async () => {
             if (vscode.window.activeTextEditor) {
+                vscode.window.activeTextEditor.document.save();
                 await runVerification(
                     vscode.window.activeTextEditor.document
                 );
@@ -168,9 +169,7 @@ export async function activate(context: vscode.ExtensionContext) {
     if (config.verifyOnSave()) {
         context.subscriptions.push(
             vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {
-                if (document.languageId === "rust") {
-                    await runVerification(document);
-                }
+                await runVerification(document);
             })
         );
     }
@@ -179,9 +178,7 @@ export async function activate(context: vscode.ExtensionContext) {
     if (config.verifyOnOpen()) {
         context.subscriptions.push(
             vscode.workspace.onDidOpenTextDocument(async (document: vscode.TextDocument) => {
-                if (document.languageId === "rust") {
-                    await runVerification(document);
-                }
+                await runVerification(document);
             })
         );
 

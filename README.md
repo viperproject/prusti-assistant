@@ -30,7 +30,7 @@ This extension automatically provides inline diagnostics for Rust by running Pru
 
 This extension provides the following commands:
 
-* `Prusti: verify this file` to verify a Rust program;
+* `Prusti: save and verify this file` to verify a Rust program;
 * `Prusti: install or update dependencies` to update Prusti.
 
 ### Snippets
@@ -43,5 +43,5 @@ In order to use this extension, please install the following components:
 
 * [Java Runtime Environment (or JDK), 64 bit](https://www.java.com/en/download/)
 * [Rustup](https://rustup.rs/)
-* Rust's toolchain version `nightly-2018-06-27`, which can be installed with the command `rustup install nightly-2018-06-27`
+* Rust's toolchain version `nightly-2018-06-27`, which can be installed from the terminal with the command `rustup install nightly-2018-06-27`
 * Only for Windows: [Visual C++ Build Tools 2015](https://go.microsoft.com/fwlink/?LinkId=691126)
