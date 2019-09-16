@@ -15,7 +15,10 @@
 			"outFiles": [
 				"${workspaceFolder}/out/**/*.js"
 			],
-			"preLaunchTask": "npm: watch"
+			"preLaunchTask": "npm: watch",
+			"env": {
+				"PATH": "${env:PATH}"
+			},
 		},
 		{
 			"name": "Extension Tests",
@@ -29,7 +32,10 @@
 			"outFiles": [
 				"${workspaceFolder}/out/test/**/*.js"
 			],
-			"preLaunchTask": "npm: watch"
+			"preLaunchTask": "npm: watch",
+			"env": {
+				"PATH": "${env:PATH}"
+			},
 		}
 	]
 }
