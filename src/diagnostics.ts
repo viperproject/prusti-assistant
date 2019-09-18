@@ -410,7 +410,7 @@ async function queryCrateDiagnostics(context: vscode.ExtensionContext, rootPath:
 async function queryProgramDiagnostics(context: vscode.ExtensionContext, programPath: string): Promise<[Diagnostic[], VerificationStatus]> {
     const output = await util.spawn(
         config.prustiRustcExe(context),
-        ["--error-format=json", programPath],
+        ["--crate-type=lib", "--error-format=json", programPath],
         {
             cwd: path.dirname(programPath),
             env: {

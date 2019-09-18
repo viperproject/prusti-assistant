@@ -8,6 +8,8 @@ const PROJECT_ROOT = path.join(__dirname, "../../");
 const DATA_ROOT = path.join(PROJECT_ROOT, "src", "test", "data");
 const ASSERT_TRUE = "assert_true.rs";
 const ASSERT_FALSE = "assert_false.rs";
+const EMPTY = "empty.rs";
+const LIB_ASSERT_TRUE = "lib_assert_true.rs";
 
 function log(msg: string) {
     console.log("[UnitTest] " + msg);
@@ -48,6 +50,13 @@ suite("Extension", () => {
         assert.equal(document.languageId, "rust");
     });
 
+    test("Verify empty program", async () => {
+        const document = await openFile(EMPTY);
+        await vscode.commands.executeCommand("prusti-assistant.verify");
+        const diagnostics = vscode.languages.getDiagnostics(document.uri);
+        assert.equal(diagnostics.length, 0);
+    });
+
     test("Verify simple correct program", async () => {
         const document = await openFile(ASSERT_TRUE);
         await vscode.commands.executeCommand("prusti-assistant.verify");
@@ -61,5 +70,12 @@ suite("Extension", () => {
         const diagnostics = vscode.languages.getDiagnostics(document.uri);
         assert.equal(diagnostics.length, 1);
         assert.equal(diagnostics[0].severity, vscode.DiagnosticSeverity.Error);
+    });
+
+    test("Verify program without main", async () => {
+        const document = await openFile(LIB_ASSERT_TRUE);
+        await vscode.commands.executeCommand("prusti-assistant.verify");
+        const diagnostics = vscode.languages.getDiagnostics(document.uri);
+        assert.equal(diagnostics.length, 0);
     });
 });
