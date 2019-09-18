@@ -367,6 +367,7 @@ async function queryCrateDiagnostics(context: vscode.ExtensionContext, rootPath:
             cwd: rootPath,
             env: {
                 RUST_BACKTRACE: "1",
+                RUST_LOG: "info",
                 JAVA_HOME: await config.javaHome(),
                 VIPER_HOME: config.viperHome(context),
                 Z3_EXE: config.z3Exe(context),
@@ -414,6 +415,7 @@ async function queryProgramDiagnostics(context: vscode.ExtensionContext, program
             cwd: path.dirname(programPath),
             env: {
                 RUST_BACKTRACE: "1",
+                RUST_LOG: "info",
                 JAVA_HOME: await config.javaHome(),
                 VIPER_HOME: config.viperHome(context),
                 Z3_EXE: config.z3Exe(context),
