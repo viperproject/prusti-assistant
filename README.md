@@ -4,17 +4,15 @@ Prusti Assistant
 [![](https://vsmarketplacebadge.apphb.com/version/fpoli.prusti-assistant.svg)](https://marketplace.visualstudio.com/items?itemName=fpoli.prusti-assistant)
 [![Build Status](https://travis-ci.org/viperproject/prusti-assistant.svg?branch=master)](https://travis-ci.org/viperproject/prusti-assistant)
 
-VSCode plugin to verify Rust programs with the [Prusti](http://www.pm.inf.ethz.ch/research/prusti.html) verifier.
-
-This plugin is based on a fork of [Rust Assist](https://github.com/mooman219/rust-assist).
+This Visual Studio Code extension provides interactive IDE features for verifying Rusti programs with the [Prusti verifier](http://prusti.ethz.ch).
 
 ## First usage
 
-1. Install the requirements (listed in a section below). Restart Visual Studio Code to make sure that the IDE has `rustup` in the program path.
-2. Install this extension in Visual Studio Code.
+1. Install the requirements (listed in a section below). Restart Visual Studio Code to make sure that `rustup` in the program path used by the IDE.
+2. Install this [extension](https://marketplace.visualstudio.com/items?itemName=fpoli.prusti-assistant) in Visual Studio Code.
 3. Open a Rust file to activate the extension. At its first activation, this extension will automatically download Prusti.
 
-To verify a Rust program, open the command palette (View -> Command Palette, or Shift+Ctrl+P on Ubuntu) and run the command `Prusti: verify this file`. You should see a "Running Prusti..." message in the status bar while Prusti is running. When Prusti terminates the result of the verification is reported in the status bar and in the "Problems" tab (open it with View -> Problems).
+To verify a Rust program, open the command palette (View -> Command Palette, or Shift+Ctrl+P on Ubuntu) and run the command `Prusti: save and verify this file`. You should see a "Running Prusti..." message in the status bar while Prusti is running. When Prusti terminates the result of the verification is reported in the status bar and in the "Problems" tab (open it with View -> Problems).
 
 To automatically run Prusti when a Rust file is opened or saved, enable the corresponding flag in the settings (Preferences -> Settings -> type "Prusti" -> enable "Verify On Open" and "Verify On Save").
 

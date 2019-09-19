@@ -1,8 +1,8 @@
 {
     "name": "prusti-assistant",
     "displayName": "Prusti Assistant",
-    "description": "VSCode integration to verify Rust code with Prusti",
-    "version": "0.3.14",
+    "description": "Verify Rust programs with the Prusti verifier.",
+    "version": "0.3.19",
     "publisher": "fpoli",
     "repository": {
         "type": "git",
@@ -22,7 +22,7 @@
     ],
     "keywords": [
         "rust",
-        "verifier",
+        "verification",
         "prusti",
         "viper",
         "eth"
