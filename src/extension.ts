@@ -73,19 +73,25 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 
     // Download dependencies
+    util.log("Checking dependencies...");
     const hasDependencies = await checks.hasDependencies(context);
     if (!hasDependencies) {
-        util.log("Dependencies are missing.");
+        util.log("Dependencies are missing. They will be downloaded.");
         await updateDependencies(false);
+    } else {
+        util.log("Dependencies confirmed.");
     }
 
     // Prerequisites checks
+    util.log("Checking prerequisites...");
     const [hasPrerequisites, errorMessage] = await checks.hasPrerequisites(context);
     if (!hasPrerequisites) {
         util.userError("Prusti Assistant's prerequisites are not satisfied.", false);
         util.userError(errorMessage, true, true);
         util.log("Stopping plugin. Restart the IDE to retry.");
         return;
+    } else {
+        util.log("Prerequisites are satisfied.");
     }
 
     // Shared collection of diagnostics
@@ -166,13 +172,13 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 
     // Verify on save
-    if (config.verifyOnSave()) {
-        context.subscriptions.push(
-            vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {
+    context.subscriptions.push(
+        vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {
+            if (config.verifyOnSave()) {
                 await runVerification(document);
-            })
-        );
-    }
+            }
+        })
+    );
 
     // Verify on open
     if (config.verifyOnOpen()) {

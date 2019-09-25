@@ -11,13 +11,15 @@ export async function hasDependencies(context: vscode.ExtensionContext): Promise
 }
 
 export async function hasPrerequisites(context: vscode.ExtensionContext): Promise<[boolean, string]> {
-    if (await config.javaHome() === null) {
+    util.log("Checking Java home...");
+    if (! await config.javaHome()) {
         const msg = (
             "[Prusti] Could not find Java home. Please install Java 1.8+ " +
             "64bit or set the 'javaHome' setting, then restart the IDE."
         );
         return [false, msg];
     }
+    util.log("Checking Rustup and Cargo...");
     try {
         await util.spawn("rustup", ["--version"]);
         await util.spawn("cargo", ["--version"]);
@@ -30,6 +32,7 @@ export async function hasPrerequisites(context: vscode.ExtensionContext): Promis
         );
         return [false, msg];
     }
+    util.log("Checking Java...");
     try {
         const javaPath = path.join(
             await config.javaHome(),
@@ -46,6 +49,7 @@ export async function hasPrerequisites(context: vscode.ExtensionContext): Promis
         );
         return [false, msg];
     }
+    util.log("Checking Z3...");
     try {
         await util.spawn(config.z3Exe(context), ["--version"]);
     } catch (err) {
@@ -57,6 +61,7 @@ export async function hasPrerequisites(context: vscode.ExtensionContext): Promis
         );
         return [false, msg];
     }
+    util.log("Checking Prusti...");
     try {
         await util.spawn(config.prustiRustcExe(context), ["--version"]);
     } catch (err) {
@@ -69,6 +74,7 @@ export async function hasPrerequisites(context: vscode.ExtensionContext): Promis
         );
         return [false, msg];
     }
+    util.log("Checking Cargo-Prusti...");
     try {
         await util.spawn(config.cargoPrustiExe(context), ["--help"]);
     } catch (err) {

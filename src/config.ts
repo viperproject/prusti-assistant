@@ -12,12 +12,13 @@ async function findJavaHome(): Promise<string | null> {
                 version: ">=1.8",
                 mustBe64Bit: true
             };
+            console.log("Searching for Java home...");
             locate_java_home.default(options, (err, javaHomes) => {
                 if (err) {
                     console.error(err.message);
                     resolve(null);
                 } else {
-                    if (!javaHomes) {
+                    if (!Array.isArray(javaHomes) || javaHomes.length === 0) {
                         console.log("Could not find Java home");
                         resolve(null);
                     } else {

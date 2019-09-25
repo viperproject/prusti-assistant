@@ -39,7 +39,6 @@ Basic code-completion snippets are provided for Prusti annotations.
 
 In order to use this extension, please install the following components:
 
-* [Java Runtime Environment (or JDK), 64 bit](https://www.java.com/en/download/)
-* [Rustup](https://rustup.rs/)
+* [Java Runtime Environment (or JDK), 64 bit, version 1.8 or later](https://www.java.com/en/download/)
+* [Rustup](https://rustup.rs/) (on Windows this also requires the [C++ build tools for Visual Studio 2013 or later](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019))
 * Rust's toolchain version `nightly-2018-06-27`, which can be installed from the terminal with the command `rustup install nightly-2018-06-27`
-* Only for Windows: [Visual C++ Build Tools 2015](https://go.microsoft.com/fwlink/?LinkId=691126)
