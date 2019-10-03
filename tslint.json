@@ -50,6 +50,7 @@
 			true,
 			3
 		],
-		"no-submodule-imports": false
+		"no-submodule-imports": false,
+		"prefer-conditional-expression": false
 	}
 }

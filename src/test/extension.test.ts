@@ -85,8 +85,7 @@ suite("Extension", () => {
         assert.ok(
             diagnostics.some(
                 (diagnostic) => (
-                    diagnostic.code &&
-                    diagnostic.code.toString().includes("false")
+                    document.getText(diagnostic.range).includes("false")
                 )
             ),
             "The 'false' expression in the postcondition was not reported."

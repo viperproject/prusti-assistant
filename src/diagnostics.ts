@@ -79,6 +79,20 @@ function dummyRange(): vscode.Range {
     return new vscode.Range(0, 0, 0, 0);
 }
 
+function parseMultiSpanRange(multiSpan: Span[]): vscode.Range {
+    let finalRange;
+    for (const span of multiSpan) {
+        const range = parseSpanRange(span);
+        if (finalRange === undefined) {
+            finalRange = range;
+        } else {
+            // Merge
+            finalRange = finalRange.union(range);
+        }
+    }
+    return finalRange || dummyRange();
+}
+
 function parseSpanRange(span: Span): vscode.Range {
     return new vscode.Range(
         span.line_start - 1,
@@ -243,15 +257,23 @@ function parseCargoMessage(msgDiag: CargoMessage, rootPath: string): Diagnostic 
 function parseRustcMessage(msg: Message, mainFilePath: string): Diagnostic {
     const level = parseMessageLevel(msg.level);
 
-    // Parse primary span
-    let primarySpan;
-    for (const span of msg.spans) {
-        if (span.is_primary) {
-            primarySpan = span;
-            break;
-        }
+    let primaryMessage = msg.message;
+    if (msg.code) {
+        primaryMessage = `[${msg.code.code}] ${primaryMessage}.`;
     }
-    if (primarySpan === undefined) {
+
+    // Parse primary spans
+    const primaryCallSiteSpans = [];
+    for (const span of msg.spans) {
+        if (!span.is_primary) {
+            continue;
+        }
+        if (span.label) {
+            primaryMessage = `${primaryMessage}\n[Note] ${span.label}`;
+        }
+        primaryCallSiteSpans.push(getCallSiteSpan(span));
+    }
+    if (primaryCallSiteSpans.length === 0) {
         return {
             file_path: mainFilePath,
             diagnostic: new vscode.Diagnostic(
@@ -262,17 +284,9 @@ function parseRustcMessage(msg: Message, mainFilePath: string): Diagnostic {
         };
     }
 
-    let primaryMessage = msg.message;
-    if (msg.code) {
-        primaryMessage = `[${msg.code.code}] ${primaryMessage}.`;
-    }
-    if (primarySpan.label) {
-        primaryMessage = `${primaryMessage} \n[Note] ${primarySpan.label}`;
-    }
-    const primaryCallSiteSpan = getCallSiteSpan(primarySpan);
-    const primaryRange = parseSpanRange(primaryCallSiteSpan);
-    const primaryFilePath = primaryCallSiteSpan.file_name;
-
+    // Convert MultiSpans to Range and Diagnostic
+    const primaryRange = parseMultiSpanRange(primaryCallSiteSpans);
+    const primaryFilePath = primaryCallSiteSpans[0].file_name;
     const diagnostic = new vscode.Diagnostic(
         primaryRange,
         primaryMessage,
