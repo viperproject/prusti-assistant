@@ -9,7 +9,6 @@ const DATA_ROOT = path.join(PROJECT_ROOT, "src", "test", "data");
 const ASSERT_TRUE = "assert_true.rs";
 const ASSERT_FALSE = "assert_false.rs";
 const EMPTY = "empty.rs";
-const LIB_ASSERT_TRUE = "lib_assert_true.rs";
 
 function log(msg: string) {
     console.log("[UnitTest] " + msg);
@@ -73,9 +72,24 @@ suite("Extension", () => {
     });
 
     test("Verify program without main", async () => {
-        const document = await openFile(LIB_ASSERT_TRUE);
+        const document = await openFile("lib_assert_true.rs");
         await vscode.commands.executeCommand("prusti-assistant.verify");
         const diagnostics = vscode.languages.getDiagnostics(document.uri);
         assert.equal(diagnostics.length, 0);
+    });
+
+    test("Underline the 'false' in the failing postcondition", async () => {
+        const document = await openFile("failing_post.rs");
+        await vscode.commands.executeCommand("prusti-assistant.verify");
+        const diagnostics = vscode.languages.getDiagnostics(document.uri);
+        assert.ok(
+            diagnostics.some(
+                (diagnostic) => (
+                    diagnostic.code &&
+                    diagnostic.code.toString().includes("false")
+                )
+            ),
+            "The 'false' expression in the postcondition was not reported."
+        );
     });
 });
