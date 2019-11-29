@@ -1,7 +1,7 @@
 Prusti Assistant
 ================
 
-[![](https://vsmarketplacebadge.apphb.com/version/fpoli.prusti-assistant.svg)](https://marketplace.visualstudio.com/items?itemName=fpoli.prusti-assistant)
+[![](https://vsmarketplacebadge.apphb.com/version/viper-admin.prusti-assistant.svg)](https://marketplace.visualstudio.com/items?itemName=viper-admin.prusti-assistant)
 [![Build Status](https://travis-ci.org/viperproject/prusti-assistant.svg?branch=master)](https://travis-ci.org/viperproject/prusti-assistant)
 
 This Visual Studio Code extension provides interactive IDE features for verifying Rusti programs with the [Prusti verifier](http://prusti.ethz.ch).
@@ -9,7 +9,7 @@ This Visual Studio Code extension provides interactive IDE features for verifyin
 ## First usage
 
 1. Install the requirements (listed in a section below). Restart Visual Studio Code to make sure that `rustup` in the program path used by the IDE.
-2. Install this [extension](https://marketplace.visualstudio.com/items?itemName=fpoli.prusti-assistant) in Visual Studio Code.
+2. Install this [extension](https://marketplace.visualstudio.com/items?itemName=viper-admin.prusti-assistant) in Visual Studio Code.
 3. Open a Rust file to activate the extension. At its first activation, this extension will automatically download Prusti.
 
 To verify a Rust program, open the command palette (View -> Command Palette, or Shift+Ctrl+P on Ubuntu) and run the command `Prusti: save and verify this file`. You should see a "Running Prusti..." message in the status bar while Prusti is running. When Prusti terminates the result of the verification is reported in the status bar and in the "Problems" tab (open it with View -> Problems).

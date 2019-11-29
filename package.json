@@ -3,7 +3,7 @@
     "displayName": "Prusti Assistant",
     "description": "Verify Rust programs with the Prusti verifier.",
     "version": "0.3.21",
-    "publisher": "fpoli",
+    "publisher": "viper-admin",
     "repository": {
         "type": "git",
         "url": "https://github.com/viperproject/prusti-assistant.git"
