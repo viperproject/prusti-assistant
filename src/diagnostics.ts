@@ -474,7 +474,7 @@ export class DiagnosticsSet {
         this.diagnostics = new Map();
     }
 
-    public hasErros(): boolean {
+    public hasErrors(): boolean {
         let count = 0;
         this.diagnostics.forEach((value: vscode.Diagnostic[], _: string) => {
             value.forEach((value: vscode.Diagnostic) => {
@@ -500,6 +500,16 @@ export class DiagnosticsSet {
 
     public isEmpty(): boolean {
         return this.diagnostics.size === 0;
+    }
+
+    public countsBySeverity(): Map<vscode.DiagnosticSeverity, number> {
+        const counts = new Map<vscode.DiagnosticSeverity, number>();
+        this.diagnostics.forEach((diags, _) => {
+            diags.forEach(diag => {
+                counts.set(diag.severity, (counts.get(diag.severity) || 0) + 1);
+            });
+        });
+        return counts;
     }
 
     public addAll(diagnostics: Diagnostic[]) {

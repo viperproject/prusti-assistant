@@ -115,11 +115,16 @@ export async function activate(context: vscode.ExtensionContext) {
                 );
                 programDiagnostics.render(prustiProgramDiagnostics);
 
+                const counts = programDiagnostics.countsBySeverity();
                 const duration = Math.round((performance.now() - start) / 100) / 10;
-                if (programDiagnostics.hasErros()) {
-                    vscode.window.setStatusBarMessage(`Verification failed (${duration} s)`);
+                if (programDiagnostics.hasErrors()) {
+                    const errors = counts.get(vscode.DiagnosticSeverity.Error);
+                    const noun = errors === 1 ? "error" : "errors";
+                    vscode.window.setStatusBarMessage(`Verification failed with ${errors} ${noun} (${duration} s)`);
                 } else if (programDiagnostics.hasWarnings()) {
-                    vscode.window.setStatusBarMessage(`Verification succeeded with warnings (${duration} s)`);
+                    const warnings = counts.get(vscode.DiagnosticSeverity.Error);
+                    const noun = warnings === 1 ? "warning" : "warningss";
+                    vscode.window.setStatusBarMessage(`Verification succeeded with ${warnings} ${noun} (${duration} s)`);
                 } else {
                     vscode.window.setStatusBarMessage(`Verification succeeded (${duration} s)`);
                 }
@@ -146,7 +151,7 @@ export async function activate(context: vscode.ExtensionContext) {
             crateDiagnostics.render(prustiCratesDiagnostics);
 
             const duration = Math.round((performance.now() - start) / 100) / 10;
-            if (crateDiagnostics.hasErros()) {
+            if (crateDiagnostics.hasErrors()) {
                 vscode.window.setStatusBarMessage(`Verification of some crate failed (${duration} s)`);
             } else if (crateDiagnostics.hasWarnings()) {
                 vscode.window.setStatusBarMessage(`Verification of all crates succeeded with warnings (${duration} s)`);
