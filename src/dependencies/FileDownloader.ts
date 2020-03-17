@@ -29,10 +29,8 @@ export class FileDownloader implements DependencyInstaller {
 				const totalSize = parseInt(response.headers["content-length"]!, 10);
 				let currentSize = 0;
 
-				console.log(`${totalSize} bytes to download`);
 				progressListener(0, "Downloading…");
 				response.on("data", (chunk) => {
-					console.log("data downloaded");
 					currentSize += chunk.length;
 					progressListener(currentSize / totalSize, "Downloading…");
 				});
