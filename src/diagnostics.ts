@@ -5,6 +5,7 @@ import * as config from './config';
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { PrustiLocation } from './deps';
 
 // ========================================================
 // JSON Schemas
@@ -371,11 +372,11 @@ enum VerificationStatus {
  * @param rootPath The root path of a rust project.
  * @returns An array of diagnostics for the given rust project.
  */
-async function queryCrateDiagnostics(context: vscode.ExtensionContext, rootPath: string): Promise<[Diagnostic[], VerificationStatus]> {
+async function queryCrateDiagnostics(prusti: PrustiLocation, rootPath: string): Promise<[Diagnostic[], VerificationStatus]> {
     // FIXME: Workaround for warning generation for libs.
     await removeDiagnosticMetadata(rootPath);
     const output = await util.spawn(
-        config.cargoPrustiExe(context),
+        prusti.cargoPrusti(),
         ["--message-format=json"],
         {
             cwd: rootPath,
@@ -383,9 +384,9 @@ async function queryCrateDiagnostics(context: vscode.ExtensionContext, rootPath:
                 RUST_BACKTRACE: "1",
                 RUST_LOG: "info",
                 JAVA_HOME: await config.javaHome(),
-                VIPER_HOME: config.viperHome(context),
-                Z3_EXE: config.z3Exe(context),
-                BOOGIE_EXE: config.boogieExe(context),
+                VIPER_HOME: prusti.viperHome(),
+                Z3_EXE: prusti.z3(),
+                BOOGIE_EXE: prusti.boogie(),
                 PATH: process.env.PATH  // Needed e.g. to run Rustup
             }
         }
@@ -421,9 +422,9 @@ async function queryCrateDiagnostics(context: vscode.ExtensionContext, rootPath:
  * @param programPath The root path of a rust program.
  * @returns An array of diagnostics for the given rust project.
  */
-async function queryProgramDiagnostics(context: vscode.ExtensionContext, programPath: string): Promise<[Diagnostic[], VerificationStatus]> {
+async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: string): Promise<[Diagnostic[], VerificationStatus]> {
     const output = await util.spawn(
-        config.prustiRustcExe(context),
+        prusti.prustiRustc(),
         ["--crate-type=lib", "--error-format=json", programPath],
         {
             cwd: path.dirname(programPath),
@@ -431,9 +432,9 @@ async function queryProgramDiagnostics(context: vscode.ExtensionContext, program
                 RUST_BACKTRACE: "1",
                 RUST_LOG: "info",
                 JAVA_HOME: await config.javaHome(),
-                VIPER_HOME: config.viperHome(context),
-                Z3_EXE: config.z3Exe(context),
-                BOOGIE_EXE: config.boogieExe(context),
+                VIPER_HOME: prusti.viperHome(),
+                Z3_EXE: prusti.z3(),
+                BOOGIE_EXE: prusti.boogie(),
                 PATH: process.env.PATH  // Needed e.g. to run Rustup
             }
         }
@@ -469,7 +470,7 @@ async function queryProgramDiagnostics(context: vscode.ExtensionContext, program
 
 export class DiagnosticsSet {
     private diagnostics: Map<string, vscode.Diagnostic[]>;
-    
+
     constructor() {
         this.diagnostics = new Map();
     }
@@ -506,7 +507,8 @@ export class DiagnosticsSet {
         const counts = new Map<vscode.DiagnosticSeverity, number>();
         this.diagnostics.forEach((diags, _) => {
             diags.forEach(diag => {
-                counts.set(diag.severity, (counts.get(diag.severity) || 0) + 1);
+                const count = counts.get(diag.severity);
+                counts.set(diag.severity, (count === undefined ? 0 : count) + 1);
             });
         });
         return counts;
@@ -556,7 +558,7 @@ export class DiagnosticsSet {
     }
 }
 
-export async function generatesCratesDiagnostics(context: vscode.ExtensionContext, projectList: util.ProjectList): Promise<DiagnosticsSet> {
+export async function generatesCratesDiagnostics(prusti: PrustiLocation, projectList: util.ProjectList): Promise<DiagnosticsSet> {
     const resultDiagnostics = new DiagnosticsSet();
 
     for (const project of projectList.projects) {
@@ -564,7 +566,7 @@ export async function generatesCratesDiagnostics(context: vscode.ExtensionContex
             continue; // FIXME: why this?
         }
         try {
-            const [diagnostics, status] = await queryCrateDiagnostics(context, project.path);
+            const [diagnostics, status] = await queryCrateDiagnostics(prusti, project.path);
             resultDiagnostics.addAll(diagnostics);
             if (status === VerificationStatus.Crash) {
                 resultDiagnostics.add({
@@ -595,11 +597,11 @@ export async function generatesCratesDiagnostics(context: vscode.ExtensionContex
 }
 
 
-export async function generatesProgramDiagnostics(context: vscode.ExtensionContext, programPath: string): Promise<DiagnosticsSet> {
+export async function generatesProgramDiagnostics(prusti: PrustiLocation, programPath: string): Promise<DiagnosticsSet> {
     const resultDiagnostics = new DiagnosticsSet();
 
     try {
-        const [diagnostics, status] = await queryProgramDiagnostics(context, programPath);
+        const [diagnostics, status] = await queryProgramDiagnostics(prusti, programPath);
         resultDiagnostics.addAll(diagnostics);
         if (status === VerificationStatus.Crash) {
             resultDiagnostics.add({

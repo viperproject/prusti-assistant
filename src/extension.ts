@@ -1,90 +1,32 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as fs_extra from 'fs-extra';
-import * as path from 'path';
 import { performance } from 'perf_hooks';
 import * as config from './config';
 import * as util from './util';
 import * as diagnostics from './diagnostics';
 import * as checks from './checks';
 import * as notifier from './notifier';
+import * as deps from './deps';
 
 export async function activate(context: vscode.ExtensionContext) {
     notifier.notify(notifier.Event.StartExtensionActivation);
     util.log("Start Prusti Assistant");
 
-    // Define update dependencies function
-    async function updateDependencies(update: boolean) {
-        // Download
-        notifier.notify(notifier.Event.StartPrustiUpdate);
-        util.userInfo("Downloading Prusti...");
-        const prustiToolsUrl = config.prustiToolsUrl();
-        if (prustiToolsUrl === null) {
-            util.userError(`Error downloading Prusti: OS detection failed.`);
-            notifier.notify(notifier.Event.EndPrustiUpdate);
-            return;
-        }
-        const prustiToolsZip = config.prustiToolsZip(context);
-        fs_extra.ensureDirSync(path.dirname(prustiToolsZip));
-        const [downloadSuccessful, downloadError] = await util.download(
-            prustiToolsUrl,
-            prustiToolsZip
-        );
-        if (!downloadSuccessful) {
-            util.userError(`Error downloading Prusti: ${downloadError}`);
-            notifier.notify(notifier.Event.EndPrustiUpdate);
-            return;
-        }
-
-        // Extract
-        util.userInfo("Extracting Prusti...", false);
-        fs_extra.emptyDirSync(config.prustiHome(context));
-        const [extractSuccessful, extractError] = await util.extract(
-            prustiToolsZip,
-            config.prustiHome(context)
-        );
-        if (!extractSuccessful) {
-            util.userError(`Error extracting Prusti: ${extractError}`);
-            notifier.notify(notifier.Event.EndPrustiUpdate);
-            return;
-        }
-
-        // Set execution flags (ignored on Windows)
-        fs.chmodSync(config.prustiDriverExe(context), "775");
-        fs.chmodSync(config.prustiRustcExe(context), "775");
-        fs.chmodSync(config.cargoPrustiExe(context), "775");
-        fs.chmodSync(config.z3Exe(context), "775");
-
-        if (update) {
-            util.userInfo("Prusti updated succesfully. Please restart the IDE.", true, true);
-        } else {
-            util.userInfo("Prusti downloaded succesfully.");
-        }
-        notifier.notify(notifier.Event.EndPrustiUpdate);
-    }
+    // Download dependencies
+    util.log("Checking dependencies...");
+    let prusti = await deps.installDependencies(context, false);
 
     // Update dependencies on command
     context.subscriptions.push(
         vscode.commands.registerCommand("prusti-assistant.update", async () => {
-            await updateDependencies(true);
+            prusti = await deps.installDependencies(context, true);
         })
     );
 
-    // Download dependencies
-    util.log("Checking dependencies...");
-    const hasDependencies = await checks.hasDependencies(context);
-    if (!hasDependencies) {
-        util.log("Dependencies are missing. They will be downloaded.");
-        await updateDependencies(false);
-    } else {
-        util.log("Dependencies confirmed.");
-    }
-
     // Prerequisites checks
     util.log("Checking prerequisites...");
-    const [hasPrerequisites, errorMessage] = await checks.hasPrerequisites(context);
+    const [hasPrerequisites, errorMessage] = await checks.hasPrerequisites(prusti, context);
     if (!hasPrerequisites) {
         util.userError("Prusti Assistant's prerequisites are not satisfied.", false);
         util.userError(errorMessage, true, true);
@@ -106,11 +48,11 @@ export async function activate(context: vscode.ExtensionContext) {
         // Verify provided document
         if (config.verificationMode() === config.VerificationMode.CurrentProgram) {
             if (document.languageId === "rust") {
-                vscode.window.setStatusBarMessage("Running Prusti...");
+                vscode.window.setStatusBarMessage("$(loading~spin) Running Prusti...");
                 const start = performance.now();
 
                 const programDiagnostics = await diagnostics.generatesProgramDiagnostics(
-                    context,
+                    prusti,
                     document.uri.fsPath
                 );
                 programDiagnostics.render(prustiProgramDiagnostics);
@@ -120,13 +62,13 @@ export async function activate(context: vscode.ExtensionContext) {
                 if (programDiagnostics.hasErrors()) {
                     const errors = counts.get(vscode.DiagnosticSeverity.Error);
                     const noun = errors === 1 ? "error" : "errors";
-                    vscode.window.setStatusBarMessage(`Verification failed with ${errors} ${noun} (${duration} s)`);
+                    vscode.window.setStatusBarMessage(`$(error) Verification failed with ${errors} ${noun} (${duration} s)`);
                 } else if (programDiagnostics.hasWarnings()) {
                     const warnings = counts.get(vscode.DiagnosticSeverity.Error);
-                    const noun = warnings === 1 ? "warning" : "warningss";
-                    vscode.window.setStatusBarMessage(`Verification succeeded with ${warnings} ${noun} (${duration} s)`);
+                    const noun = warnings === 1 ? "warning" : "warnings";
+                    vscode.window.setStatusBarMessage(`$(warning) Verification succeeded with ${warnings} ${noun} (${duration} s)`);
                 } else {
-                    vscode.window.setStatusBarMessage(`Verification succeeded (${duration} s)`);
+                    vscode.window.setStatusBarMessage(`$(check) Verification succeeded (${duration} s)`);
                 }
             } else {
                 util.log(
@@ -147,7 +89,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 );
             }
 
-            const crateDiagnostics = await diagnostics.generatesCratesDiagnostics(context, projects);
+            const crateDiagnostics = await diagnostics.generatesCratesDiagnostics(prusti, projects);
             crateDiagnostics.render(prustiCratesDiagnostics);
 
             const duration = Math.round((performance.now() - start) / 100) / 10;
@@ -162,9 +104,10 @@ export async function activate(context: vscode.ExtensionContext) {
         notifier.notify(notifier.Event.EndVerification);
     }
 
+    const verifyCommand = "prusti-assistant.verify";
     // Verify on command
     context.subscriptions.push(
-        vscode.commands.registerCommand("prusti-assistant.verify", async () => {
+        vscode.commands.registerCommand(verifyCommand, async () => {
             if (vscode.window.activeTextEditor) {
                 vscode.window.activeTextEditor.document.save();
                 await runVerification(
@@ -176,6 +119,13 @@ export async function activate(context: vscode.ExtensionContext) {
         })
     );
 
+    const verifyButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
+    verifyButton.command = verifyCommand;
+    verifyButton.text = "$(play) Verify";
+    verifyButton.tooltip = "Run the Prusti verifier on this file.";
+    verifyButton.show();
+    context.subscriptions.push(verifyButton);
+
     // Verify on save
     context.subscriptions.push(
         vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {
@@ -186,13 +136,15 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 
     // Verify on open
-    if (config.verifyOnOpen()) {
-        context.subscriptions.push(
-            vscode.workspace.onDidOpenTextDocument(async (document: vscode.TextDocument) => {
+    context.subscriptions.push(
+        vscode.workspace.onDidOpenTextDocument(async (document: vscode.TextDocument) => {
+            if (config.verifyOnOpen()) {
                 await runVerification(document);
-            })
-        );
+            }
+        })
+    );
 
+    if (config.verifyOnOpen()) {
         // Verify active document
         if (vscode.window.activeTextEditor) {
             await runVerification(

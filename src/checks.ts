@@ -1,16 +1,12 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as fs from 'fs';
 import * as util from './util';
 import * as config from './config';
 import * as path from 'path';
+import { PrustiLocation } from './deps';
 
-export async function hasDependencies(context: vscode.ExtensionContext): Promise<boolean> {
-    return fs.existsSync(config.prustiRustcExe(context));
-}
-
-export async function hasPrerequisites(context: vscode.ExtensionContext): Promise<[boolean, string]> {
+export async function hasPrerequisites(prusti: PrustiLocation, context: vscode.ExtensionContext): Promise<[boolean, string]> {
     util.log("Checking Java home...");
     if (! await config.javaHome()) {
         const msg = (
@@ -51,7 +47,7 @@ export async function hasPrerequisites(context: vscode.ExtensionContext): Promis
     }
     util.log("Checking Z3...");
     try {
-        await util.spawn(config.z3Exe(context), ["--version"]);
+        await util.spawn(prusti.z3(), ["--version"]);
     } catch (err) {
         console.error(err);
         util.log(`Error: ${err}`);
@@ -63,7 +59,7 @@ export async function hasPrerequisites(context: vscode.ExtensionContext): Promis
     }
     util.log("Checking Prusti...");
     try {
-        await util.spawn(config.prustiRustcExe(context), ["--version"]);
+        await util.spawn(prusti.prustiRustc(), ["--version"]);
     } catch (err) {
         console.error(err);
         util.log("Could not run prusti-rustc");
@@ -76,7 +72,7 @@ export async function hasPrerequisites(context: vscode.ExtensionContext): Promis
     }
     util.log("Checking Cargo-Prusti...");
     try {
-        await util.spawn(config.cargoPrustiExe(context), ["--help"]);
+        await util.spawn(prusti.cargoPrusti(), ["--help"]);
     } catch (err) {
         console.error(err);
         util.log("Could not run cargo-prusti");
