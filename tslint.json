@@ -13,6 +13,7 @@
 		"no-any": true,
 		"no-implicit-dependencies": [
 			true,
+			"dev",
 			[
 				"vscode"
 			]
@@ -51,6 +52,14 @@
 			3
 		],
 		"no-submodule-imports": false,
-		"prefer-conditional-expression": false
+		"prefer-conditional-expression": false,
+		"strict-boolean-expressions": [
+			true,
+			"allow-string",
+			"allow-null-union",
+			"allow-undefined-union",
+			"allow-mix",
+			"ignore-rhs"
+		]
 	}
 }
