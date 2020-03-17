@@ -1,7 +1,6 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as path from 'path';
-// import * as myExtension from '../extension';
 import * as notifier from '../notifier';
 
 const PROJECT_ROOT = path.join(__dirname, "../../");
