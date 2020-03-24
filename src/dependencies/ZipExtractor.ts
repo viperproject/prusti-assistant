@@ -19,17 +19,22 @@ export class ZipExtractor implements DependencyInstaller {
 
 		progressListener(0, "Unzipping…");
 
-		let entriesHandled = 0;
+		let extractedBytes = 0;
+		let prevEntrySize = 0;
+		// TODO remove debug logging
 		console.log("starting zip extraction");
 		await promisify(extractZip)(location.basePath, {
 			dir: target.basePath,
-			onEntry: (_entry, zip) => {
-				console.log("finished entry");
-				entriesHandled++;
-				progressListener(entriesHandled / zip.entryCount, "Unzipping…");
+			onEntry: (entry, zip) => {
+				console.log(`starting entry of size ${entry.compressedSize}`);
+				extractedBytes += prevEntrySize;
+				prevEntrySize = entry.compressedSize;
+				progressListener(extractedBytes / zip.fileSize, "Unzipping…");
 			}
 		});
 		console.log("finished zip extraction");
+
+		progressListener(1, "Unzipped");
 
 		// don't delete the original zip since that would cause it to get re-downloaded on next install
 		return target;
