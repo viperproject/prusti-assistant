@@ -92,7 +92,7 @@
                 "prusti-assistant.javaHome": {
                     "type": "string",
                     "default": "",
-                    "description": "Specifies the path of the Java home folder (leave empty to autodetect)."
+                    "description": "Specifies the path of the Java home folder (leave empty to auto-detect)."
                 }
             }
         }

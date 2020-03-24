@@ -31,7 +31,7 @@ export class ZipExtractor implements DependencyInstaller {
 		});
 		console.log("finished zip extraction");
 
-		// don't delete the original zip since that would cause it to get redownloaded on next install
+		// don't delete the original zip since that would cause it to get re-downloaded on next install
 		return target;
 	}
 }
