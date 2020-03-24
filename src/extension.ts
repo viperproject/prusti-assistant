@@ -106,7 +106,7 @@ export async function activate(context: vscode.ExtensionContext) {
     // Verify on command
     context.subscriptions.push(
         vscode.commands.registerCommand(verifyCommand, async () => {
-            if (vscode.window.activeTextEditor) {
+            if (vscode.window.activeTextEditor !== undefined) {
                 vscode.window.activeTextEditor.document.save();
                 await runVerification(
                     vscode.window.activeTextEditor.document
@@ -144,7 +144,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     if (config.verifyOnOpen()) {
         // Verify active document
-        if (vscode.window.activeTextEditor) {
+        if (vscode.window.activeTextEditor !== undefined) {
             await runVerification(
                 vscode.window.activeTextEditor.document
             );

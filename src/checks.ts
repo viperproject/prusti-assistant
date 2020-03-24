@@ -6,7 +6,7 @@ import { PrustiLocation } from './deps';
 
 export async function hasPrerequisites(prusti: PrustiLocation, context: vscode.ExtensionContext): Promise<[boolean, string]> {
     util.log("Checking Java home...");
-    if (! await config.javaHome()) {
+    if (await config.javaHome() === null) {
         const msg = (
             "[Prusti] Could not find Java home. Please install Java 1.8+ " +
             "64bit or set the 'javaHome' setting, then restart the IDE."

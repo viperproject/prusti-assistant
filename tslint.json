@@ -53,13 +53,6 @@
 		],
 		"no-submodule-imports": false,
 		"prefer-conditional-expression": false,
-		"strict-boolean-expressions": [
-			true,
-			"allow-string",
-			"allow-null-union",
-			"allow-undefined-union",
-			"allow-mix",
-			"ignore-rhs"
-		]
+		"strict-boolean-expressions": true
 	}
 }

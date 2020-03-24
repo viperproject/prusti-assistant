@@ -11,7 +11,7 @@ async function findJavaHome(): Promise<string | null> {
             };
             console.log("Searching for Java home...");
             locate_java_home.default(options, (err, javaHomes) => {
-                if (err) {
+                if (err !== null) {
                     console.error(err.message);
                     resolve(null);
                 } else {

@@ -89,7 +89,7 @@ function parseMultiSpanRange(multiSpan: Span[]): vscode.Range {
             finalRange = finalRange.union(range);
         }
     }
-    return finalRange || dummyRange();
+    return finalRange ?? dummyRange();
 }
 
 function parseSpanRange(span: Span): vscode.Range {
@@ -142,7 +142,7 @@ function parseRustcOutput(output: string): Message[] {
 }
 
 function getCallSiteSpan(span: Span): Span {
-    while (span.expansion) {
+    while (span.expansion !== null) {
         span = span.expansion.span;
     }
     return span;
@@ -180,10 +180,10 @@ function parseCargoMessage(msgDiag: CargoMessage, rootPath: string): Diagnostic 
     }
 
     let primaryMessage = msg.message;
-    if (msg.code) {
+    if (msg.code !== null) {
         primaryMessage = `[${msg.code.code}] ${primaryMessage}.`;
     }
-    if (primarySpan.label) {
+    if (primarySpan.label !== null) {
         primaryMessage = `${primaryMessage} \n[Note] ${primarySpan.label}`;
     }
     const primaryCallSiteSpan = getCallSiteSpan(primarySpan);
@@ -204,7 +204,7 @@ function parseCargoMessage(msgDiag: CargoMessage, rootPath: string): Diagnostic 
         }
 
         let message = "";
-        if (span.label) {
+        if (span.label !== null) {
             message = `[Note] ${span.label}`;
         }
         const callSiteSpan = getCallSiteSpan(span);
@@ -257,7 +257,7 @@ function parseRustcMessage(msg: Message, mainFilePath: string): Diagnostic {
     const level = parseMessageLevel(msg.level);
 
     let primaryMessage = msg.message;
-    if (msg.code) {
+    if (msg.code !== null) {
         primaryMessage = `[${msg.code.code}] ${primaryMessage}.`;
     }
 
@@ -267,7 +267,7 @@ function parseRustcMessage(msg: Message, mainFilePath: string): Diagnostic {
         if (!span.is_primary) {
             continue;
         }
-        if (span.label) {
+        if (span.label !== null) {
             primaryMessage = `${primaryMessage}\n[Note] ${span.label}`;
         }
         primaryCallSiteSpans.push(getCallSiteSpan(span));
@@ -299,10 +299,7 @@ function parseRustcMessage(msg: Message, mainFilePath: string): Diagnostic {
             continue;
         }
 
-        let message = "[Note] related expression";
-        if (span.label) {
-            message = `[Note] ${span.label}`;
-        }
+        const message = `[Note] ${span.label ?? "related expression"}`;
         const callSiteSpan = getCallSiteSpan(span);
         const range = parseSpanRange(callSiteSpan);
         const filePath = callSiteSpan.file_name;
@@ -399,10 +396,10 @@ async function queryCrateDiagnostics(prusti: PrustiLocation, rootPath: string): 
     if (output.code === 101) {
         status = VerificationStatus.Errors;
     }
-    if (output.stderr.match(/error: internal compiler error/)) {
+    if (output.stderr.match(/error: internal compiler error/) !== null) {
         status = VerificationStatus.Crash;
     }
-    if (output.stderr.match(/^thread '.*' panicked at/)) {
+    if (output.stderr.match(/^thread '.*' panicked at/) !== null) {
         status = VerificationStatus.Crash;
     }
     const diagnostics: Diagnostic[] = [];
@@ -447,10 +444,10 @@ async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: stri
     if (output.code === 101) {
         status = VerificationStatus.Errors;
     }
-    if (output.stderr.match(/error: internal compiler error/)) {
+    if (output.stderr.match(/error: internal compiler error/) !== null) {
         status = VerificationStatus.Crash;
     }
-    if (output.stderr.match(/^thread '.*' panicked at/)) {
+    if (output.stderr.match(/^thread '.*' panicked at/) !== null) {
         status = VerificationStatus.Crash;
     }
     const diagnostics: Diagnostic[] = [];
@@ -543,11 +540,11 @@ export class DiagnosticsSet {
     /// Returns false if the diagnostic should be ignored
     private reportDiagnostic(diagnostic: Diagnostic): boolean {
         if (config.reportErrorsOnly()) {
-            if (diagnostic.diagnostic.severity !== vscode.DiagnosticSeverity.Error && !diagnostic.diagnostic.message.match(/^\[Prusti\]/)) {
+            if (diagnostic.diagnostic.severity !== vscode.DiagnosticSeverity.Error && diagnostic.diagnostic.message.match(/^\[Prusti\]/) === null) {
                 console.log("Ignore non-error diagnostic", diagnostic);
                 return false;
             }
-            if (diagnostic.diagnostic.message.match(/^aborting due to ([0-9]+ |)previous error(s|)$/)) {
+            if (diagnostic.diagnostic.message.match(/^aborting due to ([0-9]+ |)previous error(s|)$/) !== null) {
                 console.log("Ignore non-error diagnostic", diagnostic);
                 return false;
             }
@@ -560,7 +557,7 @@ export async function generatesCratesDiagnostics(prusti: PrustiLocation, project
     const resultDiagnostics = new DiagnosticsSet();
 
     for (const project of projectList.projects) {
-        if (!project.path) {
+        if (project.path.length === 0) {
             continue; // FIXME: why this?
         }
         try {
@@ -579,7 +576,7 @@ export async function generatesCratesDiagnostics(prusti: PrustiLocation, project
         } catch (err) {
             console.error(err);
             util.log(`Error: ${err}`);
-            const errorMessage = err.message || err.toString();
+            const errorMessage = err.message ?? err.toString();
             resultDiagnostics.add({
                 file_path: path.join(project.path, "Cargo.toml"),
                 diagnostic: new vscode.Diagnostic(
@@ -614,7 +611,8 @@ export async function generatesProgramDiagnostics(prusti: PrustiLocation, progra
     } catch (err) {
         console.error(err);
         util.log(`Error: ${err}`);
-        const errorMessage = err.message || err.toString();
+        const errorMessage = err.message ?? err.toString();
+
         resultDiagnostics.add({
             file_path: programPath,
             diagnostic: new vscode.Diagnostic(

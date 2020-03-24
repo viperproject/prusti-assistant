@@ -18,7 +18,7 @@ const oneTimeListeners: Map<Event, Listener[]> = new Map();
  */
 function register(event: Event, listener: Listener) {
     let listeners = oneTimeListeners.get(event);
-    if (!listeners) {
+    if (listeners === undefined) {
         listeners = [];
         oneTimeListeners.set(event, listeners);
     }
@@ -38,7 +38,5 @@ export function notify(event: Event) {
     util.log(`Notify event: ${Event[event]}`);
     const listeners = oneTimeListeners.get(event);
     oneTimeListeners.delete(event);
-    if (listeners) {
-        listeners.forEach(listener => listener());
-    }
+    listeners?.forEach(listener => listener());
 }

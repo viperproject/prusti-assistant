@@ -54,7 +54,7 @@ export function userError(message: string, popup = true, restart = false) {
 let _channel: vscode.OutputChannel;
 export function log(message: string) {
     console.log(message);
-    if (_channel === null) {
+    if (_channel === undefined) {
         _channel = vscode.window.createOutputChannel("Prusti Assistant");
     }
     _channel.appendLine(message);
@@ -71,7 +71,7 @@ export function spawn(
     args?: string[] | undefined,
     options?: childProcess.SpawnOptionsWithoutStdio | undefined
 ): Promise<Output> {
-    log(`Prusti Assistant: Running '${cmd} ${args ? args.join(' ') : ''}'`);
+    log(`Prusti Assistant: Running '${cmd} ${args?.join(' ') ?? ''}'`);
     return new Promise((resolve, reject) => {
         let stdout = '';
         let stderr = '';
