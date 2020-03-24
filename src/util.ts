@@ -104,41 +104,29 @@ export function spawn(
 }
 
 export class Project {
-    private _path: string;
-
-    public constructor(path: string) {
-        this._path = path;
-    }
-
-    public get path() {
-        return this._path;
-    }
+    public constructor(
+        readonly path: string
+    ) { }
 
     public hasRootFile(fileName: string): Promise<boolean> {
-        const filePath = path.join(this._path, fileName);
+        const filePath = path.join(this.path, fileName);
         return new Promise((resolve, reject) => {
-            fs.access(filePath, fs.constants.F_OK, (err) => resolve(err ? false : true));
+            fs.access(filePath, fs.constants.F_OK, (err) => resolve(err === null));
         });
     }
 }
 
 export class ProjectList {
-    private _projects: Project[];
-
-    public constructor(projects: Project[]) {
-        this._projects = projects;
-    }
-
-    public get projects() {
-        return this._projects;
-    }
+    public constructor(
+        readonly projects: Project[]
+    ) { }
 
     public hasProjects() {
-        return this._projects.length > 0;
+        return this.projects.length > 0;
     }
 
     public getParent(file: string) {
-        for (const project of this._projects) {
+        for (const project of this.projects) {
             if (file.startsWith(project.path)) {
                 return project;
             }
