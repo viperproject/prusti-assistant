@@ -1,5 +1,3 @@
-'use strict';
-
 import * as vscode from 'vscode';
 import * as os from 'os';
 import * as locate_java_home from 'locate-java-home';

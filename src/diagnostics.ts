@@ -1,5 +1,3 @@
-'use strict';
-
 import * as util from './util';
 import * as config from './config';
 import * as vscode from 'vscode';

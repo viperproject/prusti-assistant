@@ -1,5 +1,3 @@
-'use strict';
-
 import * as vscode from 'vscode';
 import { performance } from 'perf_hooks';
 import * as config from './config';
