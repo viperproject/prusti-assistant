@@ -371,17 +371,17 @@ async function queryCrateDiagnostics(prusti: PrustiLocation, rootPath: string): 
     // FIXME: Workaround for warning generation for libs.
     await removeDiagnosticMetadata(rootPath);
     const output = await util.spawn(
-        prusti.cargoPrusti(),
+        prusti.cargoPrusti,
         ["--message-format=json"],
         {
             cwd: rootPath,
             env: {
                 RUST_BACKTRACE: "1",
                 RUST_LOG: "info",
-                JAVA_HOME: await config.javaHome(),
-                VIPER_HOME: prusti.viperHome(),
-                Z3_EXE: prusti.z3(),
-                BOOGIE_EXE: prusti.boogie(),
+                JAVA_HOME: (await config.javaHome())!.path,
+                VIPER_HOME: prusti.viperHome,
+                Z3_EXE: prusti.z3,
+                BOOGIE_EXE: prusti.boogie,
                 PATH: process.env.PATH  // Needed e.g. to run Rustup
             }
         }
@@ -419,17 +419,17 @@ async function queryCrateDiagnostics(prusti: PrustiLocation, rootPath: string): 
  */
 async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: string): Promise<[Diagnostic[], VerificationStatus]> {
     const output = await util.spawn(
-        prusti.prustiRustc(),
+        prusti.prustiRustc,
         ["--crate-type=lib", "--error-format=json", programPath],
         {
             cwd: path.dirname(programPath),
             env: {
                 RUST_BACKTRACE: "1",
                 RUST_LOG: "info",
-                JAVA_HOME: await config.javaHome(),
-                VIPER_HOME: prusti.viperHome(),
-                Z3_EXE: prusti.z3(),
-                BOOGIE_EXE: prusti.boogie(),
+                JAVA_HOME: (await config.javaHome())!.path,
+                VIPER_HOME: prusti.viperHome,
+                Z3_EXE: prusti.z3,
+                BOOGIE_EXE: prusti.boogie,
                 PATH: process.env.PATH  // Needed e.g. to run Rustup
             }
         }

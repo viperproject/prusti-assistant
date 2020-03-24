@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import * as os from 'os';
 import * as path from 'path';
+import * as config from './config';
 import * as util from './util';
 import * as notifier from './notifier';
 import { Dependency, Location, FileDownloader, InstallerSequence, LocalReference, ZipExtractor } from './dependencies';
@@ -16,7 +17,7 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
             title: `${shouldUpdate ? "Updating" : "Installing"} Prusti`
         }, p => {
             const tools = prustiTools(currentPlatform!, context);
-            return tools.install("stable", shouldUpdate, (fraction, step) => {
+            return tools.install(config.buildChannel(), shouldUpdate, (fraction, step) => {
                 console.log(`${fraction * 100}% completed (${step})`);
                 p.report({ message: step, increment: (fraction - lastProgress) * 100 });
                 lastProgress = fraction;
@@ -26,7 +27,7 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
 
         // only notify user about success if we reported anything in between; otherwise there was nothing to be done.
         if (lastProgress > 0) {
-            // TODO why restart only if updated?
+            // TODO test when restart is necessary
             if (shouldUpdate) {
                 util.userInfo("Prusti updated successfully. Please restart the IDE.", true, true);
             } else {
@@ -48,38 +49,34 @@ export class PrustiLocation {
         private readonly location: Location
     ) {
         // Set execution flags (ignored on Windows)
-        fs.chmodSync(this.prustiDriver(), 0o775);
-        fs.chmodSync(this.prustiRustc(), 0o775);
-        fs.chmodSync(this.cargoPrusti(), 0o775);
-        fs.chmodSync(this.z3(), 0o775);
+        fs.chmodSync(this.prustiDriver, 0o775);
+        fs.chmodSync(this.prustiRustc, 0o775);
+        fs.chmodSync(this.cargoPrusti, 0o775);
+        fs.chmodSync(this.z3, 0o775);
     }
 
-    public prustiDriver(): string {
-        return this.location.path(this.executable("prusti-driver"));
+    public get prustiDriver(): string {
+        return this.location.executable("prusti-driver");
     }
 
-    public prustiRustc(): string {
-        return this.location.path(this.executable("prusti-rustc"));
+    public get prustiRustc(): string {
+        return this.location.executable("prusti-rustc");
     }
 
-    public cargoPrusti(): string {
-        return this.location.path(this.executable("cargo-prusti"));
+    public get cargoPrusti(): string {
+        return this.location.executable("cargo-prusti");
     }
 
-    public z3(): string {
-        return this.location.path("z3", this.executable("z3"));
+    public get z3(): string {
+        return this.location.child("z3").executable("z3");
     }
 
-    public boogie(): string {
-        return this.location.path("boogie", this.executable("boogie"));
+    public get boogie(): string {
+        return this.location.child("boogie").executable("boogie");
     }
 
-    public viperHome(): string {
+    public get viperHome(): string {
         return this.location.path("viper");
-    }
-
-    private executable(name: string): string {
-        return os.platform() === "win32" ? `${name}.exe` : name;
     }
 }
 
@@ -94,7 +91,7 @@ function identifier(platform: Platform): string {
     }
 }
 
-function prustiTools(platform: Platform, context: vscode.ExtensionContext): Dependency {
+function prustiTools(platform: Platform, context: vscode.ExtensionContext): Dependency<config.BuildChannel> {
     const id = identifier(platform);
     function zipInstaller(url: string): InstallerSequence {
         return new InstallerSequence([
@@ -103,11 +100,12 @@ function prustiTools(platform: Platform, context: vscode.ExtensionContext): Depe
         ]);
     }
 
+    const channel = config.BuildChannel;
     return new Dependency(
         path.join(context.globalStoragePath, "prusti"),
-        ["stable", zipInstaller(`http://viper.ethz.ch/downloads/PrustiTools${id}.zip`)],
-        ["nightly", zipInstaller(`http://viper.ethz.ch/downloads/nightly/PrustiTools${id}.zip`)],
-        ["local", new LocalReference("~/Local/")],
+        [channel.Stable, zipInstaller(`http://viper.ethz.ch/downloads/PrustiTools${id}.zip`)],
+        [channel.Nightly, zipInstaller(`http://viper.ethz.ch/downloads/nightly/PrustiTools${id}.zip`)],
+        [channel.Local, new LocalReference(config.localPrustiPath())],
     );
 }
 

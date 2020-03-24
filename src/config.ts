@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import * as os from 'os';
 import * as locate_java_home from 'locate-java-home';
+import { Location } from './dependencies';
 
 async function findJavaHome(): Promise<string | null> {
     return new Promise((resolve, reject) => {
@@ -37,16 +37,31 @@ function config(): vscode.WorkspaceConfiguration {
     return vscode.workspace.getConfiguration("prusti-assistant");
 }
 
+export enum BuildChannel {
+    Stable = "stable",
+    Nightly = "nightly",
+    Local = "local"
+}
+
+export function buildChannel(): BuildChannel {
+    // Convert string to enum. See https://stackoverflow.com/a/17381004/2491528
+    return BuildChannel[
+        config().get("buildChannel", "Stable") as keyof typeof BuildChannel
+    ];
+}
+
+export function localPrustiPath(): string {
+    return config().get("localPrustiPath", "");
+}
+
 export enum VerificationMode {
     CurrentProgram,
     AllCratesInWorkspace
 }
 
 export function verificationMode(): VerificationMode {
-    // Convert string to enum. See https://stackoverflow.com/a/17381004/2491528
     return VerificationMode[
-        config().get("verificationMode", "CurrentProgram") as
-        keyof typeof VerificationMode
+        config().get("verificationMode", "CurrentProgram") as keyof typeof VerificationMode
     ];
 }
 
@@ -62,10 +77,22 @@ export function reportErrorsOnly(): boolean {
     return config().get("reportErrorsOnly", true);
 }
 
-export async function javaHome(): Promise<string> {
-    return config().get("javaHome") || (await findJavaHome()) || "";
+export async function javaHome(): Promise<JavaHome | null> {
+    const path = config().get<string>("javaHome") ?? (await findJavaHome());
+    if (path === null) { return null; }
+    return new JavaHome(new Location(path));
 }
 
-export function exeExtension(): string {
-    return os.platform() === "win32" ? ".exe" : "";
+export class JavaHome {
+    constructor(
+        private readonly location: Location
+    ) { }
+
+    public get path(): string {
+        return this.location.basePath;
+    }
+
+    public get javaExecutable(): string {
+        return this.location.child("bin").executable("java");
+    }
 }

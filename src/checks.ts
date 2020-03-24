@@ -29,9 +29,7 @@ export async function hasPrerequisites(prusti: PrustiLocation, context: vscode.E
     util.log("Checking Java...");
     try {
         const javaPath = path.join(
-            await config.javaHome(),
-            "bin",
-            "java" + config.exeExtension()
+            (await config.javaHome())!.javaExecutable
         );
         await util.spawn(javaPath, ["-version"]);
     } catch (err) {
@@ -45,7 +43,7 @@ export async function hasPrerequisites(prusti: PrustiLocation, context: vscode.E
     }
     util.log("Checking Z3...");
     try {
-        await util.spawn(prusti.z3(), ["--version"]);
+        await util.spawn(prusti.z3, ["--version"]);
     } catch (err) {
         console.error(err);
         util.log(`Error: ${err}`);
@@ -57,7 +55,7 @@ export async function hasPrerequisites(prusti: PrustiLocation, context: vscode.E
     }
     util.log("Checking Prusti...");
     try {
-        await util.spawn(prusti.prustiRustc(), ["--version"]);
+        await util.spawn(prusti.prustiRustc, ["--version"]);
     } catch (err) {
         console.error(err);
         util.log("Could not run prusti-rustc");
@@ -70,7 +68,7 @@ export async function hasPrerequisites(prusti: PrustiLocation, context: vscode.E
     }
     util.log("Checking Cargo-Prusti...");
     try {
-        await util.spawn(prusti.cargoPrusti(), ["--help"]);
+        await util.spawn(prusti.cargoPrusti, ["--help"]);
     } catch (err) {
         console.error(err);
         util.log("Could not run cargo-prusti");

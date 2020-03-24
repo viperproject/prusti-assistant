@@ -54,6 +54,26 @@
             "type": "object",
             "title": "Prusti Assistant",
             "properties": {
+                "prusti-assistant.buildChannel": {
+                    "type": "string",
+                    "default": "Stable",
+                    "enum": [
+                        "Stable",
+                        "Nightly",
+                        "Local"
+                    ],
+                    "enumDescriptions": [
+                        "The latest fully vetted & approved build.",
+                        "Frequent updates that might be unstable or have other issues.",
+                        "A local build of Prusti, specified via localPrustiPath."
+                    ],
+                    "description": "Specifies from which channel Prusti builds are downloaded."
+                },
+                "prusti-assistant.localPrustiPath": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Specifies the path to the local Prusti installation (has no effect if buildChannel is not set to Local)."
+                },
                 "prusti-assistant.verifyOnSave": {
                     "type": "boolean",
                     "default": false,
