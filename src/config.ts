@@ -78,7 +78,8 @@ export function reportErrorsOnly(): boolean {
 }
 
 export async function javaHome(): Promise<JavaHome | null> {
-    const path = config().get<string>("javaHome") ?? (await findJavaHome());
+    const configPath = config().get<string>("javaHome", "");
+    const path = configPath.length > 0 ? configPath : await findJavaHome();
     if (path === null) { return null; }
     return new JavaHome(new Location(path));
 }
