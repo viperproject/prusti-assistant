@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as locate_java_home from 'locate-java-home';
-import { Location } from './dependencies';
+import { Location } from 'vs-verification-toolbox';
 
 async function findJavaHome(): Promise<string | null> {
     return new Promise((resolve, reject) => {

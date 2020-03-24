@@ -124,6 +124,7 @@
         "extract-zip": "^1.6.7",
         "fs-extra": "^8.1.0",
         "locate-java-home": "^1.1.2",
-        "mz": "^2.7.0"
+        "mz": "^2.7.0",
+        "vs-verification-toolbox": "^1.0.0"
     }
 }
