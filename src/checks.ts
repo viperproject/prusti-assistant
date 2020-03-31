@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as util from './util';
 import * as config from './config';
 import * as path from 'path';
-import { PrustiLocation } from './deps';
+import { PrustiLocation } from './dependencies';
 
 export async function hasPrerequisites(prusti: PrustiLocation, context: vscode.ExtensionContext): Promise<[boolean, string]> {
     util.log("Checking Java home...");

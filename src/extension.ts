@@ -5,7 +5,7 @@ import * as util from './util';
 import * as diagnostics from './diagnostics';
 import * as checks from './checks';
 import * as notifier from './notifier';
-import * as deps from './deps';
+import * as deps from './dependencies';
 
 export async function activate(context: vscode.ExtensionContext) {
     notifier.notify(notifier.Event.StartExtensionActivation);

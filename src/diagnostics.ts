@@ -3,7 +3,7 @@ import * as config from './config';
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { PrustiLocation } from './deps';
+import { PrustiLocation } from './dependencies';
 
 // ========================================================
 // JSON Schemas
