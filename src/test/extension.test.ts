@@ -38,7 +38,7 @@ suite("Extension", () => {
     });
 
     test("Update Prusti", async () => {
-        // FIXME: this might update Prusti while other tests are running...
+        // tests are run serially, so nothing will run & break while we're updating
         const document = await openFile(ASSERT_TRUE);
         await vscode.commands.executeCommand("prusti-assistant.update");
     });
