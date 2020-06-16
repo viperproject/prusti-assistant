@@ -12,6 +12,11 @@ export class PrustiLocation {
         fs.chmodSync(this.z3, 0o775);
     }
 
+    public async rustToolchainVersion(): Promise<string> {
+        const buffer = await fs.readFile(this.location.path("rust-toolchain"));
+        return buffer.toString('utf8').trim();
+    }
+
     public get prustiDriver(): string {
         return this.location.executable("prusti-driver");
     }

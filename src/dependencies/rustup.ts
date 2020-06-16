@@ -2,8 +2,7 @@ import * as vscode from 'vscode';
 
 import * as util from '../util';
 
-const toolchainVersion = "nightly-2018-06-27";
-export async function ensureCorrectRustVersionInstalled(context: vscode.ExtensionContext): Promise<void> {
+export async function ensureRustToolchainInstalled(context: vscode.ExtensionContext, toolchainVersion: string): Promise<void> {
     util.log("Checking rust toolchain version...");
 
     const versionsOutput = await util.spawn("rustup", ["toolchain", "list"]);
