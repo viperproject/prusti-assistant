@@ -2,14 +2,13 @@ import * as childProcess from 'child_process';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { utils } from 'mocha';
 
-export function userInfo(message: string, popup = true, restart = false) {
+export function userInfo(message: string, popup = true, requestReload = false) {
     log(message);
     vscode.window.setStatusBarMessage(message);
     if (popup) {
-        if (restart) {
-            const action = "Restart Now";
+        if (requestReload) {
+            const action = "Reload Now";
             vscode.window.showInformationMessage(message, action)
                 .then(selection => {
                     if (selection === action) {

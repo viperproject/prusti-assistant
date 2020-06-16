@@ -33,8 +33,10 @@ async function findJavaHome(): Promise<string | null> {
     });
 }
 
+const namespace = "prusti-assistant";
+
 function config(): vscode.WorkspaceConfiguration {
-    return vscode.workspace.getConfiguration("prusti-assistant");
+    return vscode.workspace.getConfiguration(namespace);
 }
 
 export enum BuildChannel {
@@ -43,12 +45,18 @@ export enum BuildChannel {
     Local = "local"
 }
 
+const buildChannelKey = "buildChannel";
+export const buildChannelPath = `${namespace}.${buildChannelKey}`;
+
 export function buildChannel(): BuildChannel {
     // Convert string to enum. See https://stackoverflow.com/a/17381004/2491528
     return BuildChannel[
-        config().get("buildChannel", "Stable") as keyof typeof BuildChannel
+        config().get(buildChannelKey, "stable") as keyof typeof BuildChannel
     ];
 }
+
+const localPrustiPathKey = "localPrustiPath";
+export const localPrustiPathPath = `${namespace}.${localPrustiPathKey}`;
 
 export function localPrustiPath(): string {
     return config().get("localPrustiPath", "");

@@ -22,6 +22,14 @@ export async function activate(context: vscode.ExtensionContext) {
         })
     );
 
+    vscode.workspace.onDidChangeConfiguration(async event => {
+        const hasChangedChannel = event.affectsConfiguration(config.buildChannelPath);
+        const hasChangedLocation = config.buildChannel() === config.BuildChannel.Local && event.affectsConfiguration(config.localPrustiPathPath);
+        if (hasChangedChannel || hasChangedLocation) {
+            prusti = await deps.installDependencies(context, false);
+        }
+    });
+
     // Prerequisites checks
     util.log("Checking prerequisites...");
     const [hasPrerequisites, errorMessage] = await checks.hasPrerequisites(prusti, context);

@@ -23,9 +23,9 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
 
         // only notify user about success if we reported anything in between; otherwise there was nothing to be done.
         if (didReportProgress) {
-            // TODO test when restart is necessary
             if (shouldUpdate) {
-                util.userInfo("Prusti updated successfully. Please restart the IDE.", true, true);
+                // have to reload
+                util.userInfo("Prusti updated successfully. Please reload the IDE.", true, true);
             } else {
                 util.userInfo("Prusti installed successfully.");
             }
