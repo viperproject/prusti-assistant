@@ -1,5 +1,5 @@
 export * from './PrustiLocation';
-export * from './prustiTools';
+export * from './rustup';
 
 import { withProgressInWindow, currentPlatform } from 'vs-verification-toolbox';
 import * as vscode from 'vscode';

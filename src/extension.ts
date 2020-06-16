@@ -34,6 +34,8 @@ export async function activate(context: vscode.ExtensionContext) {
         util.log("Prerequisites are satisfied.");
     }
 
+    await deps.ensureCorrectRustVersionInstalled(context);
+
     // Shared collection of diagnostics
     const prustiProgramDiagnostics = vscode.languages.createDiagnosticCollection("prusti-program");
     const prustiCratesDiagnostics = vscode.languages.createDiagnosticCollection("prusti-crates");
