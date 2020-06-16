@@ -2,6 +2,7 @@ import * as childProcess from 'child_process';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import { utils } from 'mocha';
 
 export function userInfo(message: string, popup = true, restart = false) {
     log(message);
@@ -69,7 +70,11 @@ export interface Output {
 export function spawn(
     cmd: string,
     args?: string[] | undefined,
-    options?: childProcess.SpawnOptionsWithoutStdio | undefined
+    { options, onStdout, onStderr }: {
+        options?: childProcess.SpawnOptionsWithoutStdio | undefined;
+        onStdout?: ((data: string) => void) | undefined;
+        onStderr?: ((data: string) => void) | undefined;
+    } = {}
 ): Promise<Output> {
     log(`Prusti Assistant: Running '${cmd} ${args?.join(' ') ?? ''}'`);
     return new Promise((resolve, reject) => {
@@ -78,8 +83,15 @@ export function spawn(
 
         const proc = childProcess.spawn(cmd, args, options);
 
-        proc.stdout.on('data', (data) => stdout += data);
-        proc.stderr.on('data', (data) => stderr += data);
+        proc.stdout.on('data', (data) => {
+            stdout += data;
+            onStdout?.(data);
+        });
+        proc.stderr.on('data', (data) => {
+            stderr += data;
+            onStderr?.(data);
+        });
+
         proc.on('close', (code) => {
             log("┌──── Begin stdout ────┐");
             log(stdout);

@@ -374,15 +374,17 @@ async function queryCrateDiagnostics(prusti: PrustiLocation, rootPath: string): 
         prusti.cargoPrusti,
         ["--message-format=json"],
         {
-            cwd: rootPath,
-            env: {
-                RUST_BACKTRACE: "1",
-                RUST_LOG: "info",
-                JAVA_HOME: (await config.javaHome())!.path,
-                VIPER_HOME: prusti.viperHome,
-                Z3_EXE: prusti.z3,
-                BOOGIE_EXE: prusti.boogie,
-                PATH: process.env.PATH  // Needed e.g. to run Rustup
+            options: {
+                cwd: rootPath,
+                env: {
+                    RUST_BACKTRACE: "1",
+                    RUST_LOG: "info",
+                    JAVA_HOME: (await config.javaHome())!.path,
+                    VIPER_HOME: prusti.viperHome,
+                    Z3_EXE: prusti.z3,
+                    BOOGIE_EXE: prusti.boogie,
+                    PATH: process.env.PATH  // Needed e.g. to run Rustup
+                }
             }
         }
     );
@@ -422,15 +424,17 @@ async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: stri
         prusti.prustiRustc,
         ["--crate-type=lib", "--error-format=json", programPath],
         {
-            cwd: path.dirname(programPath),
-            env: {
-                RUST_BACKTRACE: "1",
-                RUST_LOG: "info",
-                JAVA_HOME: (await config.javaHome())!.path,
-                VIPER_HOME: prusti.viperHome,
-                Z3_EXE: prusti.z3,
-                BOOGIE_EXE: prusti.boogie,
-                PATH: process.env.PATH  // Needed e.g. to run Rustup
+            options: {
+                cwd: path.dirname(programPath),
+                env: {
+                    RUST_BACKTRACE: "1",
+                    RUST_LOG: "info",
+                    JAVA_HOME: (await config.javaHome())!.path,
+                    VIPER_HOME: prusti.viperHome,
+                    Z3_EXE: prusti.z3,
+                    BOOGIE_EXE: prusti.boogie,
+                    PATH: process.env.PATH  // Needed e.g. to run Rustup
+                }
             }
         }
     );
