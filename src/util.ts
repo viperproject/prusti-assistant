@@ -74,52 +74,54 @@ export function spawn(
         onStdout?: ((data: string) => void) | undefined;
         onStderr?: ((data: string) => void) | undefined;
     } = {}
-): Promise<Output> {
+): { output: Promise<Output>, kill: () => void } {
     log(`Prusti Assistant: Running '${cmd} ${args?.join(' ') ?? ''}'`);
-    return new Promise((resolve, reject) => {
-        let stdout = '';
-        let stderr = '';
+    let stdout = '';
+    let stderr = '';
 
-        const proc = childProcess.spawn(cmd, args, options);
-
-        proc.stdout.on('data', (data) => {
-            stdout += data;
-            try {
-                onStdout?.(data);
-            } catch (e) {
-                log(`error in stdout handler for ${cmd}: ${e}`);
-            }
-        });
-        proc.stderr.on('data', (data) => {
-            stderr += data;
-            try {
-                onStderr?.(data);
-            } catch (e) {
-                log(`error in stderr handler for ${cmd}: ${e}`);
-            }
-        });
-
-        proc.on('close', (code) => {
-            log("┌──── Begin stdout ────┐");
-            log(stdout);
-            log("└──── End stdout ──────┘");
-            log("┌──── Begin stderr ────┐");
-            log(stderr);
-            log("└──── End stderr ──────┘");
-            resolve({ stdout, stderr, code });
-        });
-        proc.on('error', (err) => {
-            log("┌──── Begin stdout ────┐");
-            log(stdout);
-            log("└──── End stdout ──────┘");
-            log("┌──── Begin stderr ────┐");
-            log(stderr);
-            log("└──── End stderr ──────┘");
-            console.log("Error", err);
-            log(`Error: ${err}`);
-            reject(err);
-        });
+    const proc = childProcess.spawn(cmd, args, options);
+    proc.stdout.on('data', (data) => {
+        stdout += data;
+        try {
+            onStdout?.(data);
+        } catch (e) {
+            log(`error in stdout handler for ${cmd}: ${e}`);
+        }
     });
+    proc.stderr.on('data', (data) => {
+        stderr += data;
+        try {
+            onStderr?.(data);
+        } catch (e) {
+            log(`error in stderr handler for ${cmd}: ${e}`);
+        }
+    });
+
+    return {
+        output: new Promise((resolve, reject) => {
+            proc.on('close', (code) => {
+                log("┌──── Begin stdout ────┐");
+                log(stdout);
+                log("└──── End stdout ──────┘");
+                log("┌──── Begin stderr ────┐");
+                log(stderr);
+                log("└──── End stderr ──────┘");
+                resolve({ stdout, stderr, code });
+            });
+            proc.on('error', (err) => {
+                log("┌──── Begin stdout ────┐");
+                log(stdout);
+                log("└──── End stdout ──────┘");
+                log("┌──── Begin stderr ────┐");
+                log(stderr);
+                log("└──── End stderr ──────┘");
+                console.log("Error", err);
+                log(`Error: ${err}`);
+                reject(err);
+            });
+        }),
+        kill: proc.kill
+    };
 }
 
 export class Project {

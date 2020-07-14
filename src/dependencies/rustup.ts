@@ -5,7 +5,7 @@ import * as util from '../util';
 export async function ensureRustToolchainInstalled(context: vscode.ExtensionContext, toolchainVersion: string): Promise<void> {
     util.log("Checking rust toolchain version...");
 
-    const versionsOutput = await util.spawn("rustup", ["toolchain", "list"]);
+    const versionsOutput = await util.spawn("rustup", ["toolchain", "list"]).output;
     const versions = versionsOutput.stdout.split("\n");
     if (versions.some(line => line.startsWith(toolchainVersion))) {
         util.log("Correct rust toolchain available.");
