@@ -29,6 +29,10 @@ export class PrustiLocation {
         return this.location.executable("cargo-prusti");
     }
 
+    public get prustiServer(): string {
+        return this.location.executable("prusti-server");
+    }
+
     public get z3(): string {
         return this.location.child("z3").executable("z3");
     }

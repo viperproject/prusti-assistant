@@ -36,19 +36,24 @@ export function userError(message: string, popup = true, restart = false) {
     vscode.window.setStatusBarMessage(message);
     if (popup) {
         if (restart) {
-            const action = "Restart Now";
-            vscode.window.showInformationMessage(message, action)
-                .then(selection => {
-                    if (selection === action) {
-                        vscode.commands.executeCommand(
-                            "workbench.action.reloadWindow"
-                        );
-                    }
-                });
+            userErrorPopup(message, "Restart Now", () => vscode.commands.executeCommand(
+                "workbench.action.reloadWindow"
+            ));
         } else {
             vscode.window.showInformationMessage(message);
         }
     }
+}
+
+export function userErrorPopup(message: string, actionLabel: string, action: () => void) {
+    log(message);
+    vscode.window.setStatusBarMessage(message);
+    vscode.window.showInformationMessage(message, actionLabel)
+        .then(selection => {
+            if (selection === actionLabel) {
+                action();
+            }
+        });
 }
 
 const logChannel = vscode.window.createOutputChannel("Prusti Assistant");

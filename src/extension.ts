@@ -6,6 +6,7 @@ import * as diagnostics from './diagnostics';
 import * as checks from './checks';
 import * as notifier from './notifier';
 import { prusti, installDependencies, ensureRustToolchainInstalled } from './dependencies';
+import { serverPort, restartServer } from './server';
 
 export async function activate(context: vscode.ExtensionContext) {
     notifier.notify(notifier.Event.StartExtensionActivation);
@@ -43,6 +44,13 @@ export async function activate(context: vscode.ExtensionContext) {
         util.log("Prerequisites are satisfied.");
     }
 
+    restartServer();
+
+    // Restart on command
+    context.subscriptions.push(
+        vscode.commands.registerCommand("prusti-assistant.restart-server", restartServer)
+    );
+
     await ensureRustToolchainInstalled(context, await prusti!.rustToolchainVersion());
 
     // Shared collection of diagnostics
@@ -60,9 +68,14 @@ export async function activate(context: vscode.ExtensionContext) {
                 vscode.window.setStatusBarMessage("$(loading~spin) Running Prusti...");
                 const start = performance.now();
 
+                if (serverPort === undefined) {
+                    util.userErrorPopup("Prusti server not running!", "Restart Server", restartServer);
+                    return;
+                }
                 const programDiagnostics = await diagnostics.generatesProgramDiagnostics(
-                    document.uri.fsPath
                     prusti!,
+                    document.uri.fsPath,
+                    `127.0.0.1:${serverPort}`
                 );
                 programDiagnostics.render(prustiProgramDiagnostics);
 

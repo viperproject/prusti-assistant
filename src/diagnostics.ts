@@ -419,7 +419,7 @@ async function queryCrateDiagnostics(prusti: PrustiLocation, rootPath: string): 
  * @param programPath The root path of a rust program.
  * @returns An array of diagnostics for the given rust project.
  */
-async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: string): Promise<[Diagnostic[], VerificationStatus]> {
+async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: string, serverAddress: string): Promise<[Diagnostic[], VerificationStatus]> {
     const output = await util.spawn(
         prusti.prustiRustc,
         ["--crate-type=lib", "--error-format=json", programPath],
@@ -427,6 +427,7 @@ async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: stri
             options: {
                 cwd: path.dirname(programPath),
                 env: {
+                    PRUSTI_SERVER_ADDRESS: serverAddress,
                     RUST_BACKTRACE: "1",
                     RUST_LOG: "info",
                     JAVA_HOME: (await config.javaHome())!.path,
@@ -596,11 +597,11 @@ export async function generatesCratesDiagnostics(prusti: PrustiLocation, project
 }
 
 
-export async function generatesProgramDiagnostics(prusti: PrustiLocation, programPath: string): Promise<DiagnosticsSet> {
+export async function generatesProgramDiagnostics(prusti: PrustiLocation, programPath: string, serverAddress: string): Promise<DiagnosticsSet> {
     const resultDiagnostics = new DiagnosticsSet();
 
     try {
-        const [diagnostics, status] = await queryProgramDiagnostics(prusti, programPath);
+        const [diagnostics, status] = await queryProgramDiagnostics(prusti, programPath, serverAddress);
         resultDiagnostics.addAll(diagnostics);
         if (status === VerificationStatus.Crash) {
             resultDiagnostics.add({
