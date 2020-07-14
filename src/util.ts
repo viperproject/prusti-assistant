@@ -51,13 +51,15 @@ export function userError(message: string, popup = true, restart = false) {
     }
 }
 
-let _channel: vscode.OutputChannel;
+const logChannel = vscode.window.createOutputChannel("Prusti Assistant");
 export function log(message: string) {
     console.log(message);
-    if (_channel === undefined) {
-        _channel = vscode.window.createOutputChannel("Prusti Assistant");
-    }
-    _channel.appendLine(message);
+    logChannel.appendLine(message);
+}
+
+const traceChannel = vscode.window.createOutputChannel("Prusti Assistant Trace");
+export function trace(message: string) {
+    traceChannel.appendLine(message);
 }
 
 export interface Output {
@@ -80,6 +82,7 @@ export function spawn(
     let stderr = '';
 
     const proc = childProcess.spawn(cmd, args, options);
+
     proc.stdout.on('data', (data) => {
         stdout += data;
         try {
@@ -97,24 +100,25 @@ export function spawn(
         }
     });
 
+    function printOutput() {
+        trace("");
+        trace(`Output from ${cmd} (args: ${args})`);
+        trace("┌──── Begin stdout ────┐");
+        trace(stdout);
+        trace("└──── End stdout ──────┘");
+        trace("┌──── Begin stderr ────┐");
+        trace(stderr);
+        trace("└──── End stderr ──────┘");
+    }
+
     return {
         output: new Promise((resolve, reject) => {
             proc.on('close', (code) => {
-                log("┌──── Begin stdout ────┐");
-                log(stdout);
-                log("└──── End stdout ──────┘");
-                log("┌──── Begin stderr ────┐");
-                log(stderr);
-                log("└──── End stderr ──────┘");
+                printOutput();
                 resolve({ stdout, stderr, code });
             });
             proc.on('error', (err) => {
-                log("┌──── Begin stdout ────┐");
-                log(stdout);
-                log("└──── End stdout ──────┘");
-                log("┌──── Begin stderr ────┐");
-                log(stderr);
-                log("└──── End stderr ──────┘");
+                printOutput();
                 console.log("Error", err);
                 log(`Error: ${err}`);
                 reject(err);
