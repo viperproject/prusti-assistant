@@ -84,11 +84,19 @@ export function spawn(
 
         proc.stdout.on('data', (data) => {
             stdout += data;
-            onStdout?.(data);
+            try {
+                onStdout?.(data);
+            } catch (e) {
+                log(`error in stdout handler for ${cmd}: ${e}`);
+            }
         });
         proc.stderr.on('data', (data) => {
             stderr += data;
-            onStderr?.(data);
+            try {
+                onStderr?.(data);
+            } catch (e) {
+                log(`error in stderr handler for ${cmd}: ${e}`);
+            }
         });
 
         proc.on('close', (code) => {
