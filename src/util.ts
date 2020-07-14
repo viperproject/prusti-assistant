@@ -77,7 +77,9 @@ export function spawn(
         onStderr?: ((data: string) => void) | undefined;
     } = {}
 ): { output: Promise<Output>, kill: () => void } {
-    log(`Prusti Assistant: Running '${cmd} ${args?.join(' ') ?? ''}'`);
+    const description = `${cmd} ${args?.join(' ') ?? ''}`;
+    log(`Prusti Assistant: Running '${description}'`);
+
     let stdout = '';
     let stderr = '';
 
@@ -88,7 +90,7 @@ export function spawn(
         try {
             onStdout?.(data);
         } catch (e) {
-            log(`error in stdout handler for ${cmd}: ${e}`);
+            log(`error in stdout handler for '${description}': ${e}`);
         }
     });
     proc.stderr.on('data', (data) => {
@@ -96,13 +98,13 @@ export function spawn(
         try {
             onStderr?.(data);
         } catch (e) {
-            log(`error in stderr handler for ${cmd}: ${e}`);
+            log(`error in stderr handler for '${description}': ${e}`);
         }
     });
 
     function printOutput() {
         trace("");
-        trace(`Output from ${cmd} (args: ${args})`);
+        trace(`Output from '${description}'`);
         trace("┌──── Begin stdout ────┐");
         trace(stdout);
         trace("└──── End stdout ──────┘");
