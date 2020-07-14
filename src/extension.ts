@@ -5,7 +5,7 @@ import * as util from './util';
 import * as diagnostics from './diagnostics';
 import * as checks from './checks';
 import * as notifier from './notifier';
-import * as deps from './dependencies';
+import { prusti, installDependencies, ensureRustToolchainInstalled } from './dependencies';
 
 export async function activate(context: vscode.ExtensionContext) {
     notifier.notify(notifier.Event.StartExtensionActivation);
@@ -13,36 +13,37 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Download dependencies
     util.log("Checking dependencies...");
-    let prusti = await deps.installDependencies(context, false);
+    await installDependencies(context, false);
 
     // Update dependencies on command
     context.subscriptions.push(
         vscode.commands.registerCommand("prusti-assistant.update", async () => {
-            prusti = await deps.installDependencies(context, true);
+            await installDependencies(context, true);
         })
     );
 
+    // Update dependencies on config change
     vscode.workspace.onDidChangeConfiguration(async event => {
         const hasChangedChannel = event.affectsConfiguration(config.buildChannelPath);
         const hasChangedLocation = config.buildChannel() === config.BuildChannel.Local && event.affectsConfiguration(config.localPrustiPathPath);
         if (hasChangedChannel || hasChangedLocation) {
-            prusti = await deps.installDependencies(context, false);
+            await installDependencies(context, false);
         }
     });
 
     // Prerequisites checks
     util.log("Checking prerequisites...");
-    const [hasPrerequisites, errorMessage] = await checks.hasPrerequisites(prusti, context);
+    const [hasPrerequisites, errorMessage] = await checks.hasPrerequisites(prusti!, context);
     if (!hasPrerequisites) {
         util.userError("Prusti Assistant's prerequisites are not satisfied.", false);
         util.userError(errorMessage, true, true);
-        util.log("Stopping plugin. Restart the IDE to retry.");
+        util.log("Stopping plugin. Reload the IDE to retry.");
         return;
     } else {
         util.log("Prerequisites are satisfied.");
     }
 
-    await deps.ensureRustToolchainInstalled(context, await prusti.rustToolchainVersion());
+    await ensureRustToolchainInstalled(context, await prusti!.rustToolchainVersion());
 
     // Shared collection of diagnostics
     const prustiProgramDiagnostics = vscode.languages.createDiagnosticCollection("prusti-program");
@@ -60,8 +61,8 @@ export async function activate(context: vscode.ExtensionContext) {
                 const start = performance.now();
 
                 const programDiagnostics = await diagnostics.generatesProgramDiagnostics(
-                    prusti,
                     document.uri.fsPath
+                    prusti!,
                 );
                 programDiagnostics.render(prustiProgramDiagnostics);
 
@@ -97,7 +98,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 );
             }
 
-            const crateDiagnostics = await diagnostics.generatesCratesDiagnostics(prusti, projects);
+            const crateDiagnostics = await diagnostics.generatesCratesDiagnostics(prusti!, projects);
             crateDiagnostics.render(prustiCratesDiagnostics);
 
             const duration = Math.round((performance.now() - start) / 100) / 10;
