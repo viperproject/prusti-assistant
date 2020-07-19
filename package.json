@@ -79,6 +79,19 @@
                     "default": "",
                     "description": "Specifies the path to the local Prusti installation (has no effect if buildChannel is not set to Local)."
                 },
+                "prusti-assistant.verificationMode": {
+                    "type": "string",
+                    "default": "CurrentProgram",
+                    "enum": [
+                        "CurrentProgram",
+                        "AllCratesInWorkspace"
+                    ],
+                    "enumDescriptions": [
+                        "Verify only the currently-open file.",
+                        "Verify all crates in the currently-open workspace."
+                    ],
+                    "description": "Selects what to do upon running the verify command."
+                },
                 "prusti-assistant.verifyOnSave": {
                     "type": "boolean",
                     "default": false,

@@ -62,9 +62,16 @@ export async function activate(context: vscode.ExtensionContext) {
         notifier.notify(notifier.Event.StartVerification);
         util.log("Run verification...");
 
-        // Verify provided document
-        if (config.verificationMode() === config.VerificationMode.CurrentProgram) {
-            if (document.languageId === "rust") {
+        switch (config.verificationMode()) {
+            case config.VerificationMode.CurrentProgram: {
+                // Verify provided document
+                if (document.languageId !== "rust") {
+                    util.log(
+                        "The document is not a Rust program, thus Prusti will not run on it."
+                    );
+                    break;
+                }
+
                 vscode.window.setStatusBarMessage("$(loading~spin) Running Prusti...");
                 const start = performance.now();
 
@@ -92,37 +99,35 @@ export async function activate(context: vscode.ExtensionContext) {
                 } else {
                     vscode.window.setStatusBarMessage(`$(check) Verification succeeded (${duration} s)`);
                 }
-            } else {
-                util.log(
-                    "The document is not a Rust program, thus Prusti will not run on it."
-                );
+                break;
+            }
+            case config.VerificationMode.AllCratesInWorkspace: {
+                // Verify all crates in workspace
+                vscode.window.setStatusBarMessage("Running Prusti...");
+                const start = performance.now();
+
+                const projects = await util.findProjects();
+                if (!projects.hasProjects()) {
+                    vscode.window.showWarningMessage(
+                        "Prusti Assistant: No 'Cargo.toml' files were found in the workspace."
+                    );
+                }
+
+                const crateDiagnostics = await diagnostics.generatesCratesDiagnostics(prusti!, projects);
+                crateDiagnostics.render(prustiCratesDiagnostics);
+
+                const duration = Math.round((performance.now() - start) / 100) / 10;
+                if (crateDiagnostics.hasErrors()) {
+                    vscode.window.setStatusBarMessage(`Verification of some crate failed (${duration} s)`);
+                } else if (crateDiagnostics.hasWarnings()) {
+                    vscode.window.setStatusBarMessage(`Verification of all crates succeeded with warnings (${duration} s)`);
+                } else {
+                    vscode.window.setStatusBarMessage(`Verification of all crates succeeded (${duration} s)`);
+                }
+                break;
             }
         }
 
-        // Verify all crates in workspace
-        if (config.verificationMode() === config.VerificationMode.AllCratesInWorkspace) {
-            vscode.window.setStatusBarMessage("Running Prusti...");
-            const start = performance.now();
-
-            const projects = await util.findProjects();
-            if (!projects.hasProjects()) {
-                vscode.window.showWarningMessage(
-                    "Prusti Assistant: No 'Cargo.toml' files were found in the workspace."
-                );
-            }
-
-            const crateDiagnostics = await diagnostics.generatesCratesDiagnostics(prusti!, projects);
-            crateDiagnostics.render(prustiCratesDiagnostics);
-
-            const duration = Math.round((performance.now() - start) / 100) / 10;
-            if (crateDiagnostics.hasErrors()) {
-                vscode.window.setStatusBarMessage(`Verification of some crate failed (${duration} s)`);
-            } else if (crateDiagnostics.hasWarnings()) {
-                vscode.window.setStatusBarMessage(`Verification of all crates succeeded with warnings (${duration} s)`);
-            } else {
-                vscode.window.setStatusBarMessage(`Verification of all crates succeeded (${duration} s)`);
-            }
-        }
         notifier.notify(notifier.Event.EndVerification);
     }
 
