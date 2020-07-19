@@ -40,7 +40,7 @@ export function userError(message: string, popup = true, restart = false) {
                 "workbench.action.reloadWindow"
             ));
         } else {
-            vscode.window.showInformationMessage(message);
+            vscode.window.showErrorMessage(message);
         }
     }
 }
@@ -48,7 +48,7 @@ export function userError(message: string, popup = true, restart = false) {
 export function userErrorPopup(message: string, actionLabel: string, action: () => void) {
     log(message);
     vscode.window.setStatusBarMessage(message);
-    vscode.window.showInformationMessage(message, actionLabel)
+    vscode.window.showErrorMessage(message, actionLabel)
         .then(selection => {
             if (selection === actionLabel) {
                 action();
@@ -60,6 +60,7 @@ const logChannel = vscode.window.createOutputChannel("Prusti Assistant");
 export function log(message: string) {
     console.log(message);
     logChannel.appendLine(message);
+    trace(message);
 }
 
 const traceChannel = vscode.window.createOutputChannel("Prusti Assistant Trace");
