@@ -2,29 +2,29 @@ name: NPM Tests
 
 on:
   push:
-    branches: [ '*' ]
+    branches: ["*"]
   pull_request:
-    branches: [ '*' ]
+    branches: ["*"]
 
 jobs:
   test:
     runs-on: macos-latest
 
     steps:
-    - name: Check out the repo
-      uses: actions/checkout@v2
+      - name: Check out the repo
+        uses: actions/checkout@v2
 
-    - name: Install VS Verification Toolbox # not on NPM yet
-      steps:
-      - id: checkout
+      - name: Check out VS Verification Toolbox # not on NPM yet
         uses: actions/checkout@v2
         with:
-          repository: 'viperproject/vs-verification-toolbox'
-      - id: link
-        run: npm link vs-verification-toolbox
+          repository: viperproject/vs-verification-toolbox
+          path: .deps/vs-verification-toolbox
 
-    - name: Install NPM dependencies
-      run: npm install
+      - name: Link VS Verification Toolbox
+        run: npm link .deps/vs-verification-toolbox
 
-    - name: Run tests
-      run: npm test
+      - name: Install NPM dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test
