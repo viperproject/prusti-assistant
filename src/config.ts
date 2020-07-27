@@ -59,7 +59,7 @@ const localPrustiPathKey = "localPrustiPath";
 export const localPrustiPathPath = `${namespace}.${localPrustiPathKey}`;
 
 export function localPrustiPath(): string {
-    return config().get("localPrustiPath", "");
+    return config().get(localPrustiPathKey, "");
 }
 
 export enum VerificationMode {
@@ -104,4 +104,11 @@ export class JavaHome {
     public get javaExecutable(): string {
         return this.location.child("bin").executable("java");
     }
+}
+
+const serverAddressKey = "serverAddress";
+export const serverAddressPath = `${namespace}.${serverAddressKey}`;
+
+export function serverAddress(): string {
+    return config().get(serverAddressKey, "");
 }

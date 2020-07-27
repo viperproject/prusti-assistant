@@ -111,6 +111,11 @@
                     "type": "string",
                     "default": "",
                     "description": "Specifies the path of the Java home folder (leave empty to auto-detect)."
+                },
+                "prusti-assistant.serverAddress": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Specifies the address of a Prusti server to use for verification. If not set, the extension will start up and manage its own server."
                 }
             }
         }

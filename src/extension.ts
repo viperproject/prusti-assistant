@@ -6,7 +6,7 @@ import * as diagnostics from './diagnostics';
 import * as checks from './checks';
 import * as notifier from './notifier';
 import { prusti, installDependencies, ensureRustToolchainInstalled } from './dependencies';
-import { serverPort, restartServer } from './server';
+import { serverAddress, restartServer } from './server';
 
 export async function activate(context: vscode.ExtensionContext) {
     notifier.notify(notifier.Event.StartExtensionActivation);
@@ -24,13 +24,19 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 
     // Update dependencies on config change
-    vscode.workspace.onDidChangeConfiguration(async event => {
-        const hasChangedChannel = event.affectsConfiguration(config.buildChannelPath);
-        const hasChangedLocation = config.buildChannel() === config.BuildChannel.Local && event.affectsConfiguration(config.localPrustiPathPath);
-        if (hasChangedChannel || hasChangedLocation) {
-            await installDependencies(context, false);
-        }
-    });
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeConfiguration(async event => {
+            const hasChangedChannel = event.affectsConfiguration(config.buildChannelPath);
+            const hasChangedLocation = config.buildChannel() === config.BuildChannel.Local && event.affectsConfiguration(config.localPrustiPathPath);
+            if (hasChangedChannel || hasChangedLocation) {
+                await installDependencies(context, false);
+            }
+            const hasChangedServer = event.affectsConfiguration(config.serverAddressPath);
+            if (hasChangedServer) {
+                restartServer();
+            }
+        })
+    );
 
     // Prerequisites checks
     util.log("Checking prerequisites...");
@@ -75,14 +81,14 @@ export async function activate(context: vscode.ExtensionContext) {
                 vscode.window.setStatusBarMessage("$(loading~spin) Running Prusti...");
                 const start = performance.now();
 
-                if (serverPort === undefined) {
+                if (serverAddress === undefined) {
                     util.userErrorPopup("Prusti server not running!", "Restart Server", restartServer);
                     return;
                 }
                 const programDiagnostics = await diagnostics.generatesProgramDiagnostics(
                     prusti!,
                     document.uri.fsPath,
-                    `127.0.0.1:${serverPort}`
+                    serverAddress
                 );
                 programDiagnostics.render(prustiProgramDiagnostics);
 
