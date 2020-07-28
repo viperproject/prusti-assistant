@@ -11,6 +11,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
+      fail-fast: false # don't cancel when one matrix job fails, so we can compare to the others
     runs-on: ${{ matrix.os }}
 
     steps:
