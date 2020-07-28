@@ -144,6 +144,6 @@
         "@types/node": "^13.9.1",
         "fs-extra": "^8.1.0",
         "locate-java-home": "^1.1.2",
-        "vs-verification-toolbox": "^1.0.0"
+        "vs-verification-toolbox": "https://github.com/viperproject/vs-verification-toolbox.git"
     }
 }

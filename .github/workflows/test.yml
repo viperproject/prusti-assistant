@@ -17,12 +17,6 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v2
 
-      - name: Check out VS Verification Toolbox # not on NPM yet
-        uses: actions/checkout@v2
-        with:
-          repository: viperproject/vs-verification-toolbox
-          path: node_modules/vs-verification-toolbox
-
       - name: Install NPM dependencies
         run: npm install
 
