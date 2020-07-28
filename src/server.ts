@@ -7,7 +7,7 @@ export let serverAddress: string | undefined;
 
 let serverKill: () => void | undefined;
 const serverChannel = vscode.window.createOutputChannel("Prusti Server");
-export function restartServer() {
+export function restartServer(context: vscode.ExtensionContext) {
     try {
         serverKill?.();
     } catch (e) {
@@ -23,7 +23,11 @@ export function restartServer() {
 
     const { output: server, kill } = util.spawn(prusti!.prustiServer, ["--port", "0"], {
         options: {
-            env: { RUST_BACKTRACE: "1", ...process.env } // TODO: remove?
+            env: {
+                PRUSTI_LOG_DIR: context.logPath, // might not exist yet, but that's handled on the rust side
+                RUST_BACKTRACE: "1", // TODO: remove?
+                ...process.env
+            }
         },
         onStdout: line => {
             serverChannel.append(`[stdout] ${line}`);
@@ -36,5 +40,5 @@ export function restartServer() {
     });
 
     serverKill = kill;
-    server.finally(() => util.userErrorPopup("Prusti server crashed!", "Restart Server", restartServer));
+    server.finally(() => util.userErrorPopup("Prusti server crashed!", "Restart Server", () => restartServer(context)));
 }

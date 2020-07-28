@@ -33,7 +33,7 @@ export async function activate(context: vscode.ExtensionContext) {
             }
             const hasChangedServer = event.affectsConfiguration(config.serverAddressPath);
             if (hasChangedServer) {
-                restartServer();
+                restartServer(context);
             }
         })
     );
@@ -50,7 +50,7 @@ export async function activate(context: vscode.ExtensionContext) {
         util.log("Prerequisites are satisfied.");
     }
 
-    restartServer();
+    restartServer(context);
 
     // Restart on command
     context.subscriptions.push(
@@ -82,7 +82,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 const start = performance.now();
 
                 if (serverAddress === undefined) {
-                    util.userErrorPopup("Prusti server not running!", "Restart Server", restartServer);
+                    util.userErrorPopup("Prusti server not running!", "Restart Server", () => restartServer(context));
                     return;
                 }
                 const programDiagnostics = await diagnostics.generatesProgramDiagnostics(
