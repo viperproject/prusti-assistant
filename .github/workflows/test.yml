@@ -8,7 +8,10 @@ on:
 
 jobs:
   test:
-    runs-on: macos-latest
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Check out the repo
@@ -18,13 +21,12 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: viperproject/vs-verification-toolbox
-          path: .deps/vs-verification-toolbox
-
-      - name: Link VS Verification Toolbox
-        run: npm link .deps/vs-verification-toolbox
+          path: node_modules/vs-verification-toolbox
 
       - name: Install NPM dependencies
         run: npm install
 
-      - name: Run tests
-        run: npm test
+      - name: Run tests (headless)
+        uses: GabrielBB/xvfb-action@v1.0
+        with:
+          run: npm test
