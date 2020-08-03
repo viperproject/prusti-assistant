@@ -9,8 +9,9 @@ export function prustiTools(platform: Platform, context: vscode.ExtensionContext
     const channel = config.BuildChannel;
     return new Dependency(
         path.join(context.globalStoragePath, "prustiTools"),
-        [channel.Stable, new RemoteZipExtractor(`http://viper.ethz.ch/downloads/PrustiTools${id}.zip`)],
-        [channel.Nightly, new RemoteZipExtractor(`http://viper.ethz.ch/downloads/nightly/PrustiTools${id}.zip`)],
+        // TODO: add actual stable channel once we have one
+        // [channel.Stable, new RemoteZipExtractor(`http://viper.ethz.ch/downloads/PrustiTools${id}.zip`)],
+        [channel.Nightly, new RemoteZipExtractor(`http://viper.ethz.ch/downloads/PrustiTools${id}.zip`)],
         [channel.Local, new LocalReference(config.localPrustiPath())],
     );
 }

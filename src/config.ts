@@ -40,7 +40,7 @@ function config(): vscode.WorkspaceConfiguration {
 }
 
 export enum BuildChannel {
-    Stable = "stable",
+    // Stable = "stable",
     Nightly = "nightly",
     Local = "local"
 }
@@ -51,7 +51,7 @@ export const buildChannelPath = `${namespace}.${buildChannelKey}`;
 export function buildChannel(): BuildChannel {
     // Convert string to enum. See https://stackoverflow.com/a/17381004/2491528
     return BuildChannel[
-        config().get(buildChannelKey, "stable") as keyof typeof BuildChannel
+        config().get(buildChannelKey, "nightly") as keyof typeof BuildChannel
     ];
 }
 
