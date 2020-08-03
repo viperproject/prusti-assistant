@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as locate_java_home from 'locate-java-home';
 import { Location } from 'vs-verification-toolbox';
+import * as util from './util';
 
 async function findJavaHome(): Promise<string | null> {
     return new Promise((resolve, reject) => {
@@ -49,10 +50,17 @@ const buildChannelKey = "buildChannel";
 export const buildChannelPath = `${namespace}.${buildChannelKey}`;
 
 export function buildChannel(): BuildChannel {
-    // Convert string to enum. See https://stackoverflow.com/a/17381004/2491528
-    return BuildChannel[
-        config().get(buildChannelKey, "nightly") as keyof typeof BuildChannel
+    const channelName = config().get(buildChannelKey, "nightly");
+    const channel = BuildChannel[
+        // Convert string to enum. See https://stackoverflow.com/a/17381004/2491528
+        channelName as keyof typeof BuildChannel
     ];
+    if (channel !== undefined) {
+        return channel;
+    } else {
+        util.userError(`Prusti has no build channel named ${channelName}; defaulting to nightly`);
+        return BuildChannel.Nightly;
+    }
 }
 
 const localPrustiPathKey = "localPrustiPath";
@@ -68,9 +76,17 @@ export enum VerificationMode {
 }
 
 export function verificationMode(): VerificationMode {
-    return VerificationMode[
-        config().get("verificationMode", "CurrentProgram") as keyof typeof VerificationMode
+    const modeName = config().get("verificationMode", "CurrentProgram");
+    const mode = VerificationMode[
+        // Convert string to enum. See https://stackoverflow.com/a/17381004/2491528
+        modeName as keyof typeof VerificationMode
     ];
+    if (mode !== undefined) {
+        return mode;
+    } else {
+        util.userError(`Prusti has no verification mode named ${modeName}; defaulting to "current program"`);
+        return VerificationMode.CurrentProgram;
+    }
 }
 
 export function verifyOnSave(): boolean {
