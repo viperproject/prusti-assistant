@@ -18,6 +18,13 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v2
 
+      - name: Set up Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: "14.0.1"
+          java-package: jdk
+          architecture: x64
+
       - name: Install NPM dependencies
         run: npm install
 
