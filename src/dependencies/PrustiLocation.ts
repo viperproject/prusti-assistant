@@ -10,6 +10,8 @@ export class PrustiLocation {
         fs.chmodSync(this.prustiRustc, 0o775);
         fs.chmodSync(this.cargoPrusti, 0o775);
         fs.chmodSync(this.z3, 0o775);
+        fs.chmodSync(this.prustiServerDriver, 0o775);
+        fs.chmodSync(this.prustiServer, 0o775);
     }
 
     public async rustToolchainVersion(): Promise<string> {
@@ -27,6 +29,10 @@ export class PrustiLocation {
 
     public get cargoPrusti(): string {
         return this.location.executable("cargo-prusti");
+    }
+
+    public get prustiServerDriver(): string {
+        return this.location.executable("prusti-server-driver");
     }
 
     public get prustiServer(): string {
