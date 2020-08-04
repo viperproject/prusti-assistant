@@ -18,7 +18,10 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
         const tools = prustiTools(currentPlatform!, context);
         const { result: location, didReportProgress } = await withProgressInWindow(
             `${shouldUpdate ? "Updating" : "Installing"} Prusti`,
-            listener => tools.install(config.buildChannel(), shouldUpdate, listener)
+            listener => tools.install(config.buildChannel(), shouldUpdate, (progress, step) => {
+                util.log(`${step}: ${progress}`);
+                listener(progress, step);
+            })
         );
         prusti = new PrustiLocation(location);
 
