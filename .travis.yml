@@ -6,7 +6,7 @@ os:
 language: node_js
 
 node_js:
-  - 10.5
+  - 14.0
 
 addons:
   apt:
