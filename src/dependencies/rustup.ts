@@ -31,7 +31,7 @@ export async function ensureRustToolchainInstalled(context: vscode.ExtensionCont
             onStderr: output => {
                 updateText(('' + output).trim());
             }
-        });
+        }).output;
         item.dispose();
     });
 }
