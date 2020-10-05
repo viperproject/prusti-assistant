@@ -2,7 +2,7 @@ name: NPM Tests
 
 on:
   push:
-    branches: [ "**" ]
+    branches: "master"
   pull_request:
     branches: [ "**" ]
 
@@ -20,6 +20,8 @@ jobs:
 
       - name: Setup Rust
         uses: actions-rs/toolchain@v1.0.6
+        with:
+          toolchain: stable
 
       - name: Install NPM dependencies
         run: npm install
