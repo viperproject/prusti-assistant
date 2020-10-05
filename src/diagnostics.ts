@@ -422,14 +422,15 @@ async function queryCrateDiagnostics(prusti: PrustiLocation, rootPath: string): 
 async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: string, serverAddress: string): Promise<[Diagnostic[], VerificationStatus]> {
     const output = await util.spawn(
         prusti.prustiRustc,
-        ["--crate-type=lib", "--error-format=json", programPath],
+        ["--crate-type=lib", "--error-format=json", "--edition=2018", programPath],
         {
             options: {
                 cwd: path.dirname(programPath),
                 env: {
                     PRUSTI_SERVER_ADDRESS: serverAddress,
                     RUST_BACKTRACE: "1",
-                    RUST_LOG: "info",
+                    PRUSTI_LOG: "info",
+                    PRUSTI_QUIET: "true",
                     JAVA_HOME: (await config.javaHome())!.path,
                     VIPER_HOME: prusti.viperHome,
                     Z3_EXE: prusti.z3,
@@ -443,11 +444,11 @@ async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: stri
     if (output.code === 0) {
         status = VerificationStatus.Verified;
     }
-    // TODO: after upgrading the Rust compiler:
-    // * exit code 1 --> error
-    // * exit code 101 --> crash
-    if (output.code === 101) {
+    if (output.code === 1) {
         status = VerificationStatus.Errors;
+    }
+    if (output.code === 101) {
+        status = VerificationStatus.Crash;
     }
     if (output.stderr.match(/error: internal compiler error/) !== null) {
         status = VerificationStatus.Crash;

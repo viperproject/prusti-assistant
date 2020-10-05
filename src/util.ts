@@ -84,7 +84,7 @@ export function spawn(
     } = {}
 ): { output: Promise<Output>, kill: () => void } {
     const description = `${cmd} ${args?.join(' ') ?? ''}`;
-    log(`Prusti Assistant: Running '${description}'`);
+    log(`Prusti Assistant: run '${description}'`);
 
     let stdout = '';
     let stderr = '';

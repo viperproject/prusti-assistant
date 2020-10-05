@@ -16,7 +16,7 @@
 			"outFiles": [
 				"${workspaceFolder}/out/**/*.js"
 			],
-			"preLaunchTask": "npm: watch",
+			"preLaunchTask": "npm: compile",
 			"env": {
 				"PATH": "${env:PATH}"
 			},
@@ -33,7 +33,7 @@
 			"outFiles": [
 				"${workspaceFolder}/out/test/**/*.js"
 			],
-			"preLaunchTask": "npm: watch",
+			"preLaunchTask": "npm: compile",
 			"env": {
 				"PATH": "${env:PATH}"
 			},

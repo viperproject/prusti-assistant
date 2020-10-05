@@ -11,7 +11,7 @@ export function prustiTools(platform: Platform, context: vscode.ExtensionContext
         path.join(context.globalStoragePath, "prustiTools"),
         // TODO: add actual stable channel once we have one
         // [channel.Stable, new RemoteZipExtractor(`http://viper.ethz.ch/downloads/PrustiTools${id}.zip`)],
-        [channel.Nightly, new RemoteZipExtractor(`http://viper.ethz.ch/downloads/PrustiTools${id}.zip`)],
+        [channel.Nightly, new RemoteZipExtractor(`https://github.com/viperproject/prusti-dev/releases/latest/download/prusti-release-ubuntu.zip`)],
         [channel.Local, new LocalReference(config.localPrustiPath())],
     );
 }
@@ -19,10 +19,10 @@ export function prustiTools(platform: Platform, context: vscode.ExtensionContext
 function identifier(platform: Platform): string {
     switch (platform) {
         case Platform.Mac:
-            return "Mac";
+            return "macos";
         case Platform.Windows:
-            return "Win";
+            return "windows";
         case Platform.Linux:
-            return "Linux";
+            return "linux";
     }
 }

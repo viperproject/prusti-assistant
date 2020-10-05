@@ -1,38 +1,7 @@
 import * as vscode from 'vscode';
-import * as locate_java_home from 'locate-java-home';
 import { Location } from 'vs-verification-toolbox';
 import * as util from './util';
-
-async function findJavaHome(): Promise<string | null> {
-    return new Promise((resolve, reject) => {
-        try {
-            const options = {
-                version: ">=1.8",
-                mustBe64Bit: true
-            };
-            console.log("Searching for Java home...");
-            locate_java_home.default(options, (err, javaHomes) => {
-                if (err !== null) {
-                    console.error(err.message);
-                    resolve(null);
-                } else {
-                    if (!Array.isArray(javaHomes) || javaHomes.length === 0) {
-                        console.log("Could not find Java home");
-                        resolve(null);
-                    } else {
-                        const javaHome = javaHomes[0];
-                        console.log("Using Java home", javaHome);
-                        resolve(javaHome.path);
-                    }
-                }
-            });
-        }
-        catch (err) {
-            console.error(err.message);
-            resolve(null);
-        }
-    });
-}
+import { findJavaHome, JavaHome } from './javaHome';
 
 const namespace = "prusti-assistant";
 
@@ -106,20 +75,6 @@ export async function javaHome(): Promise<JavaHome | null> {
     const path = configPath.length > 0 ? configPath : await findJavaHome();
     if (path === null) { return null; }
     return new JavaHome(new Location(path));
-}
-
-export class JavaHome {
-    constructor(
-        private readonly location: Location
-    ) { }
-
-    public get path(): string {
-        return this.location.basePath;
-    }
-
-    public get javaExecutable(): string {
-        return this.location.child("bin").executable("java");
-    }
 }
 
 const serverAddressKey = "serverAddress";

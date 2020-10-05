@@ -40,14 +40,16 @@ export class PrustiLocation {
     }
 
     public get z3(): string {
-        return this.location.child("z3").executable("z3");
+        return this.location.child("viper_tools").child("z3").child("bin")
+            .executable("z3");
     }
 
     public get boogie(): string {
-        return this.location.child("boogie").executable("boogie");
+        return this.location.child("viper_tools").child("boogie")
+            .child("Binaries").executable("Boogie");
     }
 
     public get viperHome(): string {
-        return this.location.path("viper");
+        return this.location.child("viper_tools").path("backends");
     }
 }

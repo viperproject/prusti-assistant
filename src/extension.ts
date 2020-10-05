@@ -27,12 +27,17 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration(async event => {
             const hasChangedChannel = event.affectsConfiguration(config.buildChannelPath);
-            const hasChangedLocation = config.buildChannel() === config.BuildChannel.Local && event.affectsConfiguration(config.localPrustiPathPath);
+            const hasChangedLocation = (
+                config.buildChannel() === config.BuildChannel.Local
+                && event.affectsConfiguration(config.localPrustiPathPath)
+            );
             if (hasChangedChannel || hasChangedLocation) {
+                util.log("Install the dependencies because the configuration changed...");
                 await installDependencies(context, false);
             }
             const hasChangedServer = event.affectsConfiguration(config.serverAddressPath);
             if (hasChangedServer) {
+                util.log("Restart the server because the configuration changed...");
                 restartServer(context);
             }
         })
@@ -50,6 +55,7 @@ export async function activate(context: vscode.ExtensionContext) {
         util.log("Prerequisites are satisfied.");
     }
 
+    // Start the server
     restartServer(context);
 
     // Restart on command
@@ -78,13 +84,18 @@ export async function activate(context: vscode.ExtensionContext) {
                     break;
                 }
 
+                if (serverAddress === undefined) {
+                    util.userErrorPopup(
+                        "Prusti server not running!",
+                        "Restart Server",
+                        () => restartServer(context)
+                    );
+                    return;
+                }
+
                 vscode.window.setStatusBarMessage("$(loading~spin) Running Prusti...");
                 const start = performance.now();
 
-                if (serverAddress === undefined) {
-                    util.userErrorPopup("Prusti server not running!", "Restart Server", () => restartServer(context));
-                    return;
-                }
                 const programDiagnostics = await diagnostics.generatesProgramDiagnostics(
                     prusti!,
                     document.uri.fsPath,
@@ -152,9 +163,10 @@ export async function activate(context: vscode.ExtensionContext) {
         })
     );
 
+    // Verify on click
     const verifyButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
     verifyButton.command = verifyCommand;
-    verifyButton.text = "$(play) Verify";
+    verifyButton.text = "$(play) Verify with Prusti";
     verifyButton.tooltip = "Run the Prusti verifier on this file.";
     verifyButton.show();
     context.subscriptions.push(verifyButton);
