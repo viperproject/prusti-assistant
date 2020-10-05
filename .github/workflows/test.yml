@@ -21,7 +21,9 @@ jobs:
       - name: Setup Rust
         uses: actions-rs/toolchain@v1.0.6
         with:
-          toolchain: stable
+          # TODO: choose automatically the toolchain version
+          toolchain: nightly-2020-09-30
+          components: rustc-dev, llvm-tools-preview
 
       - name: Install NPM dependencies
         run: npm install
