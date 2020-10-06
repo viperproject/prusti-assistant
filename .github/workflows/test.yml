@@ -28,6 +28,9 @@ jobs:
       - name: Install NPM dependencies
         run: npm install
 
+      - name: Run linter
+        run: npm run lint
+
       # https://code.visualstudio.com/api/working-with-extensions/continuous-integration#github-actions
       - name: Run tests (headless)
         uses: GabrielBB/xvfb-action@v1.0
