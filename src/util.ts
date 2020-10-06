@@ -1,54 +1,54 @@
-import * as childProcess from 'child_process';
-import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
+import * as childProcess from "child_process";
+import * as vscode from "vscode";
+import * as fs from "fs";
+import * as path from "path";
 
-export function userInfo(message: string, popup = true, requestReload = false) {
+export function userInfo(message: string, popup = true, requestReload = false): void {
     log(message);
     vscode.window.setStatusBarMessage(message);
     if (popup) {
         if (requestReload) {
             const action = "Reload Now";
-            vscode.window.showInformationMessage(message, action)
+            void vscode.window.showInformationMessage(message, action)
                 .then(selection => {
                     if (selection === action) {
-                        vscode.commands.executeCommand(
+                        void vscode.commands.executeCommand(
                             "workbench.action.reloadWindow"
                         );
                     }
                 });
         } else {
-            vscode.window.showInformationMessage(message);
+            void vscode.window.showInformationMessage(message);
         }
     }
 }
 
-export function userWarn(message: string, popup = true) {
+export function userWarn(message: string, popup = true): void {
     log(message);
     vscode.window.setStatusBarMessage(message);
     if (popup) {
-        vscode.window.showWarningMessage(message);
+        void vscode.window.showWarningMessage(message);
     }
 }
 
-export function userError(message: string, popup = true, restart = false) {
+export function userError(message: string, popup = true, restart = false): void {
     log(message);
     vscode.window.setStatusBarMessage(message);
     if (popup) {
         if (restart) {
-            userErrorPopup(message, "Restart Now", () => vscode.commands.executeCommand(
-                "workbench.action.reloadWindow"
-            ));
+            userErrorPopup(message, "Restart Now", () => {
+                void vscode.commands.executeCommand("workbench.action.reloadWindow");
+            });
         } else {
-            vscode.window.showErrorMessage(message);
+            void vscode.window.showErrorMessage(message);
         }
     }
 }
 
-export function userErrorPopup(message: string, actionLabel: string, action: () => void) {
+export function userErrorPopup(message: string, actionLabel: string, action: () => void): void {
     log(message);
     vscode.window.setStatusBarMessage(message);
-    vscode.window.showErrorMessage(message, actionLabel)
+    void vscode.window.showErrorMessage(message, actionLabel)
         .then(selection => {
             if (selection === actionLabel) {
                 action();
@@ -57,14 +57,14 @@ export function userErrorPopup(message: string, actionLabel: string, action: () 
 }
 
 const logChannel = vscode.window.createOutputChannel("Prusti Assistant");
-export function log(message: string) {
+export function log(message: string): void {
     console.log(message);
     logChannel.appendLine(message);
     trace(message);
 }
 
 const traceChannel = vscode.window.createOutputChannel("Prusti Assistant Trace");
-export function trace(message: string) {
+export function trace(message: string): void {
     traceChannel.appendLine(message);
 }
 
@@ -82,16 +82,16 @@ export function spawn(
         onStdout?: ((data: string) => void) | undefined;
         onStderr?: ((data: string) => void) | undefined;
     } = {}
-): { output: Promise<Output>, kill: () => void } {
-    const description = `${cmd} ${args?.join(' ') ?? ''}`;
+): { output: Promise<Output>; kill: () => void } {
+    const description = `${cmd} ${args?.join(" ") ?? ""}`;
     log(`Prusti Assistant: run '${description}'`);
 
-    let stdout = '';
-    let stderr = '';
+    let stdout = "";
+    let stderr = "";
 
     const proc = childProcess.spawn(cmd, args, options);
 
-    proc.stdout.on('data', (data) => {
+    proc.stdout.on("data", (data) => {
         stdout += data;
         try {
             onStdout?.(data);
@@ -99,7 +99,7 @@ export function spawn(
             log(`error in stdout handler for '${description}': ${e}`);
         }
     });
-    proc.stderr.on('data', (data) => {
+    proc.stderr.on("data", (data) => {
         stderr += data;
         try {
             onStderr?.(data);
@@ -121,18 +121,18 @@ export function spawn(
 
     return {
         output: new Promise((resolve, reject) => {
-            proc.on('close', (code) => {
+            proc.on("close", (code) => {
                 printOutput();
                 resolve({ stdout, stderr, code });
             });
-            proc.on('error', (err) => {
+            proc.on("error", (err) => {
                 printOutput();
                 console.log("Error", err);
                 log(`Error: ${err}`);
                 reject(err);
             });
         }),
-        kill: proc.kill
+        kill: () => proc.kill()
     };
 }
 
@@ -154,11 +154,11 @@ export class ProjectList {
         readonly projects: Project[]
     ) { }
 
-    public hasProjects() {
+    public hasProjects(): boolean {
         return this.projects.length > 0;
     }
 
-    public getParent(file: string) {
+    public getParent(file: string): Project | undefined {
         for (const project of this.projects) {
             if (file.startsWith(project.path)) {
                 return project;
@@ -175,8 +175,8 @@ export class ProjectList {
  */
 export async function findProjects(): Promise<ProjectList> {
     const projects: Project[] = [];
-    (await vscode.workspace.findFiles('**/Cargo.toml')).forEach((path: vscode.Uri) => {
-        projects.push(new Project(path.fsPath.replace(/[/\\]?Cargo\.toml$/, '')));
+    (await vscode.workspace.findFiles("**/Cargo.toml")).forEach((path: vscode.Uri) => {
+        projects.push(new Project(path.fsPath.replace(/[/\\]?Cargo\.toml$/, "")));
     });
     return new ProjectList(projects);
 }

@@ -1,7 +1,7 @@
-import * as assert from 'assert';
-import * as vscode from 'vscode';
-import * as path from 'path';
-import * as state from '../state';
+import * as assert from "assert";
+import * as vscode from "vscode";
+import * as path from "path";
+import * as state from "../state";
 
 const PROJECT_ROOT = path.join(__dirname, "../../");
 const DATA_ROOT = path.join(PROJECT_ROOT, "src", "test", "data");
@@ -22,8 +22,8 @@ function openFile(fileName: string): Promise<vscode.TextDocument> {
     return new Promise((resolve, reject) => {
         const filePath = path.join(DATA_ROOT, fileName);
         log("Open " + filePath);
-        vscode.workspace.openTextDocument(filePath).then(document => {
-            vscode.window.showTextDocument(document).then((_) => {
+        void vscode.workspace.openTextDocument(filePath).then(document => {
+            void vscode.window.showTextDocument(document).then((_) => {
                 resolve(document);
             });
         });
@@ -31,17 +31,16 @@ function openFile(fileName: string): Promise<vscode.TextDocument> {
 }
 
 suite("Extension", () => {
-    suiteSetup((done) => {
+    suiteSetup(async () => {
         // Wait until the extension is active
-        state.waitExtensionActivation()
-            .then(() => state.waitPrustiServerReady())
-            .then(done);
-        openFile(ASSERT_TRUE);
+        await state.waitExtensionActivation();
+        await state.waitPrustiServerReady();
+        await openFile(ASSERT_TRUE);
     });
 
     test("Update Prusti", async () => {
         // tests are run serially, so nothing will run & break while we're updating
-        const document = await openFile(ASSERT_TRUE);
+        await openFile(ASSERT_TRUE);
         await vscode.commands.executeCommand("prusti-assistant.update");
     });
 

@@ -1,5 +1,5 @@
-import { Location } from 'vs-verification-toolbox';
-import * as fs from 'fs-extra';
+import { Location } from "vs-verification-toolbox";
+import * as fs from "fs-extra";
 
 export class PrustiLocation {
     constructor(
@@ -16,7 +16,7 @@ export class PrustiLocation {
 
     public async rustToolchainVersion(): Promise<string> {
         const buffer = await fs.readFile(this.location.path("rust-toolchain"));
-        return buffer.toString('utf8').trim();
+        return buffer.toString("utf8").trim();
     }
 
     public get prustiDriver(): string {

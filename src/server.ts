@@ -1,8 +1,8 @@
-import * as vscode from 'vscode';
-import * as util from './util';
-import { prusti } from './dependencies';
-import * as config from './config';
-import * as state from './state';
+import * as vscode from "vscode";
+import * as util from "./util";
+import { prusti } from "./dependencies";
+import * as config from "./config";
+import * as state from "./state";
 
 export let serverAddress: string | undefined;
 
@@ -10,7 +10,7 @@ let serverKill: () => void | undefined;
 
 const serverChannel = vscode.window.createOutputChannel("Prusti Server");
 
-export function restartServer(context: vscode.ExtensionContext) {
+export function restartServer(context: vscode.ExtensionContext): void {
     try {
         serverKill?.();
     } catch (e) {

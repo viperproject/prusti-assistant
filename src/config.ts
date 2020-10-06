@@ -1,7 +1,7 @@
-import * as vscode from 'vscode';
-import { Location } from 'vs-verification-toolbox';
-import * as util from './util';
-import { findJavaHome, JavaHome } from './javaHome';
+import * as vscode from "vscode";
+import { Location } from "vs-verification-toolbox";
+import * as util from "./util";
+import { findJavaHome, JavaHome } from "./javaHome";
 
 const namespace = "prusti-assistant";
 
@@ -73,7 +73,7 @@ export function reportErrorsOnly(): boolean {
 // Avoid calling `findJavaHome()` each time.
 let cachedFindJavaHome: string | null = null;
 
-export async function javaHome(): Promise<JavaHome | null> {
+export async function javaHome(): Promise<JavaHome> {
     const configPath = config().get<string>("javaHome", "");
     let path;
     if (configPath.length > 0) {
@@ -82,9 +82,8 @@ export async function javaHome(): Promise<JavaHome | null> {
         if (cachedFindJavaHome === null) {
             cachedFindJavaHome = await findJavaHome();
         }
-        path = cachedFindJavaHome;
+        path = cachedFindJavaHome || "";
     }
-    if (path === null) { return null; }
     return new JavaHome(new Location(path));
 }
 

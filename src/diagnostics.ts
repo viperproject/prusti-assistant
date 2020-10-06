@@ -1,9 +1,9 @@
-import * as util from './util';
-import * as config from './config';
-import * as vscode from 'vscode';
-import * as path from 'path';
-import * as fs from 'fs';
-import { PrustiLocation } from './dependencies';
+import * as util from "./util";
+import * as config from "./config";
+import * as vscode from "vscode";
+import * as path from "path";
+import * as fs from "fs";
+import { PrustiLocation } from "./dependencies";
 
 // ========================================================
 // JSON Schemas
@@ -112,7 +112,7 @@ function parseCargoOutput(output: string): CargoMessage[] {
 
         // Parse the message into a diagnostic.
         console.log("Parse JSON", line);
-        const diag: CargoMessage = JSON.parse(line);
+        const diag = JSON.parse(line) as CargoMessage;
         console.log("Parsed JSON", diag);
         if (diag.message !== undefined) {
             messages.push(diag);
@@ -132,7 +132,7 @@ function parseRustcOutput(output: string): Message[] {
 
         // Parse the message into a diagnostic.
         console.log("Parse JSON", line);
-        const diag: Message = JSON.parse(line);
+        const diag = JSON.parse(line) as Message;
         console.log("Parsed JSON", diag);
         if (diag.message !== undefined) {
             messages.push(diag);
@@ -344,12 +344,12 @@ function parseRustcMessage(msg: Message, mainFilePath: string): Diagnostic {
  * @param rootPath The root path of a rust project.
  */
 async function removeDiagnosticMetadata(rootPath: string) {
-    const pattern = new vscode.RelativePattern(path.join(rootPath, 'target', 'debug'), '*.rmeta');
+    const pattern = new vscode.RelativePattern(path.join(rootPath, "target", "debug"), "*.rmeta");
     const files = (await vscode.workspace.findFiles(pattern));
     for (const file of files) {
-        await fs.unlink(file.fsPath, error => {
+        fs.unlink(file.fsPath, error => {
             if (error !== null) {
-                console.warn('Unlink failed', error);
+                console.warn("Unlink failed", error);
             }
         });
     }
@@ -379,7 +379,7 @@ async function queryCrateDiagnostics(prusti: PrustiLocation, rootPath: string): 
                 env: {
                     RUST_BACKTRACE: "1",
                     RUST_LOG: "info",
-                    JAVA_HOME: (await config.javaHome())!.path,
+                    JAVA_HOME: (await config.javaHome()).path,
                     VIPER_HOME: prusti.viperHome,
                     Z3_EXE: prusti.z3,
                     BOOGIE_EXE: prusti.boogie,
@@ -398,10 +398,10 @@ async function queryCrateDiagnostics(prusti: PrustiLocation, rootPath: string): 
     if (output.code === 101) {
         status = VerificationStatus.Errors;
     }
-    if (output.stderr.match(/error: internal compiler error/) !== null) {
+    if (/error: internal compiler error/.exec(output.stderr) !== null) {
         status = VerificationStatus.Crash;
     }
-    if (output.stderr.match(/^thread '.*' panicked at/) !== null) {
+    if (/^thread '.*' panicked at/.exec(output.stderr) !== null) {
         status = VerificationStatus.Crash;
     }
     const diagnostics: Diagnostic[] = [];
@@ -431,7 +431,7 @@ async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: stri
                     RUST_BACKTRACE: "1",
                     PRUSTI_LOG: "info",
                     PRUSTI_QUIET: "true",
-                    JAVA_HOME: (await config.javaHome())!.path,
+                    JAVA_HOME: (await config.javaHome()).path,
                     VIPER_HOME: prusti.viperHome,
                     Z3_EXE: prusti.z3,
                     BOOGIE_EXE: prusti.boogie,
@@ -450,10 +450,10 @@ async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: stri
     if (output.code === 101) {
         status = VerificationStatus.Crash;
     }
-    if (output.stderr.match(/error: internal compiler error/) !== null) {
+    if (/error: internal compiler error/.exec(output.stderr) !== null) {
         status = VerificationStatus.Crash;
     }
-    if (output.stderr.match(/^thread '.*' panicked at/) !== null) {
+    if (/^thread '.*' panicked at/.exec(output.stderr) !== null) {
         status = VerificationStatus.Crash;
     }
     const diagnostics: Diagnostic[] = [];
@@ -473,7 +473,7 @@ export class DiagnosticsSet {
     private diagnostics: Map<string, vscode.Diagnostic[]>;
 
     constructor() {
-        this.diagnostics = new Map();
+        this.diagnostics = new Map<string, vscode.Diagnostic[]>();
     }
 
     public hasErrors(): boolean {
@@ -515,13 +515,13 @@ export class DiagnosticsSet {
         return counts;
     }
 
-    public addAll(diagnostics: Diagnostic[]) {
+    public addAll(diagnostics: Diagnostic[]):void {
         for (const diag of diagnostics) {
             this.add(diag);
         }
     }
 
-    public add(diagnostic: Diagnostic) {
+    public add(diagnostic: Diagnostic):void {
         if (this.reportDiagnostic(diagnostic)) {
             const set = this.diagnostics.get(diagnostic.file_path);
             if (set !== undefined) {
@@ -534,7 +534,7 @@ export class DiagnosticsSet {
         }
     }
 
-    public render(diagnosticsCollection: vscode.DiagnosticCollection) {
+    public render(diagnosticsCollection: vscode.DiagnosticCollection):void {
         diagnosticsCollection.clear();
         for (const [path, fileDiagnostics] of this.diagnostics.entries()) {
             const uri = vscode.Uri.file(path);
@@ -546,11 +546,12 @@ export class DiagnosticsSet {
     /// Returns false if the diagnostic should be ignored
     private reportDiagnostic(diagnostic: Diagnostic): boolean {
         if (config.reportErrorsOnly()) {
-            if (diagnostic.diagnostic.severity !== vscode.DiagnosticSeverity.Error && diagnostic.diagnostic.message.match(/^\[Prusti\]/) === null) {
+            if (diagnostic.diagnostic.severity !== vscode.DiagnosticSeverity.Error
+                && /^\[Prusti\]/.exec(diagnostic.diagnostic.message) === null) {
                 console.log("Ignore non-error diagnostic", diagnostic);
                 return false;
             }
-            if (diagnostic.diagnostic.message.match(/^aborting due to ([0-9]+ |)previous error(s|)/) !== null) {
+            if (/^aborting due to ([0-9]+ |)previous error(s|)/.exec(diagnostic.diagnostic.message) !== null) {
                 console.log("Ignore non-error diagnostic", diagnostic);
                 return false;
             }
@@ -582,7 +583,10 @@ export async function generatesCratesDiagnostics(prusti: PrustiLocation, project
         } catch (err) {
             console.error(err);
             util.log(`Error: ${err}`);
-            const errorMessage = err.message ?? err.toString();
+            let errorMessage = "<unknown error type>";
+            if (err instanceof Error) {
+                errorMessage = err.message ?? err.toString();
+            }
             resultDiagnostics.add({
                 file_path: path.join(project.path, "Cargo.toml"),
                 diagnostic: new vscode.Diagnostic(
@@ -617,8 +621,10 @@ export async function generatesProgramDiagnostics(prusti: PrustiLocation, progra
     } catch (err) {
         console.error(err);
         util.log(`Error: ${err}`);
-        const errorMessage = err.message ?? err.toString();
-
+        let errorMessage = "<unknown error type>";
+        if (err instanceof Error) {
+            errorMessage = err.message ?? err.toString();
+        }
         resultDiagnostics.add({
             file_path: programPath,
             diagnostic: new vscode.Diagnostic(

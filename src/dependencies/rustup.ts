@@ -1,6 +1,6 @@
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
 
-import * as util from '../util';
+import * as util from "../util";
 
 export async function ensureRustToolchainInstalled(context: vscode.ExtensionContext, toolchainVersion: string): Promise<void> {
     util.log("Checking rust toolchain version...");
@@ -28,10 +28,10 @@ export async function ensureRustToolchainInstalled(context: vscode.ExtensionCont
         context.subscriptions.push(item);
         await util.spawn(
             "rustup", ["toolchain", "install", toolchainVersion], {
-            onStderr: output => {
-                updateText(('' + output).trim());
-            }
-        }).output;
+                onStderr: output => {
+                    updateText(("" + output).trim());
+                }
+            }).output;
         item.dispose();
     });
 }

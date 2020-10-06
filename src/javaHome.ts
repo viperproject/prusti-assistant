@@ -1,5 +1,5 @@
-import * as locate_java_home from 'locate-java-home';
-import { Location } from 'vs-verification-toolbox';
+import * as locate_java_home from "locate-java-home";
+import { Location } from "vs-verification-toolbox";
 
 export async function findJavaHome(): Promise<string | null> {
     return new Promise((resolve, reject) => {
@@ -26,7 +26,7 @@ export async function findJavaHome(): Promise<string | null> {
             });
         }
         catch (err) {
-            console.error(err.message);
+            console.error(err);
             resolve(null);
         }
     });

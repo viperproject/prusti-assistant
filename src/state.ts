@@ -1,4 +1,4 @@
-import * as util from './util';
+import * as util from "./util";
 
 /**
  * This module keeps a global state and allows clients to wait for the
@@ -28,7 +28,7 @@ export function waitExtensionActivation(): Promise<Listener> {
 
 export function waitPrustiServerReady(): Promise<Listener> {
     return new Promise(resolve => {
-        if (isExtensionActive) {
+        if (isPrustiServerReady) {
             // Resolve immediately
             resolve();
         } else {
@@ -37,19 +37,19 @@ export function waitPrustiServerReady(): Promise<Listener> {
     });
 }
 
-export function notifyExtensionActivation() {
+export function notifyExtensionActivation(): void {
     util.log("The extension is now active.");
     isExtensionActive = true;
     waitingForExtensionActivation?.forEach(listener => listener());
 }
 
-export function notifyPrustiServerReady() {
+export function notifyPrustiServerReady(): void {
     util.log("The Prust server is now ready.");
     isPrustiServerReady = true;
     waitingForPrustiServerReady?.forEach(listener => listener());
 }
 
-export function notifyPrustiServerStop() {
+export function notifyPrustiServerStop(): void {
     util.log("The Prust server stopped.");
     isPrustiServerReady = false;
 }

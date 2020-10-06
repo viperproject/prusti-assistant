@@ -1,14 +1,14 @@
-import * as vscode from 'vscode';
-import { performance } from 'perf_hooks';
-import * as config from './config';
-import * as util from './util';
-import * as diagnostics from './diagnostics';
-import * as checks from './checks';
-import { prusti, installDependencies, ensureRustToolchainInstalled } from './dependencies';
-import { serverAddress, restartServer } from './server';
-import * as state from './state';
+import * as vscode from "vscode";
+import { performance } from "perf_hooks";
+import * as config from "./config";
+import * as util from "./util";
+import * as diagnostics from "./diagnostics";
+import * as checks from "./checks";
+import { prusti, installDependencies, ensureRustToolchainInstalled } from "./dependencies";
+import { serverAddress, restartServer } from "./server";
+import * as state from "./state";
 
-export async function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
     util.log("Start Prusti Assistant");
 
     // Download dependencies
@@ -17,7 +17,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Prerequisites checks
     util.log("Checking prerequisites...");
-    const [hasPrerequisites, errorMessage] = await checks.hasPrerequisites(prusti!, context);
+    const [hasPrerequisites, errorMessage] = await checks.hasPrerequisites(prusti!);
     if (!hasPrerequisites) {
         util.userError("Prusti Assistant's prerequisites are not satisfied.", false);
         util.userError(errorMessage, true, true);
@@ -124,7 +124,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
                 const projects = await util.findProjects();
                 if (!projects.hasProjects()) {
-                    vscode.window.showWarningMessage(
+                    void vscode.window.showWarningMessage(
                         "Prusti Assistant: No 'Cargo.toml' files were found in the workspace."
                     );
                 }
@@ -149,10 +149,10 @@ export async function activate(context: vscode.ExtensionContext) {
     // Verify on command
     context.subscriptions.push(
         vscode.commands.registerCommand(verifyCommand, async () => {
-            if (vscode.window.activeTextEditor !== undefined) {
-                vscode.window.activeTextEditor.document.save();
-                await runVerification(
-                    vscode.window.activeTextEditor.document
+            const activeTextEditor = vscode.window.activeTextEditor;
+            if (activeTextEditor !== undefined) {
+                await activeTextEditor.document.save().then(
+                    () => runVerification(activeTextEditor.document)
                 );
             } else {
                 util.log("vscode.window.activeTextEditor is not ready yet.");

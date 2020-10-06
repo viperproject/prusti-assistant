@@ -1,10 +1,10 @@
-import * as vscode from 'vscode';
-import * as util from './util';
-import * as config from './config';
-import * as path from 'path';
-import { PrustiLocation } from './dependencies';
+import * as vscode from "vscode";
+import * as util from "./util";
+import * as config from "./config";
+import * as path from "path";
+import { PrustiLocation } from "./dependencies";
 
-export async function hasPrerequisites(prusti: PrustiLocation, context: vscode.ExtensionContext): Promise<[boolean, string]> {
+export async function hasPrerequisites(prusti: PrustiLocation): Promise<[boolean, string]> {
     util.log("Checking Java home...");
     if (await config.javaHome() === null) {
         const msg = (
@@ -29,7 +29,7 @@ export async function hasPrerequisites(prusti: PrustiLocation, context: vscode.E
     util.log("Checking Java...");
     try {
         const javaPath = path.join(
-            (await config.javaHome())!.javaExecutable
+            (await config.javaHome()).javaExecutable
         );
         await util.spawn(javaPath, ["-version"]).output;
     } catch (err) {

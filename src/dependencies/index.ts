@@ -1,13 +1,13 @@
-export * from './PrustiLocation';
-export * from './rustup';
+export * from "./PrustiLocation";
+export * from "./rustup";
 
-import { withProgressInWindow, currentPlatform } from 'vs-verification-toolbox';
-import * as vscode from 'vscode';
+import { withProgressInWindow, currentPlatform } from "vs-verification-toolbox";
+import * as vscode from "vscode";
 
-import * as config from '../config';
-import * as util from '../util';
-import { PrustiLocation } from './PrustiLocation';
-import { prustiTools } from './prustiTools';
+import * as config from "../config";
+import * as util from "../util";
+import { PrustiLocation } from "./PrustiLocation";
+import { prustiTools } from "./prustiTools";
 
 export let prusti: PrustiLocation | undefined;
 export async function installDependencies(context: vscode.ExtensionContext, shouldUpdate: boolean): Promise<void> {
