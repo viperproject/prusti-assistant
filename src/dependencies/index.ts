@@ -6,14 +6,11 @@ import * as vscode from 'vscode';
 
 import * as config from '../config';
 import * as util from '../util';
-import * as notifier from '../notifier';
 import { PrustiLocation } from './PrustiLocation';
 import { prustiTools } from './prustiTools';
 
 export let prusti: PrustiLocation | undefined;
 export async function installDependencies(context: vscode.ExtensionContext, shouldUpdate: boolean): Promise<void> {
-    notifier.notify(notifier.Event.StartPrustiUpdate);
-
     try {
         const tools = prustiTools(currentPlatform!, context);
         const { result: location, didReportProgress } = await withProgressInWindow(
@@ -34,7 +31,5 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
     } catch (err) {
         util.userError(`Error installing Prusti: ${err}`);
         throw err;
-    } finally {
-        notifier.notify(notifier.Event.EndPrustiUpdate);
     }
 }

@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as path from 'path';
-import * as notifier from '../notifier';
+import * as state from '../state';
 
 const PROJECT_ROOT = path.join(__dirname, "../../");
 const DATA_ROOT = path.join(PROJECT_ROOT, "src", "test", "data");
@@ -33,7 +33,9 @@ function openFile(fileName: string): Promise<vscode.TextDocument> {
 suite("Extension", () => {
     suiteSetup((done) => {
         // Wait until the extension is active
-        notifier.wait(notifier.Event.EndExtensionActivation).then(done);
+        state.waitExtensionActivation()
+            .then(() => state.waitPrustiServerReady())
+            .then(done);
         openFile(ASSERT_TRUE);
     });
 

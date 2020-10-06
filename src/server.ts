@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as util from './util';
 import { prusti } from './dependencies';
 import * as config from './config';
+import * as state from './state';
 
 export let serverAddress: string | undefined;
 
@@ -43,15 +44,20 @@ export function restartServer(context: vscode.ExtensionContext) {
                 const port = parseInt(line.toString().split("port: ")[1], 10);
                 util.log(`Prusti server is listening on port ${port}.`);
                 serverAddress = `localhost:${port}`;
+                state.notifyPrustiServerReady();
             },
             onStderr: line => serverChannel.append(`[stderr] ${line}`)
         }
     );
 
     serverKill = kill;
-    server.finally(() => util.userErrorPopup(
-        "Prusti server crashed!",
-        "Restart Server",
-        () => restartServer(context)
-    ));
+    server.finally(() => {
+        state.notifyPrustiServerStop();
+        // Ask the user to restart the server
+        util.userErrorPopup(
+            "Prusti server crashed!",
+            "Restart Server",
+            () => restartServer(context)
+        );
+    });
 }

@@ -4,12 +4,11 @@ import * as config from './config';
 import * as util from './util';
 import * as diagnostics from './diagnostics';
 import * as checks from './checks';
-import * as notifier from './notifier';
 import { prusti, installDependencies, ensureRustToolchainInstalled } from './dependencies';
 import { serverAddress, restartServer } from './server';
+import * as state from './state';
 
 export async function activate(context: vscode.ExtensionContext) {
-    notifier.notify(notifier.Event.StartExtensionActivation);
     util.log("Start Prusti Assistant");
 
     // Download dependencies
@@ -72,7 +71,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Define verification function
     async function runVerification(document: vscode.TextDocument) {
-        notifier.notify(notifier.Event.StartVerification);
         util.log("Run verification...");
 
         switch (config.verificationMode()) {
@@ -145,8 +143,6 @@ export async function activate(context: vscode.ExtensionContext) {
                 break;
             }
         }
-
-        notifier.notify(notifier.Event.EndVerification);
     }
 
     const verifyCommand = "prusti-assistant.verify";
@@ -201,5 +197,5 @@ export async function activate(context: vscode.ExtensionContext) {
         }
     }
 
-    notifier.notify(notifier.Event.EndExtensionActivation);
+    state.notifyExtensionActivation();
 }
