@@ -31,7 +31,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     await ensureRustToolchainInstalled(context, await prusti!.rustToolchainVersion());
 
     // Start the server
-    restartServer(context);
+    await restartServer(context);
 
     // Update dependencies on command
     context.subscriptions.push(
@@ -60,7 +60,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             const hasChangedServer = event.affectsConfiguration(config.serverAddressPath);
             if (hasChangedServer) {
                 util.log("Restart the server because the configuration changed...");
-                restartServer(context);
+                await restartServer(context);
             }
         })
     );
@@ -87,7 +87,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                     util.userErrorPopup(
                         "Prusti server not running!",
                         "Restart Server",
-                        () => restartServer(context)
+                        () => void restartServer(context)
                     );
                     return;
                 }

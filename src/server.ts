@@ -10,7 +10,7 @@ let serverKill: () => void | undefined;
 
 const serverChannel = vscode.window.createOutputChannel("Prusti Server");
 
-export function restartServer(context: vscode.ExtensionContext): void {
+export async function restartServer(context: vscode.ExtensionContext): Promise<void> {
     try {
         serverKill?.();
     } catch (e) {
@@ -34,6 +34,11 @@ export function restartServer(context: vscode.ExtensionContext): void {
                     // Might not exist yet, but that's handled on the rust side
                     PRUSTI_LOG_DIR: context.logPath,
                     RUST_BACKTRACE: "1",
+                    RUST_LOG: "info",
+                    JAVA_HOME: (await config.javaHome()).path,
+                    VIPER_HOME: prusti!.viperHome,
+                    Z3_EXE: prusti!.z3,
+                    BOOGIE_EXE: prusti!.boogie,
                     ...process.env
                 }
             },
@@ -59,7 +64,7 @@ export function restartServer(context: vscode.ExtensionContext): void {
         util.userErrorPopup(
             "Prusti server crashed!",
             "Restart Server",
-            () => restartServer(context)
+            () => void restartServer(context)
         );
     });
 }
