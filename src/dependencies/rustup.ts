@@ -1,5 +1,4 @@
 import * as vscode from "vscode";
-
 import * as util from "../util";
 
 export async function ensureRustToolchainInstalled(context: vscode.ExtensionContext, toolchainVersion: string): Promise<void> {
@@ -11,27 +10,25 @@ export async function ensureRustToolchainInstalled(context: vscode.ExtensionCont
         util.log("Correct rust toolchain available.");
         return;
     }
+    util.log(`Rust toolchain ${toolchainVersion} is not available.`);
 
-    const description = `Required rust toolchain version ${toolchainVersion} not installed!`;
-    util.log(description);
-    const installAction = "Install";
-    await vscode.window.showErrorMessage(
-        description + "\n\n" + "Prusti Assistant can install it for you.",
-        installAction
-    ).then(async selection => {
-        if (selection !== installAction) { return; }
+    util.userInfo(
+        `Installing rust toolchain version ${toolchainVersion}, required by Prusti...`
+    );
 
-        const item = vscode.window.createStatusBarItem();
-        const updateText = (text: string) => item.text = `$(loading~spin) rustup: ${text}`;
-        updateText("Installing toolchain...");
-        item.show();
-        context.subscriptions.push(item);
-        await util.spawn(
-            "rustup", ["toolchain", "install", toolchainVersion], {
-                onStderr: output => {
-                    updateText(("" + output).trim());
-                }
-            }).output;
-        item.dispose();
-    });
+    const item = vscode.window.createStatusBarItem();
+    const updateText = (text: string) => item.text = `$(loading~spin) rustup: ${text}`;
+    updateText("Installing toolchain...");
+    item.show();
+    context.subscriptions.push(item);
+    await util.spawn(
+        "rustup",
+        ["toolchain", "install", toolchainVersion],
+        {
+            onStderr: output => {
+                updateText(("" + output).trim());
+            }
+        }
+    ).output;
+    item.dispose();
 }
