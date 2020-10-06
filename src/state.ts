@@ -44,12 +44,12 @@ export function notifyExtensionActivation(): void {
 }
 
 export function notifyPrustiServerReady(): void {
-    util.log("The Prust server is now ready.");
+    util.log("The Prusti server is now ready.");
     isPrustiServerReady = true;
     waitingForPrustiServerReady?.forEach(listener => listener());
 }
 
 export function notifyPrustiServerStop(): void {
-    util.log("The Prust server stopped.");
+    util.log("The Prusti server stopped.");
     isPrustiServerReady = false;
 }
