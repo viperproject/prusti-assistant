@@ -70,9 +70,20 @@ export function reportErrorsOnly(): boolean {
     return config().get("reportErrorsOnly", true);
 }
 
+// Avoid calling `findJavaHome()` each time.
+let cachedFindJavaHome: string | null = null;
+
 export async function javaHome(): Promise<JavaHome | null> {
     const configPath = config().get<string>("javaHome", "");
-    const path = configPath.length > 0 ? configPath : await findJavaHome();
+    let path;
+    if (configPath.length > 0) {
+        path = configPath;
+    } else {
+        if (cachedFindJavaHome === null) {
+            cachedFindJavaHome = await findJavaHome();
+        }
+        path = cachedFindJavaHome;
+    }
     if (path === null) { return null; }
     return new JavaHome(new Location(path));
 }

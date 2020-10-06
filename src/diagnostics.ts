@@ -383,7 +383,7 @@ async function queryCrateDiagnostics(prusti: PrustiLocation, rootPath: string): 
                     VIPER_HOME: prusti.viperHome,
                     Z3_EXE: prusti.z3,
                     BOOGIE_EXE: prusti.boogie,
-                    PATH: process.env.PATH  // Needed e.g. to run Rustup
+                    ...process.env  // Needed e.g. to run Rustup
                 }
             }
         }
@@ -435,7 +435,7 @@ async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: stri
                     VIPER_HOME: prusti.viperHome,
                     Z3_EXE: prusti.z3,
                     BOOGIE_EXE: prusti.boogie,
-                    PATH: process.env.PATH  // Needed e.g. to run Rustup
+                    ...process.env  // Needed e.g. to run Rustup
                 }
             }
         }
