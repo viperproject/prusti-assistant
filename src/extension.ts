@@ -16,11 +16,34 @@ export async function activate(context: vscode.ExtensionContext) {
     util.log("Checking dependencies...");
     await installDependencies(context, false);
 
+    // Prerequisites checks
+    util.log("Checking prerequisites...");
+    const [hasPrerequisites, errorMessage] = await checks.hasPrerequisites(prusti!, context);
+    if (!hasPrerequisites) {
+        util.userError("Prusti Assistant's prerequisites are not satisfied.", false);
+        util.userError(errorMessage, true, true);
+        util.log("Stopping plugin. Reload the IDE to retry.");
+        return;
+    } else {
+        util.log("Prerequisites are satisfied.");
+    }
+
+    // Install Rust toolchain
+    await ensureRustToolchainInstalled(context, await prusti!.rustToolchainVersion());
+
+    // Start the server
+    restartServer(context);
+
     // Update dependencies on command
     context.subscriptions.push(
         vscode.commands.registerCommand("prusti-assistant.update", async () => {
             await installDependencies(context, true);
         })
+    );
+
+    // Restart the server on command
+    context.subscriptions.push(
+        vscode.commands.registerCommand("prusti-assistant.restart-server", restartServer)
     );
 
     // Update dependencies on config change
@@ -42,28 +65,6 @@ export async function activate(context: vscode.ExtensionContext) {
             }
         })
     );
-
-    // Prerequisites checks
-    util.log("Checking prerequisites...");
-    const [hasPrerequisites, errorMessage] = await checks.hasPrerequisites(prusti!, context);
-    if (!hasPrerequisites) {
-        util.userError("Prusti Assistant's prerequisites are not satisfied.", false);
-        util.userError(errorMessage, true, true);
-        util.log("Stopping plugin. Reload the IDE to retry.");
-        return;
-    } else {
-        util.log("Prerequisites are satisfied.");
-    }
-
-    // Start the server
-    restartServer(context);
-
-    // Restart on command
-    context.subscriptions.push(
-        vscode.commands.registerCommand("prusti-assistant.restart-server", restartServer)
-    );
-
-    await ensureRustToolchainInstalled(context, await prusti!.rustToolchainVersion());
 
     // Shared collection of diagnostics
     const prustiProgramDiagnostics = vscode.languages.createDiagnosticCollection("prusti-program");
