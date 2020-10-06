@@ -46,7 +46,9 @@ export function restartServer(context: vscode.ExtensionContext): void {
                 serverAddress = `localhost:${port}`;
                 state.notifyPrustiServerReady();
             },
-            onStderr: line => serverChannel.append(`[stderr] ${line}`)
+            onStderr: line => {
+                serverChannel.append(`[stderr] ${line}`);
+            }
         }
     );
 

@@ -33,9 +33,9 @@ function openFile(fileName: string): Promise<vscode.TextDocument> {
 suite("Extension", () => {
     suiteSetup(async () => {
         // Wait until the extension is active
+        await openFile(ASSERT_TRUE);
         await state.waitExtensionActivation();
         await state.waitPrustiServerReady();
-        await openFile(ASSERT_TRUE);
     });
 
     test("Update Prusti", async () => {
