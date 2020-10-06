@@ -35,7 +35,7 @@ export async function restartServer(context: vscode.ExtensionContext): Promise<v
                     PRUSTI_LOG_DIR: context.logPath,
                     RUST_BACKTRACE: "1",
                     RUST_LOG: "info",
-                    JAVA_HOME: (await config.javaHome()).path,
+                    JAVA_HOME: (await config.javaHome())!.path,
                     VIPER_HOME: prusti!.viperHome,
                     Z3_EXE: prusti!.z3,
                     BOOGIE_EXE: prusti!.boogie,
