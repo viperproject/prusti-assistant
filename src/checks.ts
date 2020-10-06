@@ -28,7 +28,7 @@ export async function hasPrerequisites(prusti: PrustiLocation): Promise<[boolean
     util.log("Checking Java...");
     try {
         const javaPath = path.join(
-            (await config.javaHome()).javaExecutable
+            (await config.javaHome())!.javaExecutable
         );
         await util.spawn(javaPath, ["-version"]).output;
     } catch (err) {
