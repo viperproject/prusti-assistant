@@ -10,7 +10,7 @@ function config(): vscode.WorkspaceConfiguration {
 }
 
 export enum BuildChannel {
-    // Stable = "stable",
+    Stable = "stable",
     Nightly = "nightly",
     Local = "local"
 }
