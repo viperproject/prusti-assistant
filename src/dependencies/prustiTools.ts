@@ -23,6 +23,6 @@ function identifier(platform: Platform): string {
         case Platform.Windows:
             return "windows";
         case Platform.Linux:
-            return "linux";
+            return "ubuntu";
     }
 }
