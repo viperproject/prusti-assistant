@@ -550,7 +550,7 @@ export class DiagnosticsSet {
                 console.log("Ignore non-error diagnostic", diagnostic);
                 return false;
             }
-            if (diagnostic.diagnostic.message.match(/^aborting due to ([0-9]+ |)previous error(s|)$/) !== null) {
+            if (diagnostic.diagnostic.message.match(/^aborting due to ([0-9]+ |)previous error(s|)/) !== null) {
                 console.log("Ignore non-error diagnostic", diagnostic);
                 return false;
             }
