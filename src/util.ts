@@ -133,7 +133,7 @@ export function spawn(
                 reject(err);
             });
         }),
-        kill: () => proc.kill()
+        kill: () => proc.kill("SIGKILL")
     };
 }
 
