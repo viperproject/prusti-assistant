@@ -6,17 +6,25 @@ import * as state from "./state";
 
 export let serverAddress: string | undefined;
 
-let serverKill: () => void | undefined;
+let serverKill: (() => void) | undefined;
 
 const serverChannel = vscode.window.createOutputChannel("Prusti Assistant Server");
 
-export async function restartServer(context: vscode.ExtensionContext): Promise<void> {
+export function killServer(): void {
     try {
-        serverKill?.();
+        if (serverKill !== undefined) {
+            util.log("Kill Prusti server");
+            serverKill();
+        }
+        serverKill = undefined;
+        serverAddress = undefined;
     } catch (e) {
         util.log(`Error ignored while killing the Prusti server: ${e}`);
     }
-    serverAddress = undefined;
+}
+
+export async function restartServer(context: vscode.ExtensionContext): Promise<void> {
+    killServer();
 
     const configAddress = config.serverAddress();
     if (configAddress !== "") {

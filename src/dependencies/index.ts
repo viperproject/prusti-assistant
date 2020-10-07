@@ -5,6 +5,7 @@ import * as vscode from "vscode";
 
 import * as config from "../config";
 import * as util from "../util";
+import * as server from "../server";
 import { PrustiLocation } from "./PrustiLocation";
 import { prustiTools } from "./prustiTools";
 import { ensureRustToolchainInstalled } from "./rustup";
@@ -12,6 +13,9 @@ import { ensureRustToolchainInstalled } from "./rustup";
 export let prusti: PrustiLocation | undefined;
 export async function installDependencies(context: vscode.ExtensionContext, shouldUpdate: boolean): Promise<void> {
     try {
+        // Kill the server before trying to remove its files
+        server.killServer();
+
         const tools = prustiTools(currentPlatform!, context);
         const { result: location, didReportProgress } = await withProgressInWindow(
             `${shouldUpdate ? "Updating" : "Installing"} Prusti`,
