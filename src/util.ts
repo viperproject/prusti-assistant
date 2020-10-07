@@ -3,9 +3,11 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
 
-export function userInfo(message: string, popup = true, requestReload = false): void {
+export function userInfo(message: string, popup = true, requestReload = false, statusBar = true): void {
     log(message);
-    vscode.window.setStatusBarMessage(message);
+    if (statusBar) {
+        vscode.window.setStatusBarMessage(message);
+    }
     if (popup) {
         if (requestReload) {
             const action = "Reload Now";

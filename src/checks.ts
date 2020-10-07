@@ -3,7 +3,7 @@ import * as config from "./config";
 import * as path from "path";
 import { PrustiLocation } from "./dependencies";
 
-export async function hasPrerequisites(prusti: PrustiLocation): Promise<[boolean, string]> {
+export async function hasPrerequisites(): Promise<[boolean, string]> {
     util.log("Checking Java home...");
     if (await config.javaHome() === null) {
         const msg = (
@@ -40,6 +40,10 @@ export async function hasPrerequisites(prusti: PrustiLocation): Promise<[boolean
         );
         return [false, msg];
     }
+    return [true, ""];
+}
+
+export async function checkPrusti(prusti: PrustiLocation): Promise<[boolean, string]> {
     util.log("Checking Z3...");
     try {
         await util.spawn(prusti.z3, ["--version"]).output;

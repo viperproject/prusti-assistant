@@ -4,20 +4,16 @@ import * as config from "./config";
 import * as util from "./util";
 import * as diagnostics from "./diagnostics";
 import * as checks from "./checks";
-import { prusti, installDependencies, ensureRustToolchainInstalled } from "./dependencies";
+import { prusti, installDependencies } from "./dependencies";
 import { serverAddress, restartServer } from "./server";
 import * as state from "./state";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     util.log("Start Prusti Assistant");
 
-    // Download dependencies
-    util.log("Checking dependencies...");
-    await installDependencies(context, false);
-
     // Prerequisites checks
     util.log("Checking prerequisites...");
-    const [hasPrerequisites, errorMessage] = await checks.hasPrerequisites(prusti!);
+    const [hasPrerequisites, errorMessage] = await checks.hasPrerequisites();
     if (!hasPrerequisites) {
         util.userError("Prusti Assistant's prerequisites are not satisfied.", false);
         util.userError(errorMessage, true, true);
@@ -27,8 +23,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         util.log("Prerequisites are satisfied.");
     }
 
-    // Install Rust toolchain
-    await ensureRustToolchainInstalled(context, await prusti!.rustToolchainVersion());
+    // Download dependencies
+    util.log("Checking dependencies...");
+    await installDependencies(context, false);
+
+    // Check Prusti
+    util.log("Checking Prusti...");
+    const [isPrustiOk, prustiErrorMessage] = await checks.checkPrusti(prusti!);
+    if (!isPrustiOk) {
+        util.userError(prustiErrorMessage, true, true);
+        util.log("Stopping plugin. Reload the IDE to retry.");
+        return;
+    } else {
+        util.log("Prusti checks completed.");
+    }
 
     // Start the server
     await restartServer(context);

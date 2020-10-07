@@ -1,5 +1,4 @@
 export * from "./PrustiLocation";
-export * from "./rustup";
 
 import { withProgressInWindow, currentPlatform } from "vs-verification-toolbox";
 import * as vscode from "vscode";
@@ -8,6 +7,7 @@ import * as config from "../config";
 import * as util from "../util";
 import { PrustiLocation } from "./PrustiLocation";
 import { prustiTools } from "./prustiTools";
+import { ensureRustToolchainInstalled } from "./rustup";
 
 export let prusti: PrustiLocation | undefined;
 export async function installDependencies(context: vscode.ExtensionContext, shouldUpdate: boolean): Promise<void> {
@@ -28,6 +28,13 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
                 util.userInfo("Prusti installed successfully.");
             }
         }
+
+        // Install Rust toolchain
+        await ensureRustToolchainInstalled(
+            context,
+            await prusti.rustToolchainVersion(),
+            ["rustc-dev", "llvm-tools-preview"],
+        );
     } catch (err) {
         util.userError(`Error installing Prusti: ${err}`);
         throw err;
