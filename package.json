@@ -148,7 +148,7 @@
         "@types/mocha": "^8.0.3",
         "@types/node": "^14.11.5",
         "fs-extra": "^9.0.1",
-        "locate-java-home": "^1.1.2",
+        "find-java-home": "^1.1.0",
         "vs-verification-toolbox": "git+https://github.com/viperproject/vs-verification-toolbox.git"
     }
 }

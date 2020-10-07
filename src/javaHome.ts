@@ -1,27 +1,21 @@
-import * as locate_java_home from "locate-java-home";
 import { Location } from "vs-verification-toolbox";
+import * as findJavaHomeLib from 'find-java-home';
 
 export async function findJavaHome(): Promise<string | null> {
     return new Promise((resolve, reject) => {
         try {
-            const options = {
-                version: ">=1.8",
-                mustBe64Bit: true
+            const options: findJavaHomeLib.IOptions = {
+                allowJre: false,
+                registry: "x64",
             };
             console.log("Searching for Java home...");
-            locate_java_home.default(options, (err, javaHomes) => {
+            findJavaHomeLib(options, (err, home) => {
                 if (err !== null) {
-                    console.error(err.message);
+                    console.error(err);
                     resolve(null);
                 } else {
-                    if (!Array.isArray(javaHomes) || javaHomes.length === 0) {
-                        console.log("Could not find Java home");
-                        resolve(null);
-                    } else {
-                        const javaHome = javaHomes[0];
-                        console.log("Using Java home", javaHome);
-                        resolve(javaHome.path);
-                    }
+                    console.log("Using Java home", home);
+                    resolve(home);
                 }
             });
         }
