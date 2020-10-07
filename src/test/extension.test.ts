@@ -10,7 +10,7 @@ const ASSERT_FALSE = "assert_false.rs";
 const EMPTY = "empty.rs";
 
 function log(msg: string) {
-    console.log("[UnitTest] " + msg);
+    console.log("[test] " + msg);
 }
 
 /**

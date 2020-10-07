@@ -12,3 +12,4 @@ src/**
 log/
 nll-facts/
 report.csv
+*.log

@@ -78,18 +78,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 // Verify provided document
                 if (document.languageId !== "rust") {
                     util.log(
-                        "The document is not a Rust program, thus Prusti will not run on it."
+                        `The document is not a Rust program (${document.languageId}), thus Prusti will not run on it.`
                     );
                     break;
                 }
 
                 if (serverAddress === undefined) {
-                    util.userErrorPopup(
-                        "Prusti server not running!",
-                        "Restart Server",
-                        () => void restartServer(context)
+                    // Just warn, as Prusti can run without a server.
+                    util.userWarn(
+                        "Prusti might run slower than usual because the Prusti server is not running."
                     );
-                    return;
                 }
 
                 vscode.window.setStatusBarMessage("$(loading~spin) Running Prusti...");

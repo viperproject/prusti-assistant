@@ -127,7 +127,6 @@ export function spawn(
             });
             proc.on("error", (err) => {
                 printOutput();
-                console.log("Error", err);
                 log(`Error: ${err}`);
                 reject(err);
             });

@@ -420,9 +420,16 @@ async function queryCrateDiagnostics(prusti: PrustiLocation, rootPath: string): 
  * @returns An array of diagnostics for the given rust project.
  */
 async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: string, serverAddress: string): Promise<[Diagnostic[], VerificationStatus]> {
+    const args = [
+        "--crate-type=lib",
+        "--error-format=json",
+        // TODO: only when using nightly Prusti
+        "--edition=2018",
+        programPath
+    ];
     const output = await util.spawn(
         prusti.prustiRustc,
-        ["--crate-type=lib", "--error-format=json", "--edition=2018", programPath],
+        args,
         {
             options: {
                 cwd: path.dirname(programPath),
@@ -575,7 +582,7 @@ export async function generatesCratesDiagnostics(prusti: PrustiLocation, project
                     file_path: path.join(project.path, "Cargo.toml"),
                     diagnostic: new vscode.Diagnostic(
                         dummyRange(),
-                        "Prusti encountered an error. See other reported errors and the log (View -> Output -> Prusti Assistant) for more details.",
+                        "Prusti encountered an error. See other reported errors and the log (View -> Output -> Prusti Assistant ...) for more details.",
                         vscode.DiagnosticSeverity.Error
                     )
                 });
@@ -591,7 +598,7 @@ export async function generatesCratesDiagnostics(prusti: PrustiLocation, project
                 file_path: path.join(project.path, "Cargo.toml"),
                 diagnostic: new vscode.Diagnostic(
                     dummyRange(),
-                    `Unexpected error. ${errorMessage}. See the log for more details.`,
+                    `Unexpected error. ${errorMessage}. See the log (View -> Output -> Prusti Assistant ...) for more details.`,
                     vscode.DiagnosticSeverity.Error
                 )
             });
@@ -602,18 +609,18 @@ export async function generatesCratesDiagnostics(prusti: PrustiLocation, project
 }
 
 
-export async function generatesProgramDiagnostics(prusti: PrustiLocation, programPath: string, serverAddress: string): Promise<DiagnosticsSet> {
+export async function generatesProgramDiagnostics(prusti: PrustiLocation, programPath: string, serverAddress: string | undefined): Promise<DiagnosticsSet> {
     const resultDiagnostics = new DiagnosticsSet();
 
     try {
-        const [diagnostics, status] = await queryProgramDiagnostics(prusti, programPath, serverAddress);
+        const [diagnostics, status] = await queryProgramDiagnostics(prusti, programPath, serverAddress || "");
         resultDiagnostics.addAll(diagnostics);
         if (status === VerificationStatus.Crash) {
             resultDiagnostics.add({
                 file_path: programPath,
                 diagnostic: new vscode.Diagnostic(
                     dummyRange(),
-                    "Prusti encountered an error. See other reported errors and the log (View -> Output -> Prusti Assistant) for more details.",
+                    "Prusti encountered an error. See other reported errors and the log (View -> Output -> Prusti Assistant ...) for more details.",
                     vscode.DiagnosticSeverity.Error
                 )
             });
@@ -629,7 +636,7 @@ export async function generatesProgramDiagnostics(prusti: PrustiLocation, progra
             file_path: programPath,
             diagnostic: new vscode.Diagnostic(
                 dummyRange(),
-                `Unexpected error: ${errorMessage}. See the log for more details.`,
+                `Unexpected error: ${errorMessage}. See the log (View -> Output -> Prusti Assistant ...) for more details.`,
                 vscode.DiagnosticSeverity.Error
             )
         });

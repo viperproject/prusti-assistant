@@ -8,7 +8,7 @@ export let serverAddress: string | undefined;
 
 let serverKill: () => void | undefined;
 
-const serverChannel = vscode.window.createOutputChannel("Prusti Server");
+const serverChannel = vscode.window.createOutputChannel("Prusti Assistant Server");
 
 export async function restartServer(context: vscode.ExtensionContext): Promise<void> {
     try {
@@ -44,12 +44,13 @@ export async function restartServer(context: vscode.ExtensionContext): Promise<v
             },
             onStdout: line => {
                 serverChannel.append(`[stdout] ${line}`);
-                if (serverAddress !== undefined) { return; }
                 // Extract the server port from the output
-                const port = parseInt(line.toString().split("port: ")[1], 10);
-                util.log(`Prusti server is listening on port ${port}.`);
-                serverAddress = `localhost:${port}`;
-                state.notifyPrustiServerReady();
+                if (serverAddress === undefined) {
+                    const port = parseInt(line.toString().split("port: ")[1], 10);
+                    util.log(`Prusti server is listening on port ${port}.`);
+                    serverAddress = `localhost:${port}`;
+                    state.notifyPrustiServerReady();
+                }
             },
             onStderr: line => {
                 serverChannel.append(`[stderr] ${line}`);
@@ -62,7 +63,7 @@ export async function restartServer(context: vscode.ExtensionContext): Promise<v
         state.notifyPrustiServerStop();
         // Ask the user to restart the server
         util.userErrorPopup(
-            "Prusti server crashed!",
+            "Prusti server stopped working.",
             "Restart Server",
             () => void restartServer(context)
         );
