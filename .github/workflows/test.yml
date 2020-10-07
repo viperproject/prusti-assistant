@@ -18,17 +18,23 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v2
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: '12'
+
       - name: Set up Java
         uses: actions/setup-java@v1
         with:
-          java-version: 1.8
+          java-version: '1.8'
           java-package: jdk
           architecture: x64
 
       - name: Set up Rust
         uses: actions-rs/toolchain@v1.0.6
         with:
-          # TODO: choose automatically the toolchain version
+          # Prusti Assistant will automatically check and install the correct
+          # toolchain version and components.
           toolchain: nightly-2020-09-30
           components: rustc-dev, llvm-tools-preview
 
