@@ -15,6 +15,7 @@ export function killServer(): void {
         if (serverKill !== undefined) {
             util.log("Kill Prusti server");
             serverKill();
+            state.notifyPrustiServerStop();
         }
         serverKill = undefined;
         serverAddress = undefined;
@@ -67,8 +68,8 @@ export async function restartServer(context: vscode.ExtensionContext): Promise<v
     );
 
     serverKill = kill;
-    server.finally(() => {
-        state.notifyPrustiServerStop();
+    server.catch((error) => { // TODO: this is not executed when the server crashes
+        util.log(`Prusti server error: ${error}`)
         // Ask the user to restart the server
         util.userErrorPopup(
             "Prusti server stopped working.",

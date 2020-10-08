@@ -13,6 +13,8 @@ import { ensureRustToolchainInstalled } from "./rustup";
 export let prusti: PrustiLocation | undefined;
 export async function installDependencies(context: vscode.ExtensionContext, shouldUpdate: boolean): Promise<void> {
     try {
+        util.log(`${shouldUpdate ? "Update" : "Install"} Prusti dependencies`);
+
         // Kill the server before trying to remove its files
         server.killServer();
 
@@ -44,5 +46,7 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
     } catch (err) {
         util.userError(`Error installing Prusti: ${err}`);
         throw err;
+    } finally {
+        await server.restartServer(context);
     }
 }

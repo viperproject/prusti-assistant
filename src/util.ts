@@ -2,6 +2,7 @@ import * as childProcess from "child_process";
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
+import * as treeKill from 'tree-kill';
 
 export function userInfo(message: string, popup = true, requestReload = false, statusBar = true): void {
     log(message);
@@ -133,7 +134,18 @@ export function spawn(
                 reject(err);
             });
         }),
-        kill: () => proc.kill("SIGKILL")
+        kill: () => {
+            treeKill(proc.pid, "SIGKILL", (err) => {
+                if (err !== undefined) {
+                    console.error(err);
+                    log(`Failed to kill process tree of ${proc.pid}: ${err}`);
+                    const succeeded = proc.kill("SIGKILL");
+                    if (!succeeded) {
+                        log(`Failed to kill process ${proc}`);
+                    }
+                }
+            });
+        }
     };
 }
 

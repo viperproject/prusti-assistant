@@ -50,7 +50,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // Restart the server on command
     context.subscriptions.push(
-        vscode.commands.registerCommand("prusti-assistant.restart-server", restartServer)
+        vscode.commands.registerCommand("prusti-assistant.restart-server", async () => {
+            await restartServer(context);
+        })
     );
 
     // Update dependencies on config change
