@@ -1,6 +1,5 @@
 import * as childProcess from "child_process";
-import * as treeKill from 'tree-kill';
-import { setFlagsFromString } from "v8";
+import * as treeKill from "tree-kill";
 
 /**
  * The state of the process of a server.
@@ -16,9 +15,7 @@ enum State {
     Crashed,
 }
 
-export type Listener = () => void;
-
-interface StartOptions {
+export interface StartOptions {
     cwd?: string;
     env?: NodeJS.ProcessEnv;
     onStdout?: (data: string) => void;
@@ -38,22 +35,27 @@ type ResolveReject = { resolve: () => void, reject: (err: Error) => void };
 
 export class ServerManager {
     private state: State = State.Stopped;
-    private onRunningCallbacks: ResolveReject[] = [];
-    private onReadyCallbacks: ResolveReject[] = [];
-    private onStoppedCallbacks: ResolveReject[] = [];
-    private onCrashedCallbacks: ResolveReject[] = [];
-    private log: (data: string) => void;
     private proc: childProcess.ChildProcessWithoutNullStreams | undefined;
+    private log: (data: string) => void;
+    private callbacksWaitingForRunning: ResolveReject[] = [];
+    private callbacksWaitingForReady: ResolveReject[] = [];
+    private callbacksWaitingForStopped: ResolveReject[] = [];
+    private callbacksWaitingForCrashed: ResolveReject[] = [];
 
-    public constructor(log: (data: string) => void) {
-        this.log = log;
+    /**
+     * Construct a new server manager.
+     *
+     * @param log: the function to be called to report log messages.
+     */
+    public constructor(log?: (data: string) => void) {
+        this.log = log || console.log
     }
 
     /**
-     * Set the state of the server
+     * Set a new state of the server.
      */
     private setState(state: State) {
-        this.log(`Mark server as '${state}'.`);
+        this.log(`Mark server as "{state}"`);
 
         // Check class invariant
         switch (state) {
@@ -79,25 +81,28 @@ export class ServerManager {
     }
 
     /**
-     * Resolve pending promises that were waiting for a new state.
+     * Resolve all pending promises that were waiting for a new state.
+     *
+     * The pending promises will be rejected if some previous promise
+     * resolution or rejection modified the state of the server.
      */
     private notifyOfNewState() {
         const initialState = this.state;
         let callbacks: ResolveReject[];
 
         if (this.state === State.Running) {
-            callbacks = this.onRunningCallbacks;
+            callbacks = this.callbacksWaitingForRunning;
         } else if (this.state === State.Ready) {
-            callbacks = this.onReadyCallbacks;
+            callbacks = this.callbacksWaitingForReady;
         } else if (this.state === State.Stopped) {
-            callbacks = this.onStoppedCallbacks;
+            callbacks = this.callbacksWaitingForStopped;
         } else if(this.state === State.Crashed) {
-            callbacks = this.onCrashedCallbacks;
+            callbacks = this.callbacksWaitingForCrashed;
         } else {
             throw new ServerError("Unreachable.");
         }
 
-        let responsible = undefined;
+        let badCallback = undefined;
         while (callbacks.length) {
             const { resolve, reject } = callbacks.shift() as ResolveReject;
 
@@ -105,23 +110,25 @@ export class ServerManager {
                 resolve();
             } else {
                 reject(new ServerError(
-                    `After the server state become '${initialState}', promise \
-                    resolution (1) modified the state to '${this.state}' \
+                    `After the server state become "{initialState}" promise \
+                    resolution (1) modified the state to "{this.state}"\
                     before promise resolution (2) - also waiting for the state \
-                    to become '${initialState}' - could run. \
-                    (1): ${responsible}, (2): ${resolve}.`
+                    to become "{initialState}"- could run.\n\
+                    (1): ${badCallback}\n(2): ${resolve}`
                 ));
             }
 
             if (this.state !== initialState) {
-                responsible = resolve;
+                badCallback = resolve;
             }
         }
     }
 
     /**
      * Start the server process, stopping any previously running process.
-     * After this call the server will be `Running`.
+     *
+     * After this call the server will be `Running`, unless a `waitForRunning`
+     * promise modified the state.
      */
     public start(
         command: string,
@@ -133,7 +140,7 @@ export class ServerManager {
         }
 
         // Start the process
-        console.log(`"Start '${command} ${args?.join(" ") ?? ""}'`);
+        console.log(`Start "${command} ${args?.join(" ") ?? ""}"`);
         const proc = childProcess.spawn(
             command,
             args,
@@ -176,7 +183,10 @@ export class ServerManager {
     }
 
     /**
-     * Stop the server process. After this call the server will be `Stopped`.
+     * Stop the server process.
+     *
+     * After this call the server will be `Stopped`, unless a `waitForStopped`
+     * promise modified the state.
      */
     public stop(): void {
         if (this.state === State.Running || this.state === State.Ready) {
@@ -198,8 +208,11 @@ export class ServerManager {
     }
 
     /**
-     * Mark a running server (`Running` or `Ready`) as `Ready`, otherwise throw
-     * an exception. After this call the server will be `Ready`.
+     * Mark the server as `Ready`, throwing an exception if the server is
+     * `Stopped` or `Crashed`.
+     *
+     * After this call the server will be `Ready`, unless a `waitForReady`
+     * promise modified the state.
      *
      * @throws {ServerError}
      */
@@ -207,7 +220,7 @@ export class ServerManager {
         // Check that the state is not `Stopped` or `Crashed`.
         if (this.state === State.Stopped || this.state === State.Crashed ) {
             throw new ServerError(
-                `Cannot mark a '${this.state}' server as 'Ready'.`
+                `Cannot mark a "{this.state}"server as "eady"`
             )
         }
 
@@ -215,53 +228,57 @@ export class ServerManager {
     }
 
     /**
-     * Return a promise that will resolve when the server becomes 'Running'.
+     * Return a promise that will resolve when the server becomes `Running`.
+     * Only one promise - the last one - is allowed to modify the server state.
      */
     public waitForRunning(): Promise<void> {
         return new Promise((resolve, reject) => {
             if (this.state === State.Running) {
                 resolve();
             } else {
-                this.onRunningCallbacks.push({ resolve, reject });
+                this.callbacksWaitingForRunning.push({ resolve, reject });
             }
         });
     }
 
     /**
-     * Return a promise that will resolve when the server becomes 'Ready'.
+     * Return a promise that will resolve when the server becomes `Ready`.
+     * Only one promise - the last one - is allowed to modify the server state.
      */
     public waitForReady(): Promise<void> {
         return new Promise((resolve, reject) => {
             if (this.state === State.Ready) {
                 resolve();
             } else {
-                this.onReadyCallbacks.push({ resolve, reject });
+                this.callbacksWaitingForReady.push({ resolve, reject });
             }
         });
     }
 
     /**
-     * Return a promise that will resolve when the server becomes 'Stopped'.
+     * Return a promise that will resolve when the server becomes `Stopped`.
+     * Only one promise - the last one - is allowed to modify the server state.
      */
     public waitForStopped(): Promise<void> {
         return new Promise((resolve, reject) => {
             if (this.state === State.Stopped) {
                 resolve();
             } else {
-                this.onStoppedCallbacks.push({ resolve, reject });
+                this.callbacksWaitingForStopped.push({ resolve, reject });
             }
         });
     }
 
     /**
-     * Return a promise that will resolve when the server becomes 'Crashed'.
+     * Return a promise that will resolve when the server becomes `Crashed`.
+     * Only one promise - the last one - is allowed to modify the server state.
      */
     public waitForCrashed(): Promise<void> {
         return new Promise((resolve, reject) => {
             if (this.state === State.Crashed) {
                 resolve();
             } else {
-                this.onCrashedCallbacks.push({ resolve, reject });
+                this.callbacksWaitingForCrashed.push({ resolve, reject });
             }
         });
     }
