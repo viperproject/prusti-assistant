@@ -15,10 +15,10 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
     try {
         util.log(`${shouldUpdate ? "Update" : "Install"} Prusti dependencies`);
 
-        // Kill the server before trying to remove its files
-        server.killServer();
+        // Stop the server before trying to remove its files
+        server.stopServer();
 
-        // TODO: kill prusti-rustc and cargo-prusti
+        // TODO: stop prusti-rustc and cargo-prusti
 
         const tools = prustiTools(currentPlatform!, context);
         const { result: location, didReportProgress } = await withProgressInWindow(
