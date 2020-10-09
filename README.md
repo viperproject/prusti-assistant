@@ -29,7 +29,7 @@ This extension automatically provides inline diagnostics for Rust by running Pru
 This extension provides the following commands:
 
 * `Prusti: save and verify this file` to verify a Rust program;
-* `Prusti: install or update dependencies` to update Prusti.
+* `Prusti: update dependencies` to update Prusti.
 
 ### Snippets
 

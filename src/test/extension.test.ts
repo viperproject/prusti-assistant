@@ -2,6 +2,7 @@ import * as assert from "assert";
 import * as vscode from "vscode";
 import * as path from "path";
 import * as state from "../state";
+import * as server from "../server";
 
 const PROJECT_ROOT = path.join(__dirname, "../../");
 const DATA_ROOT = path.join(PROJECT_ROOT, "src", "test", "data");
@@ -35,7 +36,6 @@ suite("Extension", () => {
         // Wait until the extension is active
         await openFile(ASSERT_TRUE);
         await state.waitExtensionActivation();
-        await state.waitPrustiServerReady();
     });
 
     test("Update Prusti", async () => {
@@ -51,6 +51,7 @@ suite("Extension", () => {
 
     test("Verify empty program", async () => {
         const document = await openFile(EMPTY);
+        await server.waitForReady();
         await vscode.commands.executeCommand("prusti-assistant.verify");
         const diagnostics = vscode.languages.getDiagnostics(document.uri);
         assert.equal(diagnostics.length, 0);
@@ -58,6 +59,7 @@ suite("Extension", () => {
 
     test("Verify simple correct program", async () => {
         const document = await openFile(ASSERT_TRUE);
+        await server.waitForReady();
         await vscode.commands.executeCommand("prusti-assistant.verify");
         const diagnostics = vscode.languages.getDiagnostics(document.uri);
         assert.equal(diagnostics.length, 0);
@@ -65,6 +67,7 @@ suite("Extension", () => {
 
     test("Verify simple incorrect program", async () => {
         const document = await openFile(ASSERT_FALSE);
+        await server.waitForReady();
         await vscode.commands.executeCommand("prusti-assistant.verify");
         const diagnostics = vscode.languages.getDiagnostics(document.uri);
         assert.equal(diagnostics.length, 1);
@@ -73,6 +76,7 @@ suite("Extension", () => {
 
     test("Verify program without main", async () => {
         const document = await openFile("lib_assert_true.rs");
+        await server.waitForReady();
         await vscode.commands.executeCommand("prusti-assistant.verify");
         const diagnostics = vscode.languages.getDiagnostics(document.uri);
         assert.equal(diagnostics.length, 0);
@@ -80,6 +84,7 @@ suite("Extension", () => {
 
     test("Underline the 'false' in the failing postcondition", async () => {
         const document = await openFile("failing_post.rs");
+        await server.waitForReady();
         await vscode.commands.executeCommand("prusti-assistant.verify");
         const diagnostics = vscode.languages.getDiagnostics(document.uri);
         assert.ok(

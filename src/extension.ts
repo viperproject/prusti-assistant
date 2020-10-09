@@ -5,7 +5,7 @@ import * as util from "./util";
 import * as diagnostics from "./diagnostics";
 import * as checks from "./checks";
 import { prusti, installDependencies } from "./dependencies";
-import { serverAddress, restartServer } from "./server";
+import * as server from "./server";
 import * as state from "./state";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
@@ -23,12 +23,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         util.log("Prerequisites are satisfied.");
     }
 
-    // Download dependencies
-    util.log("Checking dependencies...");
+    // Download dependencies and start the server
+    util.log("Install dependencies...");
     await installDependencies(context, false);
 
     // Check Prusti
-    util.log("Checking Prusti...");
+    util.log("Checking Prusti dependencies...");
     const [isPrustiOk, prustiErrorMessage] = await checks.checkPrusti(prusti!);
     if (!isPrustiOk) {
         util.userError(prustiErrorMessage, true, true);
@@ -37,9 +37,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     } else {
         util.log("Prusti checks completed.");
     }
-
-    // Start the server
-    await restartServer(context);
 
     // Update dependencies on command
     context.subscriptions.push(
@@ -51,7 +48,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Restart the server on command
     context.subscriptions.push(
         vscode.commands.registerCommand("prusti-assistant.restart-server", async () => {
-            await restartServer(context);
+            await server.restart(context);
         })
     );
 
@@ -70,7 +67,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             const hasChangedServer = event.affectsConfiguration(config.serverAddressPath);
             if (hasChangedServer) {
                 util.log("Restart the server because the configuration changed...");
-                await restartServer(context);
+                await server.restart(context);
             }
         })
     );
@@ -87,14 +84,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             case config.VerificationMode.CurrentProgram: {
                 // Verify provided document
                 if (document.languageId !== "rust") {
-                    util.log(
-                        `The document is not a Rust program (${document.languageId}), thus Prusti will not run on it.`
+                    util.userWarn(
+                        `The active document is not a Rust program (it's ${document.languageId}), thus Prusti will not try to verify it.`
                     );
                     break;
                 }
 
-                if (serverAddress === undefined) {
-                    // Just warn, as Prusti can run without a server.
+                if (server.address === undefined) {
+                    // Just warn, as Prusti can run even without a server.
                     util.userWarn(
                         "Prusti might run slower than usual because the Prusti server is not running."
                     );
@@ -106,7 +103,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 const programDiagnostics = await diagnostics.generatesProgramDiagnostics(
                     prusti!,
                     document.uri.fsPath,
-                    serverAddress
+                    server.address
                 );
                 programDiagnostics.render(prustiProgramDiagnostics);
 

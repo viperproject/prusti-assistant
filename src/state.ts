@@ -8,12 +8,10 @@ import * as util from "./util";
  */
 
 let isExtensionActive = false;
-let isPrustiServerReady = false;
 
 export type Listener = () => void;
 
 const waitingForExtensionActivation: Listener[] = [];
-const waitingForPrustiServerReady: Listener[] = [];
 
 export function waitExtensionActivation(): Promise<Listener> {
     return new Promise(resolve => {
@@ -26,30 +24,8 @@ export function waitExtensionActivation(): Promise<Listener> {
     });
 }
 
-export function waitPrustiServerReady(): Promise<Listener> {
-    return new Promise(resolve => {
-        if (isPrustiServerReady) {
-            // Resolve immediately
-            resolve();
-        } else {
-            waitingForPrustiServerReady.push(resolve);
-        }
-    });
-}
-
 export function notifyExtensionActivation(): void {
     util.log("The extension is now active.");
     isExtensionActive = true;
     waitingForExtensionActivation?.forEach(listener => listener());
-}
-
-export function notifyPrustiServerReady(): void {
-    util.log("The Prusti server is now ready.");
-    isPrustiServerReady = true;
-    waitingForPrustiServerReady?.forEach(listener => listener());
-}
-
-export function notifyPrustiServerStop(): void {
-    util.log("The Prusti server stopped.");
-    isPrustiServerReady = false;
 }

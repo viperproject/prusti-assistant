@@ -7,31 +7,39 @@ import { ServerManager } from "./toolbox/serverManager";
 const serverChannel = vscode.window.createOutputChannel("Prusti Assistant Server");
 const server = new ServerManager(
     "Prusti server",
-    (data) => { util.log(data); serverChannel.append(data + "\n"); }
+    util.trace
 );
 
 /**
  * The address of the server.
  */
-export let serverAddress: string | undefined;
+export let address: string | undefined;
 
 /**
  * Stop the server.
  */
-export function stopServer(): void {
+export function stop(): void {
+    address = undefined;
     server.stop();
+}
+
+/**
+ * Return a promise that will resolve when the server becomes `Ready`.
+ */
+export function waitForReady(): Promise<void> {
+    return server.waitForReady();
 }
 
 /**
  * Start or restart the server.
  */
-export async function restartServer(context: vscode.ExtensionContext): Promise<void> {
-    stopServer();
+export async function restart(context: vscode.ExtensionContext): Promise<void> {
+    stop();
 
     const configAddress = config.serverAddress();
     if (configAddress !== "") {
         util.log(`Using configured Prusti server address: ${configAddress}`);
-        serverAddress = configAddress;
+        address = configAddress;
         return;
     }
 
@@ -50,29 +58,31 @@ export async function restartServer(context: vscode.ExtensionContext): Promise<v
                 BOOGIE_EXE: prusti!.boogie,
                 ...process.env
             },
-            onStdout: line => {
-                serverChannel.append(`[stdout] ${line}`);
+            onStdout: data => {
+                serverChannel.append(`[stdout] ${data}`);
                 // Extract the server port from the output
-                if (serverAddress === undefined) {
-                    const port = parseInt(line.toString().split("port: ")[1], 10);
+                if (address === undefined) {
+                    const port = parseInt(data.toString().split("port: ")[1], 10);
                     util.log(`Prusti server is listening on port ${port}.`);
-                    serverAddress = `localhost:${port}`;
+                    address = `localhost:${port}`;
+                    vscode.window.setStatusBarMessage("Prusti server is ready.");
                     server.setReady();
                 }
             },
-            onStderr: line => {
-                serverChannel.append(`[stderr] ${line}`);
+            onStderr: data => {
+                serverChannel.append(`[stderr] ${data}`);
             }
         }
     );
 
     void server.waitForCrashed().then(() => {
         util.log(`Prusti server crashed.`);
+        address = undefined;
         // Ask the user to restart the server
         util.userErrorPopup(
             "Prusti server stopped working.",
             "Restart Server",
-            () => void restartServer(context)
+            () => void restart(context)
         );
     });
 }

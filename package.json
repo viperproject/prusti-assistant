@@ -41,7 +41,7 @@
         "commands": [
             {
                 "command": "prusti-assistant.update",
-                "title": "install or update dependencies",
+                "title": "update dependencies",
                 "category": "Prusti"
             },
             {

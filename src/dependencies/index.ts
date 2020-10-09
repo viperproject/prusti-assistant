@@ -16,7 +16,7 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
         util.log(`${shouldUpdate ? "Update" : "Install"} Prusti dependencies`);
 
         // Stop the server before trying to remove its files
-        server.stopServer();
+        server.stop();
 
         // TODO: stop prusti-rustc and cargo-prusti
 
@@ -47,6 +47,6 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
         util.userError(`Error installing Prusti: ${err}`);
         throw err;
     } finally {
-        await server.restartServer(context);
+        await server.restart(context);
     }
 }
