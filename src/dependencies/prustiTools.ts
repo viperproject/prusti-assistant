@@ -1,36 +1,45 @@
-import { Platform, Dependency, RemoteZipExtractor, LocalReference, GitHubReleaseAsset } from "vs-verification-toolbox";
+import * as vvt from "vs-verification-toolbox";
 import * as path from "path";
 import * as vscode from "vscode";
 
 import * as config from "../config";
 
 export async function prustiTools(
-    platform: Platform,
+    platform: vvt.Platform,
     context: vscode.ExtensionContext
-): Promise<Dependency<config.BuildChannel>> {
+): Promise<vvt.Dependency<config.BuildChannel>> {
     const id = identifier(platform);
     const channel = config.BuildChannel;
-    const stableUrl = await GitHubReleaseAsset.getLatestAssetUrl(
+    const stableUrl = await vvt.GitHubReleaseAsset.getLatestAssetUrl(
         "viperproject", "prusti-dev", `prusti-release-${id}.zip`
     );
-    const nightlyUrl = await GitHubReleaseAsset.getLatestAssetUrl(
+    const nightlyUrl = await vvt.GitHubReleaseAsset.getLatestAssetUrl(
         "viperproject", "prusti-dev", `prusti-release-${id}.zip`, true
     );
-    return new Dependency(
+    const headers = {
+        "Accept": "application/octet-stream"
+    };
+    return new vvt.Dependency(
         path.join(context.globalStoragePath, "prustiTools"),
-        [channel.Stable, new RemoteZipExtractor(stableUrl)],
-        [channel.Nightly, new RemoteZipExtractor(nightlyUrl)],
-        [channel.Local, new LocalReference(config.localPrustiPath())],
+        [channel.Stable, new vvt.InstallerSequence([
+            new vvt.FileDownloader(stableUrl, headers),
+            new vvt.ZipExtractor("prusti"),
+        ])],
+        [channel.Nightly, new vvt.InstallerSequence([
+            new vvt.FileDownloader(nightlyUrl, headers),
+            new vvt.ZipExtractor("prusti"),
+        ])],
+        [channel.Local, new vvt.LocalReference(config.localPrustiPath())],
     );
 }
 
-function identifier(platform: Platform): string {
+function identifier(platform: vvt.Platform): string {
     switch (platform) {
-        case Platform.Mac:
+        case vvt.Platform.Mac:
             return "macos";
-        case Platform.Windows:
+        case vvt.Platform.Windows:
             return "windows";
-        case Platform.Linux:
+        case vvt.Platform.Linux:
             return "ubuntu";
     }
 }
