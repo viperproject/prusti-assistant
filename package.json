@@ -150,6 +150,6 @@
         "find-java-home": "^1.1.0",
         "fs-extra": "^9.0.1",
         "tree-kill": "^1.2.2",
-        "vs-verification-toolbox": "git+https://github.com/viperproject/vs-verification-toolbox.git"
+        "vs-verification-toolbox": "git+https://github.com/viperproject/vs-verification-toolbox.git#cb8f822"
     }
 }
