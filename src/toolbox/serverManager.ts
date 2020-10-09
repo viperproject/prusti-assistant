@@ -37,8 +37,9 @@ export class ServerError extends Error {
 export class ServerManager {
     private name: string;
     private state: StateMachine;
-    private proc: childProcess.ChildProcessWithoutNullStreams | undefined;
+    private proc?: childProcess.ChildProcessWithoutNullStreams;
     private log: (data: string) => void;
+    private procOnExit: (code: any) => void;
 
     /**
      * Construct a new server manager.
@@ -52,8 +53,12 @@ export class ServerManager {
             `${name} state`,
             State[State.Stopped],
             stateKeys,
-            log
         )
+        this.procOnExit = (code: any) => {
+            this.log(`Server process unexpected terminated with exit code ${code}`);
+            this.proc = undefined;
+            this.setState(State.Crashed);
+        };
     }
 
     /**
@@ -117,13 +122,6 @@ export class ServerManager {
             { cwd: options?.cwd, env: options?.env }
         );
 
-        proc.stdout.on("data", (data) => {
-            this.log(`[stdout] ${data}`);
-        });
-        proc.stderr.on("data", (data) => {
-            this.log(`[stderr] ${data}`);
-        });
-
         if (options?.onStdout) {
             const onStdout = options.onStdout;
             proc.stdout.on("data", onStdout);
@@ -137,16 +135,7 @@ export class ServerManager {
             this.log(`Server process error: ${err}`);
         });
 
-        proc.on("exit", (code) => {
-            this.log(`Server process terminated with exit code ${code}`);
-
-            if (!this.isState(State.Stopped)) {
-                this.log(`This is an unexpected termination.`);
-
-                this.proc = undefined;
-                this.setState(State.Crashed);
-            }
-        });
+        proc.on("exit", this.procOnExit);
 
         this.proc = proc;
         this.setState(State.Running);
@@ -160,8 +149,9 @@ export class ServerManager {
      */
     public stop(): void {
         if (this.isState(State.Running) || this.isState(State.Ready)) {
-            this.log(`Kill process ${this.proc}.`);
+            this.log(`Kill server process ${this.proc?.pid}.`);
             const proc = this.proc as childProcess.ChildProcessWithoutNullStreams;
+            proc.removeListener("exit", this.procOnExit);
             treeKill(proc.pid, "SIGKILL", (err) => {
                 if (err !== undefined) {
                     this.log(`Failed to kill process tree of ${proc.pid}: ${err}.`);

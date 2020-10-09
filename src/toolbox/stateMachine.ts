@@ -18,7 +18,6 @@ export class StateMachine {
     private name: string;
     private currentState: string;
     private validStates: string[];
-    private log: (data: string) => void;
     private waitingForState: WaitingForState = {};
 
     /**
@@ -31,16 +30,12 @@ export class StateMachine {
         name: string,
         initialState: string,
         validStates: string[],
-        log?: (data: string) => void
     ) {
         this.name = name;
         this.validStates = [...validStates];
-        this.log = (data) => (log || console.log)(`[${this.name}] ${data}`);
         for (const state of validStates) {
             this.waitingForState[state] = []
         }
-
-        this.log(`Set initial state to "${initialState}".`);
 
         if (!this.validStates.includes(initialState)) {
             throw new StateMachineError(
@@ -65,8 +60,6 @@ export class StateMachine {
      * @throw Will throw an error if `newState` is not a valid state.
      */
     public setState(newState: string): void {
-        this.log(`Set state to "${newState}".`);
-
         if (!this.validStates.includes(newState)) {
             throw new StateMachineError(
                 this.name,

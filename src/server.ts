@@ -7,7 +7,7 @@ import { ServerManager } from "./toolbox/serverManager";
 const serverChannel = vscode.window.createOutputChannel("Prusti Assistant Server");
 const server = new ServerManager(
     "Prusti server",
-    (data) => { util.log(data); serverChannel.append(data); }
+    (data) => { util.log(data); serverChannel.append(data + "\n"); }
 );
 
 /**
