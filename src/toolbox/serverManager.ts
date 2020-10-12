@@ -35,11 +35,11 @@ export class ServerError extends Error {
 }
 
 export class ServerManager {
-    private name: string;
-    private state: StateMachine;
+    private readonly name: string;
+    private readonly state: StateMachine;
+    private readonly log: (data: string) => void;
+    private readonly procExitCallback: (code: any) => void;
     private proc?: childProcess.ChildProcessWithoutNullStreams;
-    private log: (data: string) => void;
-    private procOnExit: (code: any) => void;
 
     /**
      * Construct a new server manager.
@@ -54,7 +54,7 @@ export class ServerManager {
             State[State.Stopped],
             stateKeys,
         )
-        this.procOnExit = (code: any) => {
+        this.procExitCallback = (code: any) => {
             this.log(`Server process unexpected terminated with exit code ${code}`);
             this.proc = undefined;
             this.setState(State.Crashed);
@@ -62,7 +62,7 @@ export class ServerManager {
     }
 
     /**
-     * Return wether the current server state is `state`.
+     * Return whether the current server state is `state`.
      */
     private isState(state: State): boolean {
         const currentState = State[this.state.getState() as keyof typeof State];
@@ -135,7 +135,7 @@ export class ServerManager {
             this.log(`Server process error: ${err}`);
         });
 
-        proc.on("exit", this.procOnExit);
+        proc.on("exit", this.procExitCallback);
 
         this.proc = proc;
         this.setState(State.Running);
@@ -151,7 +151,7 @@ export class ServerManager {
         if (this.isState(State.Running) || this.isState(State.Ready)) {
             this.log(`Kill server process ${this.proc?.pid}.`);
             const proc = this.proc as childProcess.ChildProcessWithoutNullStreams;
-            proc.removeListener("exit", this.procOnExit);
+            proc.removeListener("exit", this.procExitCallback);
             treeKill(proc.pid, "SIGKILL", (err) => {
                 if (err !== undefined) {
                     this.log(`Failed to kill process tree of ${proc.pid}: ${err}.`);

@@ -15,9 +15,9 @@ interface WaitingForState {
 } 
 
 export class StateMachine {
-    private name: string;
+    private readonly name: string;
+    private readonly validStates: string[];
     private currentState: string;
-    private validStates: string[];
     private waitingForState: WaitingForState = {};
 
     /**
