@@ -12,7 +12,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     util.log("Start Prusti Assistant");
 
     // Prerequisites checks
-    util.log("Checking prerequisites...");
+    util.log("Checking Prusti prerequisites...");
     const [hasPrerequisites, errorMessage] = await checks.hasPrerequisites();
     if (!hasPrerequisites) {
         util.userError("Prusti Assistant's prerequisites are not satisfied.", false);
@@ -24,7 +24,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }
 
     // Download dependencies and start the server
-    util.log("Install dependencies...");
+    util.log("Check the Prusti dependencies...");
     await installDependencies(context, false);
 
     // Check Prusti
