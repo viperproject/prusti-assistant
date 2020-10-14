@@ -420,11 +420,12 @@ async function queryCrateDiagnostics(prusti: PrustiLocation, rootPath: string): 
  * @returns An array of diagnostics for the given rust project.
  */
 async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: string, serverAddress: string): Promise<[Diagnostic[], VerificationStatus]> {
+    // For backward compatibility
+    const isStable = config.isStableBuildChannel();
     const args = [
         "--crate-type=lib",
         "--error-format=json",
-        // TODO: only when using nightly Prusti
-        "--edition=2018",
+        isStable ? "--edition=2015" : "--edition=2018",
         programPath
     ];
     const output = await util.spawn(
@@ -451,11 +452,17 @@ async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: stri
     if (output.code === 0) {
         status = VerificationStatus.Verified;
     }
-    if (output.code === 1) {
-        status = VerificationStatus.Errors;
-    }
-    if (output.code === 101) {
-        status = VerificationStatus.Crash;
+    if (isStable) {
+        if (output.code === 101) {	
+            status = VerificationStatus.Errors;
+        }
+    } else {
+        if (output.code === 1) {
+            status = VerificationStatus.Errors;
+        }
+        if (output.code === 101) {
+            status = VerificationStatus.Crash;
+        }
     }
     if (/error: internal compiler error/.exec(output.stderr) !== null) {
         status = VerificationStatus.Crash;

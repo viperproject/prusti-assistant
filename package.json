@@ -131,25 +131,25 @@
     "devDependencies": {
         "@types/glob": "^7.1.3",
         "@types/vscode": "^1.50.0",
-        "@typescript-eslint/eslint-plugin": "^4.4.0",
-        "@typescript-eslint/parser": "^4.4.0",
-        "eslint": "^7.10.0",
+        "@typescript-eslint/eslint-plugin": "^4.4.1",
+        "@typescript-eslint/parser": "^4.4.1",
+        "eslint": "^7.11.0",
         "eslint-plugin-import": "^2.22.1",
-        "eslint-plugin-jsdoc": "^30.6.4",
+        "eslint-plugin-jsdoc": "^30.6.5",
         "eslint-plugin-prefer-arrow": "^1.2.2",
-        "eslint-plugin-react": "^7.21.3",
+        "eslint-plugin-react": "^7.21.4",
         "glob": "^7.1.6",
         "mocha": "^8.1.3",
         "typescript": "^4.0.3",
         "vscode-test": "^1.4.0"
     },
     "dependencies": {
-        "@types/fs-extra": "^9.0.1",
+        "@types/fs-extra": "^9.0.2",
         "@types/mocha": "^8.0.3",
         "@types/node": "^14.11.8",
         "find-java-home": "^1.1.0",
         "fs-extra": "^9.0.1",
         "tree-kill": "^1.2.2",
-        "vs-verification-toolbox": "git+https://github.com/viperproject/vs-verification-toolbox.git#cb8f822"
+        "vs-verification-toolbox": "git+https://github.com/viperproject/vs-verification-toolbox.git#efc84b3"
     }
 }

@@ -5,7 +5,7 @@ import { findJavaHome, JavaHome } from "./javaHome";
 
 const namespace = "prusti-assistant";
 
-function config(): vscode.WorkspaceConfiguration {
+export function config(): vscode.WorkspaceConfiguration {
     return vscode.workspace.getConfiguration(namespace);
 }
 
@@ -15,7 +15,7 @@ export enum BuildChannel {
     Local = "local"
 }
 
-const buildChannelKey = "buildChannel";
+export const buildChannelKey = "buildChannel";
 export const buildChannelPath = `${namespace}.${buildChannelKey}`;
 
 export function buildChannel(): BuildChannel {
@@ -30,6 +30,10 @@ export function buildChannel(): BuildChannel {
         util.userError(`Prusti has no build channel named ${channelName}; defaulting to nightly`);
         return BuildChannel.Nightly;
     }
+}
+
+export function isStableBuildChannel(): boolean {
+    return buildChannel() === BuildChannel.Stable
 }
 
 const localPrustiPathKey = "localPrustiPath";
