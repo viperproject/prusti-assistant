@@ -103,7 +103,7 @@ suite("Extension", () => {
         // Choose the stable toolchain
         await config.config().update(
             config.buildChannelKey, 
-            config.BuildChannel.Stable.toLowerCase()
+            config.BuildChannel.Stable.toString()
         );
 
         // Test
