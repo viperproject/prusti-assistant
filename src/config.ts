@@ -10,16 +10,17 @@ export function config(): vscode.WorkspaceConfiguration {
 }
 
 export enum BuildChannel {
-    Stable = "stable",
-    Nightly = "nightly",
-    Local = "local"
+    Stable = "Stable",
+    Nightly = "Nightly",
+    Local = "Local"
 }
 
 export const buildChannelKey = "buildChannel";
 export const buildChannelPath = `${namespace}.${buildChannelKey}`;
 
 export function buildChannel(): BuildChannel {
-    const channelName = config().get(buildChannelKey, "nightly");
+    const defaultChannel = BuildChannel.Nightly;
+    const channelName = config().get(buildChannelKey, defaultChannel as string);
     const channel = BuildChannel[
         // Convert string to enum. See https://stackoverflow.com/a/17381004/2491528
         channelName as keyof typeof BuildChannel
@@ -27,8 +28,11 @@ export function buildChannel(): BuildChannel {
     if (channel !== undefined) {
         return channel;
     } else {
-        util.userError(`Prusti has no build channel named ${channelName}; defaulting to nightly`);
-        return BuildChannel.Nightly;
+        util.userError(
+            `Prusti has no build channel named ${channelName}; ` +
+            `defaulting to ${defaultChannel}`
+        );
+        return defaultChannel;
     }
 }
 
