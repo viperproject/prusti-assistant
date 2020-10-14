@@ -27,8 +27,8 @@ export async function prustiTools(
     }
     return new vvt.Dependency(
         path.join(context.globalStoragePath, "prustiTools"),
-        [channel.Stable, new vvt.GitHubZipExtractor(getNightlyUrl, "prusti")],
-        [channel.Nightly, new vvt.GitHubZipExtractor(getStableUrl, "prusti")],
+        [channel.Stable, new vvt.GitHubZipExtractor(getStableUrl, "prusti")],
+        [channel.Nightly, new vvt.GitHubZipExtractor(getNightlyUrl, "prusti")],
         [channel.Local, new vvt.LocalReference(config.localPrustiPath())],
     );
 }

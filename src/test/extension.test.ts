@@ -83,8 +83,14 @@ suite("Extension", () => {
         assert.strictEqual(diagnostics.length, 0);
     });
 
-    test("Underline the 'false' in the failing postcondition", async () => {
-        const filePath = path.join("nightly", "failing_post.rs");
+    test("Choose 'stable' and underline 'false' in the failing postcondition", async () => {
+        // Choose and update the nightly toolchain
+        await config.config().update(
+            config.buildChannelKey, 
+            config.BuildChannel.Stable.toString()
+        );
+        // Test
+        const filePath = path.join("stable", "failing_post.rs");
         const document = await openFile(filePath);
         await server.waitForReady();
         await vscode.commands.executeCommand("prusti-assistant.verify");
@@ -99,15 +105,14 @@ suite("Extension", () => {
         );
     });
 
-    test("[stable] Underline the 'false' in the failing postcondition", async () => {
-        // Choose the stable toolchain
+    test("Choose 'nightly' and underline 'false' in the failing postcondition", async () => {
+        // Choose and update the nightly toolchain
         await config.config().update(
             config.buildChannelKey, 
-            config.BuildChannel.Stable.toString()
+            config.BuildChannel.Nightly.toString()
         );
-
         // Test
-        const filePath = path.join("stable", "failing_post.rs");
+        const filePath = path.join("nightly", "failing_post.rs");
         const document = await openFile(filePath);
         await server.waitForReady();
         await vscode.commands.executeCommand("prusti-assistant.verify");

@@ -422,12 +422,16 @@ async function queryCrateDiagnostics(prusti: PrustiLocation, rootPath: string): 
 async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: string, serverAddress: string): Promise<[Diagnostic[], VerificationStatus]> {
     // For backward compatibility
     const isStable = config.isStableBuildChannel();
-    const args = [
-        "--crate-type=lib",
-        "--error-format=json",
-        isStable ? "--edition=2015" : "--edition=2018",
-        programPath
-    ];
+    const args = isStable ? [
+            "--crate-type=lib",
+            "--error-format=json",
+            programPath
+        ] : [
+            "--crate-type=lib",
+            "--error-format=json",
+            "--edition=2018",
+            programPath
+        ];
     const output = await util.spawn(
         prusti.prustiRustc,
         args,

@@ -25,6 +25,7 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
             `${shouldUpdate ? "Updating" : "Installing"} Prusti`,
             listener => tools.install(config.buildChannel(), shouldUpdate, listener)
         );
+        util.log(`Prusti is now at ${location}`)
         prusti = new PrustiLocation(location);
 
         // only notify user about success if we reported anything in between; otherwise there was nothing to be done.
