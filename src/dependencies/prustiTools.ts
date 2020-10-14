@@ -5,10 +5,10 @@ import * as vscode from "vscode";
 import * as config from "../config";
 import * as util from "../util";
 
-export async function prustiTools(
+export function prustiTools(
     platform: vvt.Platform,
     context: vscode.ExtensionContext
-): Promise<vvt.Dependency<config.BuildChannel>> {
+): vvt.Dependency<config.BuildChannel> {
     const id = identifier(platform);
     const channel = config.BuildChannel;
     const getStableUrl = (): Promise<string> => {

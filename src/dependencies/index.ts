@@ -20,7 +20,7 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
 
         // TODO: stop prusti-rustc and cargo-prusti
 
-        const tools = await prustiTools(currentPlatform!, context);
+        const tools = prustiTools(currentPlatform!, context);
         const { result: location, didReportProgress } = await withProgressInWindow(
             `${shouldUpdate ? "Updating" : "Installing"} Prusti`,
             listener => tools.install(config.buildChannel(), shouldUpdate, listener)
