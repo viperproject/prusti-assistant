@@ -42,3 +42,5 @@ jobs:
         uses: GabrielBB/xvfb-action@v1.0
         with:
           run: npm test --full-trace
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
