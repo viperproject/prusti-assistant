@@ -3,7 +3,6 @@ import * as path from "path";
 import * as vscode from "vscode";
 
 import * as config from "../config";
-import * as util from "../util";
 
 export function prustiTools(
     platform: vvt.Platform,
