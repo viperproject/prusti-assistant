@@ -15,14 +15,12 @@ export function prustiTools(
         const url = vvt.GitHubReleaseAsset.getLatestAssetUrl(
             "viperproject", "prusti-dev", `prusti-release-${id}.zip`
         );
-        util.log(`Obtained stable Prusti url: ${url}`);
         return url;
     }
     const getNightlyUrl = (): Promise<string> => {
         const url = vvt.GitHubReleaseAsset.getLatestAssetUrl(
             "viperproject", "prusti-dev", `prusti-release-${id}.zip`, true
         );
-        util.log(`Obtained nightly Prusti url: ${url}`);
         return url;
     }
     return new vvt.Dependency(

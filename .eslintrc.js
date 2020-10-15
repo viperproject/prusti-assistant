@@ -22,6 +22,7 @@ module.exports = {
     ],
     "rules": {
         "no-implicit-globals": ["error", {"lexicalBindings": true}],
+        "import/no-cycle": "error",
         "@typescript-eslint/restrict-template-expressions": "off",
         "@typescript-eslint/explicit-module-boundary-types": "error",
     }
