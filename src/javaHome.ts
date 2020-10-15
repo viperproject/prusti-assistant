@@ -1,15 +1,29 @@
 import { Location } from "vs-verification-toolbox";
 import * as findJavaHomeLib from 'find-java-home';
+import * as util from './util';
+
+async function parseJavaHome(): Promise<string | null> {
+    const output = await util.spawn(
+        "java",
+        ["-XshowSettings:properties", "-version"]
+    ).output;
+    const java_home_line = output.stdout.split("\n")
+        .find((line) => line.indexOf("java.home") != -1);
+    if (java_home_line === undefined) {
+        return null;
+    }
+    return java_home_line.split("=")[1].trim()
+}
 
 export async function findJavaHome(): Promise<string | null> {
-    return new Promise((resolve, reject) => {
-        try {
-            const options: findJavaHomeLib.IOptions = {
-                allowJre: false,
-                registry: "x64",
-            };
-            console.log("Searching for Java home...");
-            findJavaHomeLib(options, (err, home) => {
+    try {
+        const options: findJavaHomeLib.IOptions = {
+            allowJre: false,
+            registry: "x64",
+        };
+        console.log("Searching for Java home...");
+        let javaHome: string | null = await new Promise(resolve => {
+            findJavaHomeLib(options, (err: unknown, home: string) => {
                 if (err !== null) {
                     console.error(err);
                     resolve(null);
@@ -18,12 +32,16 @@ export async function findJavaHome(): Promise<string | null> {
                     resolve(home);
                 }
             });
+        });
+        if (javaHome === null) {
+            // Last resort
+            javaHome = await parseJavaHome();
         }
-        catch (err) {
-            console.error(err);
-            resolve(null);
-        }
-    });
+        return javaHome;
+    } catch (err) {
+        console.error(err);
+        throw err
+    }
 }
 
 export class JavaHome {
