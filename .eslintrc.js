@@ -21,6 +21,7 @@ module.exports = {
         "plugin:@typescript-eslint/recommended-requiring-type-checking"
     ],
     "rules": {
+        "no-implicit-globals": ["error", {"lexicalBindings": true}],
         "@typescript-eslint/restrict-template-expressions": "off",
         "@typescript-eslint/explicit-module-boundary-types": "error",
     }
