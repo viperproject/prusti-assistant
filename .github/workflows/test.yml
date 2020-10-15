@@ -21,6 +21,11 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v2
 
+      - name: Set up Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: '12'
+
       - name: Set up Rust
         uses: actions-rs/toolchain@v1.0.6
         with:
