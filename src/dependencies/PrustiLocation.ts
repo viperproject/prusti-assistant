@@ -1,5 +1,6 @@
 import { Location } from "vs-verification-toolbox";
 import * as fs from "fs-extra";
+import * as config from "../config";
 
 export class PrustiLocation {
     constructor(
@@ -37,13 +38,15 @@ export class PrustiLocation {
             const components_line = content.split("\n")
                 .find((line) => line.startsWith("components"));
             if (components_line === undefined) {
-                return []
+                return [];
             }
             const value = components_line.split("=")[1];
             const values = value.replace(/[[]]/g, '').trim().split(",");
-            return values.map((x) => x.replace(/"/g, '').trim())
+            return values.map((x) => x.replace(/"/g, '').trim());
         } else {
-            return [];
+            return config.isStableBuildChannel()
+                ? []
+                : ["rustc-dev", "llvm-tools-preview"];
         }
     }
 
