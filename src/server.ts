@@ -48,6 +48,7 @@ export async function restart(context: vscode.ExtensionContext): Promise<void> {
         ["--port", "0"],
         {
             env: {
+                ...process.env,  // Needed e.g. to run Rustup
                 // Might not exist yet, but that's handled on the rust side
                 PRUSTI_LOG_DIR: context.logPath,
                 RUST_BACKTRACE: "1",
@@ -55,8 +56,7 @@ export async function restart(context: vscode.ExtensionContext): Promise<void> {
                 JAVA_HOME: (await config.javaHome())!.path,
                 VIPER_HOME: prusti!.viperHome,
                 Z3_EXE: prusti!.z3,
-                BOOGIE_EXE: prusti!.boogie,
-                ...process.env
+                BOOGIE_EXE: prusti!.boogie
             },
             onStdout: data => {
                 serverChannel.append(`[stdout] ${data}`);

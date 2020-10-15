@@ -377,13 +377,13 @@ async function queryCrateDiagnostics(prusti: PrustiLocation, rootPath: string): 
             options: {
                 cwd: rootPath,
                 env: {
+                    ...process.env,  // Needed e.g. to run Rustup
                     RUST_BACKTRACE: "1",
                     RUST_LOG: "info",
                     JAVA_HOME: (await config.javaHome())!.path,
                     VIPER_HOME: prusti.viperHome,
                     Z3_EXE: prusti.z3,
-                    BOOGIE_EXE: prusti.boogie,
-                    ...process.env  // Needed e.g. to run Rustup
+                    BOOGIE_EXE: prusti.boogie
                 }
             }
         }
@@ -439,6 +439,7 @@ async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: stri
             options: {
                 cwd: path.dirname(programPath),
                 env: {
+                    ...process.env,  // Needed e.g. to run Rustup
                     PRUSTI_SERVER_ADDRESS: serverAddress,
                     RUST_BACKTRACE: "1",
                     PRUSTI_LOG: "info",
@@ -446,8 +447,7 @@ async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: stri
                     JAVA_HOME: (await config.javaHome())!.path,
                     VIPER_HOME: prusti.viperHome,
                     Z3_EXE: prusti.z3,
-                    BOOGIE_EXE: prusti.boogie,
-                    ...process.env  // Needed e.g. to run Rustup
+                    BOOGIE_EXE: prusti.boogie
                 }
             }
         }
