@@ -49,3 +49,11 @@ jobs:
           run: npm test --full-trace
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Collect coverage
+        run: npx nyc report --reporter=lcov
+
+      - name: Upload coverage to Codecov
+        run: npx codecov
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

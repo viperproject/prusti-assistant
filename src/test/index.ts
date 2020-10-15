@@ -6,8 +6,16 @@ import NYC = require("nyc");
 // kept as-is (except for the mocha config) from `yo code` extension template
 export async function run(): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const nyc: NYC = new NYC();
+    const nyc: NYC = new NYC({
+        cwd: path.join(__dirname, "..", ".."),
+        //reporter: ['text', 'html'],
+        instrument: true,
+        hookRequire: true,
+        hookRunInContext: true,
+        hookRunInThisContext: true,
+    });
     await nyc.createTempDirectory();
+    await nyc.wrap();
 
     // Create the mocha test
     const mocha = new Mocha({

@@ -3,6 +3,7 @@ declare module 'nyc' {
       constructor(config?: unknown);
       createTempDirectory(): Promise<void>;
       writeCoverageFile(): Promise<void>;
+      wrap(): Promise<void>;
     }
     export = NYC;
 }

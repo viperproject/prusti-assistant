@@ -3,6 +3,8 @@ node_modules
 .vscode-test/
 *.vsix
 .idea/
+.nyc_output/
+coverage/
 
 # Prusti temporary files
 log/
