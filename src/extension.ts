@@ -9,7 +9,7 @@ import * as server from "./server";
 import * as state from "./state";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-    util.log("Start Prusti Assistant");
+    util.log("Activate Prusti Assistant");
 
     // Prerequisites checks
     util.log("Checking Prusti prerequisites...");
@@ -203,4 +203,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }
 
     state.notifyExtensionActivation();
+}
+
+export function deactivate(): void {
+    util.log("Deactivate Prusti Assistant");
+    server.stop();
 }
