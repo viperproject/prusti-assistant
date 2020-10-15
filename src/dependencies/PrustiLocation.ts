@@ -16,7 +16,35 @@ export class PrustiLocation {
 
     public async rustToolchainVersion(): Promise<string> {
         const buffer = await fs.readFile(this.location.path("rust-toolchain"));
-        return buffer.toString("utf8").trim();
+        const content = buffer.toString("utf8").trim();
+        if (content.startsWith("[toolchain]")) {
+            const channel_line = content.split("\n")
+                .find((line) => line.startsWith("channel"));
+            if (channel_line === undefined) {
+                throw new Error("failed to parse rust-toolchain file");
+            }
+            const value = channel_line.split("=")[1];
+            return value.replace(/"/g, '').trim();
+        } else {
+            return content;
+        }
+    }
+
+    public async rustToolchainComponents(): Promise<string[]> {
+        const buffer = await fs.readFile(this.location.path("rust-toolchain"));
+        const content = buffer.toString("utf8").trim();
+        if (content.startsWith("[toolchain]")) {
+            const components_line = content.split("\n")
+                .find((line) => line.startsWith("components"));
+            if (components_line === undefined) {
+                return []
+            }
+            const value = components_line.split("=")[1];
+            const values = value.replace(/[[]]/g, '').trim().split(",");
+            return values.map((x) => x.replace(/"/g, '').trim())
+        } else {
+            return [];
+        }
     }
 
     public get prustiDriver(): string {

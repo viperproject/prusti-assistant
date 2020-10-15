@@ -42,9 +42,7 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
         await ensureRustToolchainInstalled(
             context,
             await prusti.rustToolchainVersion(),
-            config.isStableBuildChannel()
-                ? []
-                : ["rustc-dev", "llvm-tools-preview"],
+            await prusti.rustToolchainComponents(),
         );
     } catch (err) {
         util.userError(`Error installing Prusti: ${err}`);
