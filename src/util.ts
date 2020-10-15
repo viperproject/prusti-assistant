@@ -81,9 +81,9 @@ export function spawn(
     cmd: string,
     args?: string[] | undefined,
     { options, onStdout, onStderr }: {
-        options?: childProcess.SpawnOptionsWithoutStdio | undefined;
-        onStdout?: ((data: string) => void) | undefined;
-        onStderr?: ((data: string) => void) | undefined;
+        options?: childProcess.SpawnOptionsWithoutStdio;
+        onStdout?: ((data: string) => void);
+        onStderr?: ((data: string) => void);
     } = {}
 ): { output: Promise<Output>; kill: () => void } {
     const description = `${cmd} ${args?.join(" ") ?? ""}`;
@@ -150,9 +150,11 @@ export function spawn(
 }
 
 export class Project {
-    public constructor(
-        readonly path: string
-    ) { }
+    readonly path;
+
+    public constructor(_path: string) {
+        this.path = _path;
+    }
 
     public hasRootFile(fileName: string): Promise<boolean> {
         const filePath = path.join(this.path, fileName);
@@ -188,8 +190,8 @@ export class ProjectList {
  */
 export async function findProjects(): Promise<ProjectList> {
     const projects: Project[] = [];
-    (await vscode.workspace.findFiles("**/Cargo.toml")).forEach((path: vscode.Uri) => {
-        projects.push(new Project(path.fsPath.replace(/[/\\]?Cargo\.toml$/, "")));
+    (await vscode.workspace.findFiles("**/Cargo.toml")).forEach((uri: vscode.Uri) => {
+        projects.push(new Project(uri.fsPath.replace(/[/\\]?Cargo\.toml$/, "")));
     });
     return new ProjectList(projects);
 }

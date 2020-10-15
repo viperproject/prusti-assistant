@@ -32,9 +32,9 @@ export async function run(): Promise<void> {
             {
                 cwd: testsRoot,
             },
-            (err, files) => {
+            (err, result) => {
                 if (err) reject(err)
-                else resolve(files)
+                else resolve(result)
             }
         )
     )
