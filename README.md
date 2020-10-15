@@ -3,6 +3,7 @@ Prusti Assistant
 
 [![](https://vsmarketplacebadge.apphb.com/version/viper-admin.prusti-assistant.svg)](https://marketplace.visualstudio.com/items?itemName=viper-admin.prusti-assistant)
 [![Test](https://github.com/viperproject/prusti-assistant/workflows/Test/badge.svg)](https://github.com/viperproject/prusti-assistant/actions?query=workflow%3A"Test"+branch%3Amaster)
+[![Test coverage](https://codecov.io/gh/viperproject/prusti-assistant/branch/master/graph/badge.svg?token=D4HOAD0KRU)](https://codecov.io/gh/viperproject/prusti-assistant)
 
 This Visual Studio Code extension provides interactive IDE features for verifying Rusti programs with the [Prusti verifier](http://prusti.ethz.ch).
 
