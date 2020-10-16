@@ -17,7 +17,7 @@ export async function run(): Promise<void> {
     // Create the mocha test
     const mocha = new Mocha({
         ui: "tdd",
-        timeout: 300_000, // ms
+        timeout: 60_000, // ms
         color: true,
     });
 

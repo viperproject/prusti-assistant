@@ -202,6 +202,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         }
     }
 
+    // Deactivate the extension
+    context.subscriptions.push({
+        dispose: () => deactivate()
+    });
+    process.on("SIGTERM", () => deactivate());
+
     state.notifyExtensionActivation();
 }
 
