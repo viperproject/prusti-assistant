@@ -35,7 +35,7 @@ async function main() {
             
             // Run the tests in the workspace
             await runTests({
-                version: "1.43.0",
+                version: "1.50.0",
                 extensionDevelopmentPath,
                 extensionTestsPath,
                 // Disable any other extension
