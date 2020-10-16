@@ -39,6 +39,12 @@ suite("Extension", () => {
         await state.waitExtensionActivation();
     });
 
+    suiteTeardown(() => {
+        // HACK: It seems that `deactivate` is not called when using the test
+        //   suite. So, we manually stop the server.
+        server.stop();
+    })
+
     test("Update Prusti", async () => {
         // tests are run serially, so nothing will run & break while we're updating
         await openFile(ASSERT_TRUE);
