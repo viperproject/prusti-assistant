@@ -3,12 +3,9 @@ import * as Mocha from "mocha";
 import * as glob from "glob";
 import NYC = require("nyc");
 
-// kept as-is (except for the mocha config) from `yo code` extension template
 export async function run(): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const nyc: NYC = new NYC({
         cwd: path.join(__dirname, "..", ".."),
-        //reporter: ['text', 'html'],
         instrument: true,
         hookRequire: true,
         hookRunInContext: true,
@@ -20,7 +17,7 @@ export async function run(): Promise<void> {
     // Create the mocha test
     const mocha = new Mocha({
         ui: "tdd",
-        timeout: 60_000, // ms
+        timeout: 300_000, // 5 minutes
         color: true,
     });
 
