@@ -155,6 +155,6 @@
         "fs-extra": "^9.0.1",
         "tmp": "^0.2.1",
         "tree-kill": "^1.2.2",
-        "vs-verification-toolbox": "git+https://github.com/viperproject/vs-verification-toolbox.git#da08421"
+        "vs-verification-toolbox": "git+https://github.com/viperproject/vs-verification-toolbox.git#30e401e"
     }
 }
