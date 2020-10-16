@@ -149,15 +149,15 @@ export class ServerManager {
      */
     public stop(): void {
         if (this.isState(State.Running) || this.isState(State.Ready)) {
-            this.log(`Kill server process ${this.proc?.pid}.`);
+            console.log(`Kill server process ${this.proc?.pid}.`);
             const proc = this.proc as childProcess.ChildProcessWithoutNullStreams;
             proc.removeListener("exit", this.procExitCallback);
             treeKill(proc.pid, "SIGKILL", (err) => {
                 if (err !== undefined) {
-                    this.log(`Failed to kill process tree of ${proc.pid}: ${err}.`);
+                    console.warn(`Failed to kill process tree of ${proc.pid}: ${err}.`);
                     const succeeded = proc.kill("SIGKILL");
                     if (!succeeded) {
-                        this.log(`Failed to kill process ${proc}.`);
+                        console.error(`Failed to kill process ${proc}.`);
                     }
                 }
             });
