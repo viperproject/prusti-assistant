@@ -2,7 +2,7 @@ import * as util from "./util";
 import * as config from "./config";
 import * as vscode from "vscode";
 import * as path from "path";
-import * as fs from "fs";
+import * as vvt from "vs-verification-toolbox";
 import { PrustiLocation } from "./dependencies";
 
 // ========================================================
@@ -345,14 +345,11 @@ function parseRustcMessage(msg: Message, mainFilePath: string): Diagnostic {
  */
 async function removeDiagnosticMetadata(rootPath: string) {
     const pattern = new vscode.RelativePattern(path.join(rootPath, "target", "debug"), "*.rmeta");
-    const files = (await vscode.workspace.findFiles(pattern));
-    for (const file of files) {
-        fs.unlink(file.fsPath, error => {
-            if (error !== null) {
-                console.warn("Unlink failed", error);
-            }
-        });
-    }
+    const files = await vscode.workspace.findFiles(pattern);
+    const promises = files.map(file => {
+        return (new vvt.Location(file.fsPath)).remove()
+    });
+    await Promise.all(promises)
 }
 
 enum VerificationStatus {

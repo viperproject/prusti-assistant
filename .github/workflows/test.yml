@@ -29,10 +29,9 @@ jobs:
       - name: Set up Rust
         uses: actions-rs/toolchain@v1.0.6
         with:
-          # Prusti Assistant will automatically check and install the correct
-          # toolchain version and components.
+          # On its first activation Prusti Assistant will automatically
+          # install the correct toolchain version and components.
           toolchain: nightly-2020-09-30
-          components: rustc-dev, llvm-tools-preview
 
       - name: Install NPM dependencies
         run: npm ci
