@@ -111,9 +111,9 @@ function parseCargoOutput(output: string): CargoMessage[] {
         seen.add(line);
 
         // Parse the message into a diagnostic.
-        console.log("Parse JSON", line);
+        console.trace("Parse JSON", line);
         const diag = JSON.parse(line) as CargoMessage;
-        console.log("Parsed JSON", diag);
+        console.trace("Parsed JSON", diag);
         if (diag.message !== undefined) {
             messages.push(diag);
         }
@@ -131,9 +131,9 @@ function parseRustcOutput(output: string): Message[] {
         seen.add(line);
 
         // Parse the message into a diagnostic.
-        console.log("Parse JSON", line);
+        console.trace("Parse JSON", line);
         const diag = JSON.parse(line) as Message;
-        console.log("Parsed JSON", diag);
+        console.trace("Parsed JSON", diag);
         if (diag.message !== undefined) {
             messages.push(diag);
         }
@@ -545,7 +545,7 @@ export class DiagnosticsSet {
                 this.diagnostics.set(diagnostic.file_path, [diagnostic.diagnostic]);
             }
         } else {
-            console.log("Hide diagnostics", diagnostic);
+            console.trace("Hide diagnostics", diagnostic);
         }
     }
 
@@ -553,7 +553,7 @@ export class DiagnosticsSet {
         diagnosticsCollection.clear();
         for (const [path, fileDiagnostics] of this.diagnostics.entries()) {
             const uri = vscode.Uri.file(path);
-            console.log("Render diagnostics", uri, fileDiagnostics);
+            console.trace("Render diagnostics", uri, fileDiagnostics);
             diagnosticsCollection.set(uri, fileDiagnostics);
         }
     }
@@ -563,11 +563,11 @@ export class DiagnosticsSet {
         if (config.reportErrorsOnly()) {
             if (diagnostic.diagnostic.severity !== vscode.DiagnosticSeverity.Error
                 && /^\[Prusti\]/.exec(diagnostic.diagnostic.message) === null) {
-                console.log("Ignore non-error diagnostic", diagnostic);
+                console.trace("Ignore non-error diagnostic", diagnostic);
                 return false;
             }
             if (/^aborting due to ([0-9]+ |)previous error(s|)/.exec(diagnostic.diagnostic.message) !== null) {
-                console.log("Ignore non-error diagnostic", diagnostic);
+                console.trace("Ignore non-error diagnostic", diagnostic);
                 return false;
             }
         }
