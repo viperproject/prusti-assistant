@@ -28,14 +28,12 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
         util.log(`Using Prusti at ${location}`)
         prusti = new PrustiLocation(location);
 
-        // only notify user about success if we reported anything in between; otherwise there was nothing to be done.
+        // only notify user about success if we reported anything in between;
+        // otherwise there was nothing to be done.
         if (didReportProgress) {
-            if (shouldUpdate) {
-                // have to reload
-                util.userInfo("Prusti updated successfully. Please reload the IDE.", true, true);
-            } else {
-                util.userInfo("Prusti installed successfully.");
-            }
+            util.userInfo(
+                `Prusti ${shouldUpdate ? "updated" : "installed"} successfully.`
+            );
         }
 
         // Install Rust toolchain

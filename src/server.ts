@@ -25,13 +25,6 @@ export async function stop(): Promise<void> {
 }
 
 /**
- * Return a promise that will resolve when the server becomes `Ready`.
- */
-export function waitForReady(): Promise<void> {
-    return server.waitForReady();
-}
-
-/**
  * Start or restart the server.
  */
 export async function restart(context: vscode.ExtensionContext): Promise<void> {
@@ -93,4 +86,6 @@ export async function restart(context: vscode.ExtensionContext): Promise<void> {
         undefined,
         err => util.log(`Error: ${err}`)
     );
+
+    await server.waitForReady();
 }
