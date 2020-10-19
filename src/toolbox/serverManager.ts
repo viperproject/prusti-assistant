@@ -1,5 +1,4 @@
 import * as childProcess from "child_process";
-import { assert } from "console";
 import * as treeKill from "tree-kill";
 import { StateMachine } from "./stateMachine";
 
