@@ -102,8 +102,8 @@ export class ServerManager {
     /**
      * Start the server process, stopping any previously running process.
      *
-     * After this call the server will be `Running`, unless a `waitForRunning`
-     * promise modified the state.
+     * After this call the server is *not* guaranteed to be `Running`. Use
+     * `waitForRunning` for that.
      */
     public start(
         command: string,
@@ -114,57 +114,68 @@ export class ServerManager {
             this.stop();
         }
 
-        // Start the process
-        this.log(`Start "${command} ${args?.join(" ") ?? ""}"`);
-        const proc = childProcess.spawn(
-            command,
-            args,
-            { cwd: options?.cwd, env: options?.env }
-        );
+        this.waitForStopped().then(() => {
+            // Start the process
+            this.log(`Start "${command} ${args?.join(" ") ?? ""}"`);
+            const proc = childProcess.spawn(
+                command,
+                args,
+                { cwd: options?.cwd, env: options?.env }
+            );
 
-        if (options?.onStdout) {
-            const onStdout = options.onStdout;
-            proc.stdout.on("data", onStdout);
-        }
-        if (options?.onStderr) {
-            const onStderr = options.onStderr;
-            proc.stderr.on("data", onStderr);
-        }
+            if (options?.onStdout) {
+                const onStdout = options.onStdout;
+                proc.stdout.on("data", onStdout);
+            }
+            if (options?.onStderr) {
+                const onStderr = options.onStderr;
+                proc.stderr.on("data", onStderr);
+            }
 
-        proc.on("error", (err) => {
-            this.log(`Server process error: ${err}`);
+            proc.on("error", (err) => {
+                this.log(`Server process error: ${err}`);
+            });
+
+            proc.on("exit", this.procExitCallback);
+
+            this.proc = proc;
+            this.setState(State.Running);
+        }, err => {
+            this.log(`Error while waiting for the server to stop: ${err}`);
         });
-
-        proc.on("exit", this.procExitCallback);
-
-        this.proc = proc;
-        this.setState(State.Running);
     }
 
     /**
      * Stop the server process.
      *
-     * After this call the server will be `Stopped`, unless a `waitForStopped`
-     * promise modified the state in the meantime.
+     * After this call the server is *not* guaranteed to be `Stopped`. Use
+     * `waitForStopped` for that.
      */
     public stop(): void {
         if (this.isState(State.Running) || this.isState(State.Ready)) {
-            console.log(`Kill server process ${this.proc?.pid}.`);
+            this.log(`Kill server process ${this.proc?.pid}.`);
             const proc = this.proc as childProcess.ChildProcessWithoutNullStreams;
             proc.removeListener("exit", this.procExitCallback);
             treeKill(proc.pid, "SIGKILL", (err) => {
                 if (err !== undefined) {
-                    console.warn(`Failed to kill process tree of ${proc.pid}: ${err}.`);
+                    this.log(`Failed to kill process tree of ${proc.pid}: ${err}`);
                     const succeeded = proc.kill("SIGKILL");
                     if (!succeeded) {
-                        console.error(`Failed to kill process ${proc}.`);
+                        this.log(`Failed to kill process ${proc}.`);
                     }
+                    this.log("This is an unrecorevable error.");
+                    // TODO: We could now set the state to an unrecoverable
+                    //   `Unknown` state.
+                } else {
+                    // Success
+                    this.proc = undefined;
+                    this.setState(State.Stopped);
                 }
             });
+        } else {
+            this.proc = undefined;
+            this.setState(State.Stopped);
         }
-
-        this.proc = undefined;
-        this.setState(State.Stopped);
     }
 
     /**

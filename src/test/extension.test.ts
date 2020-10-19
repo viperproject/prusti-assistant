@@ -39,10 +39,11 @@ suite("Extension", () => {
         await state.waitExtensionActivation();
     });
 
-    suiteTeardown(() => {
+    suiteTeardown(async () => {
         // HACK: It seems that `deactivate` is not called when using the test
         //   suite. So, we manually stop the server.
-        server.stop();
+        console.log("Tear down test suite");
+        await server.stop();
     })
 
     test("Update Prusti", async () => {

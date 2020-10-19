@@ -18,9 +18,10 @@ export let address: string | undefined;
 /**
  * Stop the server.
  */
-export function stop(): void {
+export async function stop(): Promise<void> {
     address = undefined;
     server.stop();
+    await server.waitForStopped();
 }
 
 /**
@@ -34,7 +35,7 @@ export function waitForReady(): Promise<void> {
  * Start or restart the server.
  */
 export async function restart(context: vscode.ExtensionContext): Promise<void> {
-    stop();
+    await stop();
 
     const configAddress = config.serverAddress();
     if (configAddress !== "") {
