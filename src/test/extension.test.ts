@@ -4,6 +4,7 @@ import * as path from "path";
 import * as state from "../state";
 import * as server from "../server";
 import * as config from "../config";
+import * as extension from "../extension"
 
 const PROJECT_ROOT = path.join(__dirname, "..", "..");
 const DATA_ROOT = path.join(PROJECT_ROOT, "src", "test", "data");
@@ -41,9 +42,8 @@ suite("Extension", () => {
 
     suiteTeardown(async () => {
         // HACK: It seems that `deactivate` is not called when using the test
-        //   suite. So, we manually stop the server.
-        console.log("Tear down test suite");
-        await server.stop();
+        //   suite. So, we manually call the deactivate() function.
+        await extension.deactivate();
     })
 
     test("Update Prusti", async () => {
