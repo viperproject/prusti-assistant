@@ -1,4 +1,5 @@
 import * as childProcess from "child_process";
+import { assert } from "console";
 import * as treeKill from "tree-kill";
 import { StateMachine } from "./stateMachine";
 
@@ -14,6 +15,8 @@ enum State {
     Stopped = "Stopped",
     /** A process that terminated without being explicely stopped. */
     Crashed = "Crashed",
+    /** A process that failed to get killed. */
+    Unrecoverable = "Unrecoverable",
 }
 
 const stateKeys: string[] = Object.keys(State);
@@ -75,10 +78,11 @@ export class ServerManager {
     private setState(newState: State): void {
         this.log(`Mark server as "${newState}".`);
 
-        // Check an internal invariant
+        // Check an internal invariant.
         switch (newState) {
             case State.Ready:
             case State.Running:
+            case State.Unrecoverable:
                 if (this.proc === undefined) {
                     throw new ServerError(
                         this.name,
@@ -94,6 +98,18 @@ export class ServerManager {
                         `State will become ${newState}, but proc is defined.`
                     );
                 }
+        }
+
+        // Check that we are not leaving Unrecoverable.
+        if (
+            this.state.getState() === State.Unrecoverable
+            && newState !== State.Unrecoverable
+        ) {
+            throw new ServerError(
+                this.name,
+                `State cannot change from ${this.state.getState()} ` +
+                `to ${newState}.`
+            );
         }
 
         this.state.setState(State[newState]);
@@ -164,8 +180,7 @@ export class ServerManager {
                         this.log(`Failed to kill process ${proc}.`);
                     }
                     this.log("This is an unrecorevable error.");
-                    // TODO: We could now set the state to an unrecoverable
-                    //   `Unknown` state.
+                    this.setState(State.Unrecoverable);
                 } else {
                     // Success
                     this.proc = undefined;
