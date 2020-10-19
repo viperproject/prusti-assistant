@@ -43,6 +43,7 @@ suite("Extension", () => {
     suiteTeardown(async () => {
         // HACK: It seems that `deactivate` is not called when using the test
         //   suite. So, we manually call the deactivate() function.
+        console.log("Tear down test suite");
         await extension.deactivate();
     })
 

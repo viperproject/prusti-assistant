@@ -83,7 +83,11 @@ export async function restart(context: vscode.ExtensionContext): Promise<void> {
         util.userErrorPopup(
             "Prusti server stopped working.",
             "Restart Server",
-            () => void restart(context)
+            () => {
+                restart(context).catch(
+                    err => util.log(`Error: ${err}`)
+                );
+            }
         );
     }).then(
         undefined,
