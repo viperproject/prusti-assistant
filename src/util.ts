@@ -12,16 +12,25 @@ export function userInfo(message: string, popup = true, requestReload = false, s
     if (popup) {
         if (requestReload) {
             const action = "Reload Now";
-            void vscode.window.showInformationMessage(message, action)
+            vscode.window.showInformationMessage(message, action)
                 .then(selection => {
                     if (selection === action) {
-                        void vscode.commands.executeCommand(
+                        vscode.commands.executeCommand(
                             "workbench.action.reloadWindow"
+                        ).then(
+                            undefined,
+                            err => log(`Error: ${err}`)
                         );
                     }
-                });
+                }).then(
+                    undefined,
+                    err => log(`Error: ${err}`)
+                );
         } else {
-            void vscode.window.showInformationMessage(message);
+            vscode.window.showInformationMessage(message).then(
+                undefined,
+                err => log(`Error: ${err}`)
+            );
         }
     }
 }
@@ -30,7 +39,10 @@ export function userWarn(message: string, popup = true): void {
     log(message);
     vscode.window.setStatusBarMessage(message);
     if (popup) {
-        void vscode.window.showWarningMessage(message);
+        vscode.window.showWarningMessage(message).then(
+            undefined,
+            err => log(`Error: ${err}`)
+        );
     }
 }
 
@@ -40,10 +52,12 @@ export function userError(message: string, popup = true, restart = false): void 
     if (popup) {
         if (restart) {
             userErrorPopup(message, "Restart Now", () => {
-                void vscode.commands.executeCommand("workbench.action.reloadWindow");
+                vscode.commands.executeCommand("workbench.action.reloadWindow")
+                    .then(undefined, err => log(`Error: ${err}`));
             });
         } else {
-            void vscode.window.showErrorMessage(message);
+            vscode.window.showErrorMessage(message)
+                .then(undefined, err => log(`Error: ${err}`));
         }
     }
 }
@@ -51,12 +65,13 @@ export function userError(message: string, popup = true, restart = false): void 
 export function userErrorPopup(message: string, actionLabel: string, action: () => void): void {
     log(message);
     vscode.window.setStatusBarMessage(message);
-    void vscode.window.showErrorMessage(message, actionLabel)
+    vscode.window.showErrorMessage(message, actionLabel)
         .then(selection => {
             if (selection === actionLabel) {
                 action();
             }
-        });
+        })
+        .then(undefined, err => log(`Error: ${err}`));
 }
 
 const logChannel = vscode.window.createOutputChannel("Prusti Assistant");

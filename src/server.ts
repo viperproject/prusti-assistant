@@ -75,7 +75,7 @@ export async function restart(context: vscode.ExtensionContext): Promise<void> {
         }
     );
 
-    void server.waitForCrashed().then(() => {
+    server.waitForCrashed().then(() => {
         util.log(`Prusti server crashed.`);
         address = undefined;
         // Ask the user to restart the server
@@ -84,5 +84,8 @@ export async function restart(context: vscode.ExtensionContext): Promise<void> {
             "Restart Server",
             () => void restart(context)
         );
-    });
+    }).then(
+        undefined,
+        err => util.log(`Error: ${err}`)
+    );
 }

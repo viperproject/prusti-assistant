@@ -24,11 +24,11 @@ function openFile(fileName: string): Promise<vscode.TextDocument> {
     return new Promise((resolve, reject) => {
         const filePath = path.join(DATA_ROOT, fileName);
         log("Open " + filePath);
-        void vscode.workspace.openTextDocument(filePath).then(document => {
-            void vscode.window.showTextDocument(document).then((_) => {
+        vscode.workspace.openTextDocument(filePath).then(document => {
+            vscode.window.showTextDocument(document).then(() => {
                 resolve(document);
-            });
-        });
+            }).then(undefined, err => log(`Error: ${err}`));
+        }).then(undefined, err => log(`Error: ${err}`));
     });
 }
 

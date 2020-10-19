@@ -129,9 +129,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
                 const projects = await util.findProjects();
                 if (!projects.hasProjects()) {
-                    void vscode.window.showWarningMessage(
+                    vscode.window.showWarningMessage(
                         "Prusti Assistant: No 'Cargo.toml' files were found in the workspace."
-                    );
+                    ).then(undefined, err => {
+                        util.log(`Error: ${err}`);
+                    });
                 }
 
                 const crateDiagnostics = await diagnostics.generatesCratesDiagnostics(prusti!, projects);
