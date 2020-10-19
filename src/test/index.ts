@@ -17,7 +17,8 @@ export async function run(): Promise<void> {
     // Create the mocha test
     const mocha = new Mocha({
         ui: "tdd",
-        timeout: 60_000, // ms
+        // Installing Rustup and Prusti might take some minutes
+        timeout: 300_000, // ms
         color: true,
     });
 
