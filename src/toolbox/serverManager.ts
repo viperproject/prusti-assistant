@@ -120,13 +120,13 @@ export class ServerManager {
      * After this call the server is *not* guaranteed to be `Running`. Use
      * `waitForRunning` for that.
      */
-    public start(
+    public initiateStart(
         command: string,
         args?: readonly string[] | undefined,
         options?: StartOptions | undefined
     ): void {
         if (this.isState(State.Running) || this.isState(State.Ready)) {
-            this.stop();
+            this.initiateStop();
         }
 
         this.waitForStopped().then(() => {
@@ -166,7 +166,7 @@ export class ServerManager {
      * After this call the server is *not* guaranteed to be `Stopped`. Use
      * `waitForStopped` for that.
      */
-    public stop(): void {
+    public initiateStop(): void {
         if (this.isState(State.Running) || this.isState(State.Ready)) {
             this.log(`Kill server process ${this.proc?.pid}.`);
             const proc = this.proc as childProcess.ChildProcessWithoutNullStreams;
@@ -235,5 +235,13 @@ export class ServerManager {
      */
     public waitForCrashed(): Promise<void> {
         return this.state.waitForState(State[State.Crashed]);
+    }
+
+    /**
+     * Return a promise that will resolve when the server becomes
+     * `Unrecoverable`.
+     */
+    public waitForUnrecoverable(): Promise<void> {
+        return this.state.waitForState(State[State.Unrecoverable]);
     }
 }

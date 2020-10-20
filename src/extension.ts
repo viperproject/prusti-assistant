@@ -38,6 +38,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         util.log("Prusti checks completed.");
     }
 
+    // Prepare the server
+    server.registerCrashHandler(context);
+
     // Update dependencies on command
     context.subscriptions.push(
         vscode.commands.registerCommand("prusti-assistant.update", async () => {
@@ -48,7 +51,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Restart the server on command
     context.subscriptions.push(
         vscode.commands.registerCommand("prusti-assistant.restart-server", async () => {
-            await server.restart(context);
+            await server.initiateRestart(context);
         })
     );
 
@@ -67,7 +70,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             const hasChangedServer = event.affectsConfiguration(config.serverAddressPath);
             if (hasChangedServer) {
                 util.log("Restart the server because the configuration changed...");
-                await server.restart(context);
+                await server.initiateRestart(context);
             }
         })
     );

@@ -50,16 +50,19 @@ suite("Extension", () => {
     test("Update Prusti", async () => {
         // tests are run serially, so nothing will run & break while we're updating
         await openFile(ASSERT_TRUE);
+        await server.waitUntilReady();
         await vscode.commands.executeCommand("prusti-assistant.update");
     });
 
     test("Recognize Rust files", async () => {
         const document = await openFile(ASSERT_TRUE);
+        await server.waitUntilReady();
         assert.strictEqual(document.languageId, "rust");
     });
 
     test("Verify empty program", async () => {
         const document = await openFile(EMPTY);
+        await server.waitUntilReady();
         await vscode.commands.executeCommand("prusti-assistant.verify");
         const diagnostics = vscode.languages.getDiagnostics(document.uri);
         assert.strictEqual(diagnostics.length, 0);
@@ -67,6 +70,7 @@ suite("Extension", () => {
 
     test("Verify simple correct program", async () => {
         const document = await openFile(ASSERT_TRUE);
+        await server.waitUntilReady();
         await vscode.commands.executeCommand("prusti-assistant.verify");
         const diagnostics = vscode.languages.getDiagnostics(document.uri);
         assert.strictEqual(diagnostics.length, 0);
@@ -74,6 +78,7 @@ suite("Extension", () => {
 
     test("Verify simple incorrect program", async () => {
         const document = await openFile(ASSERT_FALSE);
+        await server.waitUntilReady();
         await vscode.commands.executeCommand("prusti-assistant.verify");
         const diagnostics = vscode.languages.getDiagnostics(document.uri);
         assert.strictEqual(diagnostics.length, 1);
@@ -82,18 +87,20 @@ suite("Extension", () => {
 
     test("Verify program without main", async () => {
         const document = await openFile("lib_assert_true.rs");
+        await server.waitUntilReady();
         await vscode.commands.executeCommand("prusti-assistant.verify");
         const diagnostics = vscode.languages.getDiagnostics(document.uri);
         assert.strictEqual(diagnostics.length, 0);
     });
 
     test("Choose 'stable' and underline 'false' in the failing postcondition", async () => {
-        await server.stop();
         // Choose and update the nightly toolchain
+        await server.stop();
         await config.config().update(
             config.buildChannelKey, 
             config.BuildChannel.Stable.toString()
         );
+        await server.waitUntilReady();
         // Test
         const filePath = path.join("stable", "failing_post.rs");
         const document = await openFile(filePath);
@@ -110,12 +117,13 @@ suite("Extension", () => {
     });
 
     test("Choose 'nightly' and underline 'false' in the failing postcondition", async () => {
-        await server.stop();
         // Choose and update the nightly toolchain
+        await server.stop();
         await config.config().update(
             config.buildChannelKey, 
             config.BuildChannel.Nightly.toString()
         );
+        await server.waitUntilReady();
         // Test
         const filePath = path.join("nightly", "failing_post.rs");
         const document = await openFile(filePath);
