@@ -103,12 +103,10 @@ function parseSpanRange(span: Span): vscode.Range {
 
 function parseCargoOutput(output: string): CargoMessage[] {
     const messages: CargoMessage[] = [];
-    const seen = new Set();
     for (const line of output.split("\n")) {
         if (line[0] !== "{") {
             continue;
         }
-        seen.add(line);
 
         // Parse the message into a diagnostic.
         const diag = JSON.parse(line) as CargoMessage;
@@ -121,12 +119,10 @@ function parseCargoOutput(output: string): CargoMessage[] {
 
 function parseRustcOutput(output: string): Message[] {
     const messages: Message[] = [];
-    const seen = new Set();
     for (const line of output.split("\n")) {
         if (line[0] !== "{") {
             continue;
         }
-        seen.add(line);
 
         // Parse the message into a diagnostic.
         const diag = JSON.parse(line) as Message;
@@ -145,7 +141,7 @@ function getCallSiteSpan(span: Span): Span {
 }
 
 /**
- * Parses a message into diagnostics.
+ * Parses a message into a diagnostic.
  * 
  * @param msg The message to parse.
  * @param rootPath The root path of the rust project the message was generated
@@ -186,7 +182,7 @@ function parseCargoMessage(msgDiag: CargoMessage, rootPath: string): Diagnostic 
     const primaryRange = parseSpanRange(primaryCallSiteSpan);
     const primaryFilePath = path.join(rootPath, primaryCallSiteSpan.file_name);
 
-    const diagnostic = new vscode.Diagnostic(
+    const generatedDiagnostic = new vscode.Diagnostic(
         primaryRange,
         primaryMessage,
         level
@@ -219,26 +215,26 @@ function parseCargoMessage(msgDiag: CargoMessage, rootPath: string): Diagnostic 
     // Recursively parse child messages.
     for (const child of msg.children) {
         const childMsgDiag = { target: msgDiag.target, message: child };
-        const { file_path, diagnostic } = parseCargoMessage(childMsgDiag, rootPath);
-        const fileUri = vscode.Uri.file(file_path);
+        const childDiagnostic = parseCargoMessage(childMsgDiag, rootPath);
+        const fileUri = vscode.Uri.file(childDiagnostic.file_path);
 
         relatedInformation.push(
             new vscode.DiagnosticRelatedInformation(
                 new vscode.Location(
                     fileUri,
-                    diagnostic.range
+                    childDiagnostic.diagnostic.range
                 ),
-                diagnostic.message
+                childDiagnostic.diagnostic.message
             )
         );
     }
 
     // Set related information
-    diagnostic.relatedInformation = relatedInformation;
+    generatedDiagnostic.relatedInformation = relatedInformation;
 
     return {
         file_path: primaryFilePath,
-        diagnostic
+        diagnostic: generatedDiagnostic,
     };
 }
 
@@ -489,9 +485,9 @@ export class DiagnosticsSet {
 
     public hasErrors(): boolean {
         let count = 0;
-        this.diagnostics.forEach((value: vscode.Diagnostic[], _: string) => {
-            value.forEach((value: vscode.Diagnostic) => {
-                if (value.severity === vscode.DiagnosticSeverity.Error) {
+        this.diagnostics.forEach((documentDiagnostics: vscode.Diagnostic[], _) => {
+            documentDiagnostics.forEach((diagnostic: vscode.Diagnostic) => {
+                if (diagnostic.severity === vscode.DiagnosticSeverity.Error) {
                     count += 1;
                 }
             });
@@ -501,9 +497,9 @@ export class DiagnosticsSet {
 
     public hasWarnings(): boolean {
         let count = 0;
-        this.diagnostics.forEach((value: vscode.Diagnostic[], _: string) => {
-            value.forEach((value: vscode.Diagnostic) => {
-                if (value.severity === vscode.DiagnosticSeverity.Warning) {
+        this.diagnostics.forEach((documentDiagnostics: vscode.Diagnostic[], _) => {
+            documentDiagnostics.forEach((diagnostic: vscode.Diagnostic) => {
+                if (diagnostic.severity === vscode.DiagnosticSeverity.Warning) {
                     count += 1;
                 }
             });
@@ -547,8 +543,8 @@ export class DiagnosticsSet {
 
     public render(diagnosticsCollection: vscode.DiagnosticCollection):void {
         diagnosticsCollection.clear();
-        for (const [path, fileDiagnostics] of this.diagnostics.entries()) {
-            const uri = vscode.Uri.file(path);
+        for (const [filePath, fileDiagnostics] of this.diagnostics.entries()) {
+            const uri = vscode.Uri.file(filePath);
             util.trace(`Render diagnostics: ${uri}, ${fileDiagnostics}`);
             diagnosticsCollection.set(uri, fileDiagnostics);
         }
