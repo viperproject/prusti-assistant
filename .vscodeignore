@@ -3,8 +3,9 @@
 .github/**
 out/test/**
 src/**
+.eslintrc.js
 .gitignore
-.eslint.json
+.tslint.json
 **/*.map
 **/*.ts
 

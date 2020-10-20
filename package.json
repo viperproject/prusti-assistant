@@ -148,7 +148,7 @@
     },
     "dependencies": {
         "@types/find-java-home": "^1.0.0",
-        "@types/fs-extra": "^9.0.2",
+        "@types/fs-extra": "^9.0.1",
         "@types/node": "^14.11.8",
         "@types/tmp": "^0.2.0",
         "find-java-home": "^1.1.0",
