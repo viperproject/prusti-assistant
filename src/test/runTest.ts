@@ -19,7 +19,7 @@ async function main() {
 
     // Download VS Code, unzip it and run the integration test
     console.info("Reading list of settings...");
-    const settings_list = fs.readdirSync(path.join(DATA_ROOT, "settings"));
+    const settings_list = fs.readdirSync(path.join(DATA_ROOT, "settings")).sort();
     assert(settings_list.length > 0, "There are no settings to test");
 
     for (const settings_file of settings_list) {

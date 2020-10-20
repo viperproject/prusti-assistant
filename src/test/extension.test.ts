@@ -95,7 +95,6 @@ suite("Extension", () => {
 
     test("Choose 'stable' and underline 'false' in the failing postcondition", async () => {
         // Choose and update the nightly toolchain
-        await server.stop();
         await config.config().update(
             config.buildChannelKey, 
             config.BuildChannel.Stable.toString()
@@ -118,7 +117,6 @@ suite("Extension", () => {
 
     test("Choose 'nightly' and underline 'false' in the failing postcondition", async () => {
         // Choose and update the nightly toolchain
-        await server.stop();
         await config.config().update(
             config.buildChannelKey, 
             config.BuildChannel.Nightly.toString()
