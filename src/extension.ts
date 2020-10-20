@@ -51,7 +51,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Restart the server on command
     context.subscriptions.push(
         vscode.commands.registerCommand("prusti-assistant.restart-server", async () => {
-            await server.initiateRestart(context);
+            await server.restart(context);
         })
     );
 
@@ -70,8 +70,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             const hasChangedServer = event.affectsConfiguration(config.serverAddressPath);
             if (hasChangedServer) {
                 util.log("Restart the server because the configuration changed...");
-                await server.initiateRestart(context);
+                await server.restart(context);
             }
+            // Let the test suite know that the new configuration has been
+            // processed
+            state.notifyConfigUpdate();
         })
     );
 

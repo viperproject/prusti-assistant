@@ -33,15 +33,14 @@ export function registerCrashHandler(context: vscode.ExtensionContext): void {
             "Prusti server stopped working.",
             "Restart Server",
             () => {
-                initiateRestart(context).then(
+                restart(context).then(
                     () => registerCrashHandler(context)
                 ).catch(
                     err => util.log(`Error: ${err}`)
                 );
             }
         );
-    }).then(
-        undefined,
+    }).catch(
         err => util.log(`Error: ${err}`)
     );
 }
@@ -61,16 +60,41 @@ export async function stop(): Promise<void> {
 }
 
 /**
- * Wait for the server to become ready.
+ * Wait for the server to become ready, with a timeout.
  */
-export async function waitUntilReady(): Promise<void> {
-    await server.waitForReady();
+function waitUntilReady(timeout = 10_000): Promise<void> {
+    return new Promise((resolve, reject) => {
+        let done = false;
+        server.waitForReady().then(
+            () => {
+                if (!done) {
+                    done = true;
+                    resolve();
+                }
+            },
+            err => {
+                if (!done) {
+                    done = true;
+                    reject(err);
+                }
+            }
+        );
+        setTimeout(() => {
+            if (!done) {
+                done = true;
+                reject(
+                    `Prusti server took more than ${timeout / 1000} seconds ` +
+                    `to start.`
+                );
+            }
+        }, timeout);
+    })
 }
 
 /**
  * Start or restart the server.
  */
-export async function initiateRestart(context: vscode.ExtensionContext): Promise<void> {
+export async function restart(context: vscode.ExtensionContext): Promise<void> {
     await stop();
 
     const configAddress = config.serverAddress();
@@ -111,4 +135,6 @@ export async function initiateRestart(context: vscode.ExtensionContext): Promise
             }
         }
     );
+
+    await waitUntilReady();
 }

@@ -4,7 +4,7 @@ import * as util from "./util";
  * This module keeps a global state and allows clients to wait for the
  * following events:
  *  - The extension has been fully activated.
- *  - The Prusti server is ready to process verification requests.
+ *  - A change to the settings has been fully processed.
  */
 
 let isExtensionActive = false;
@@ -13,7 +13,7 @@ export type Listener = () => void;
 
 const waitingForExtensionActivation: Listener[] = [];
 
-export function waitExtensionActivation(): Promise<Listener> {
+export function waitExtensionActivation(): Promise<void> {
     return new Promise(resolve => {
         if (isExtensionActive) {
             // Resolve immediately
@@ -27,5 +27,19 @@ export function waitExtensionActivation(): Promise<Listener> {
 export function notifyExtensionActivation(): void {
     util.log("The extension is now active.");
     isExtensionActive = true;
-    waitingForExtensionActivation?.forEach(listener => listener());
+    waitingForExtensionActivation.forEach(listener => listener());
+}
+
+const waitingForConfigUpdate: Listener[] = [];
+
+export function waitConfigUpdate(): Promise<void> {
+    util.log("waitConfigUpdate");
+    return new Promise(resolve => {
+        waitingForConfigUpdate.push(resolve);
+    });
+}
+
+export function notifyConfigUpdate(): void {
+    util.log("The configuration has been updated.");
+    waitingForConfigUpdate.forEach(listener => listener());
 }

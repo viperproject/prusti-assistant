@@ -46,6 +46,6 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
         util.userError(`Error installing Prusti: ${err}`);
         throw err;
     } finally {
-        await server.initiateRestart(context);
+        await server.restart(context);
     }
 }
