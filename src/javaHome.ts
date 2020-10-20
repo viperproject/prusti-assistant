@@ -1,5 +1,6 @@
 import { Location } from "vs-verification-toolbox";
 import * as findJavaHomeLib from 'find-java-home';
+import * as process from 'process';
 import * as util from './util';
 
 async function parseJavaHome(): Promise<string | null> {
@@ -16,15 +17,16 @@ async function parseJavaHome(): Promise<string | null> {
 }
 
 export async function findJavaHome(): Promise<string | null> {
+    console.log("Searching for Java home...");
+    let javaHome: string | null = null;
     try {
         const options: findJavaHomeLib.IOptions = {
             allowJre: false,
             registry: "x64",
         };
-        console.log("Searching for Java home...");
-        let javaHome: string | null = await new Promise(resolve => {
+        javaHome = await new Promise(resolve => {
             findJavaHomeLib(options, (err: unknown, home: string) => {
-                if (err !== null) {
+                if (err) {
                     console.error(err);
                     resolve(null);
                 } else {
@@ -33,15 +35,16 @@ export async function findJavaHome(): Promise<string | null> {
                 }
             });
         });
-        if (javaHome === null) {
-            // Last resort
-            javaHome = await parseJavaHome();
-        }
-        return javaHome;
     } catch (err) {
-        console.error(err);
-        throw err
+        util.log(`Error while searching for Java home: ${err}`);
     }
+    if (javaHome === null) {
+        javaHome = process.env.JAVA_HOME || null;
+    }
+    if (javaHome === null) {
+        javaHome = await parseJavaHome();
+    }
+    return javaHome || null;
 }
 
 export class JavaHome {

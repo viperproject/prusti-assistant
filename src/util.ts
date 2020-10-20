@@ -2,7 +2,6 @@ import * as childProcess from "child_process";
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
-import * as treeKill from 'tree-kill';
 
 export function userInfo(message: string, popup = true, requestReload = false, statusBar = true): void {
     log(message);

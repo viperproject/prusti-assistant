@@ -172,7 +172,7 @@ export class ServerManager {
             const proc = this.proc as childProcess.ChildProcessWithoutNullStreams;
             proc.removeListener("exit", this.procExitCallback);
             treeKill(proc.pid, "SIGKILL", (err) => {
-                if (err !== undefined) {
+                if (err) {
                     this.log(`Failed to kill process tree of ${proc.pid}: ${err}`);
                     const succeeded = proc.kill("SIGKILL");
                     if (!succeeded) {

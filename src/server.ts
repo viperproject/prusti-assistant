@@ -16,8 +16,7 @@ server.waitForUnrecoverable().then(() => {
     util.userError(
         "Prusti server stopped working. Please restart the IDE."
     );
-}).then(
-    undefined,
+}).catch(
     err => util.log(`Error: ${err}`)
 );
 
