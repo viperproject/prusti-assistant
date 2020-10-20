@@ -380,7 +380,7 @@ async function queryCrateDiagnostics(prusti: PrustiLocation, rootPath: string): 
                 }
             }
         }
-    ).output;
+    );
     let status = VerificationStatus.Crash;
     if (output.code === 0) {
         status = VerificationStatus.Verified;
@@ -444,7 +444,7 @@ async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: stri
                 }
             }
         }
-    ).output;
+    );
     let status = VerificationStatus.Crash;
     if (output.code === 0) {
         status = VerificationStatus.Verified;

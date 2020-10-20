@@ -14,8 +14,8 @@ export async function hasPrerequisites(): Promise<[boolean, string]> {
     }
     util.log("Checking Rustup and Cargo...");
     try {
-        await util.spawn("rustup", ["--version"]).output;
-        await util.spawn("cargo", ["--version"]).output;
+        await util.spawn("rustup", ["--version"]);
+        await util.spawn("cargo", ["--version"]);
     } catch (err) {
         console.error(err);
         util.log(`Error: ${err}`);
@@ -30,7 +30,7 @@ export async function hasPrerequisites(): Promise<[boolean, string]> {
         const javaPath = path.join(
             (await config.javaHome())!.javaExecutable
         );
-        await util.spawn(javaPath, ["-version"]).output;
+        await util.spawn(javaPath, ["-version"]);
     } catch (err) {
         console.error(err);
         util.log(`Error: ${err}`);
@@ -46,7 +46,7 @@ export async function hasPrerequisites(): Promise<[boolean, string]> {
 export async function checkPrusti(prusti: PrustiLocation): Promise<[boolean, string]> {
     util.log("Checking Z3...");
     try {
-        await util.spawn(prusti.z3, ["--version"]).output;
+        await util.spawn(prusti.z3, ["--version"]);
     } catch (err) {
         console.error(err);
         util.log(`Error: ${err}`);
@@ -58,7 +58,7 @@ export async function checkPrusti(prusti: PrustiLocation): Promise<[boolean, str
     }
     util.log("Checking Prusti...");
     try {
-        await util.spawn(prusti.prustiRustc, ["--version"]).output;
+        await util.spawn(prusti.prustiRustc, ["--version"]);
     } catch (err) {
         console.error(err);
         util.log("Could not run prusti-rustc");
@@ -71,7 +71,7 @@ export async function checkPrusti(prusti: PrustiLocation): Promise<[boolean, str
     }
     util.log("Checking Cargo-Prusti...");
     try {
-        await util.spawn(prusti.cargoPrusti, ["--help"]).output;
+        await util.spawn(prusti.cargoPrusti, ["--help"]);
     } catch (err) {
         console.error(err);
         util.log("Could not run cargo-prusti");

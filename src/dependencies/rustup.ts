@@ -20,7 +20,7 @@ export async function ensureRustToolchainInstalled(context: vscode.ExtensionCont
     const versionsOutput = await util.spawn(
         "rustup",
         ["toolchain", "list"]
-    ).output;
+    );
     const versions = versionsOutput.stdout.split("\n");
     if (versions.some(line => line.startsWith(toolchainVersion))) {
         util.log(`Rust toolchain ${toolchainVersion} is already available.`);
@@ -41,7 +41,7 @@ export async function ensureRustToolchainInstalled(context: vscode.ExtensionCont
                     updateText(("" + output).trim());
                 }
             }
-        ).output;
+        );
         item.dispose();
     }
 
@@ -49,7 +49,7 @@ export async function ensureRustToolchainInstalled(context: vscode.ExtensionCont
     const componentsOutput = await util.spawn(
         "rustup",
         ["+" + toolchainVersion, "component", "list"]
-    ).output;
+    );
     const components = componentsOutput.stdout.split("\n");
     for (const toolchainComponent of toolchainComponents) {
         const alreadyInstalled = components.some(line => (
@@ -74,7 +74,7 @@ export async function ensureRustToolchainInstalled(context: vscode.ExtensionCont
                         updateText(("" + output).trim());
                     }
                 }
-            ).output;
+            );
             item.dispose();
         }
     }

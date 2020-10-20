@@ -100,7 +100,7 @@ export function spawn(
         onStdout?: ((data: string) => void);
         onStderr?: ((data: string) => void);
     } = {}
-): { output: Promise<Output>; kill: () => void } {
+): Promise<Output> {
     const description = `${cmd} ${args?.join(" ") ?? ""}`;
     log(`Prusti Assistant: run '${description}'`);
 
@@ -137,31 +137,17 @@ export function spawn(
         trace("└──── End stderr ──────┘");
     }
 
-    return {
-        output: new Promise((resolve, reject) => {
-            proc.on("close", (code) => {
-                printOutput();
-                resolve({ stdout, stderr, code });
-            });
-            proc.on("error", (err) => {
-                printOutput();
-                log(`Error: ${err}`);
-                reject(err);
-            });
-        }),
-        kill: () => {
-            treeKill(proc.pid, "SIGKILL", (err) => {
-                if (err !== undefined) {
-                    console.error(err);
-                    log(`Failed to kill process tree of ${proc.pid}: ${err}`);
-                    const succeeded = proc.kill("SIGKILL");
-                    if (!succeeded) {
-                        log(`Failed to kill process ${proc}`);
-                    }
-                }
-            });
-        }
-    };
+    return new Promise((resolve, reject) => {
+        proc.on("close", (code) => {
+            printOutput();
+            resolve({ stdout, stderr, code });
+        });
+        proc.on("error", (err) => {
+            printOutput();
+            log(`Error: ${err}`);
+            reject(err);
+        });
+    });
 }
 
 export class Project {

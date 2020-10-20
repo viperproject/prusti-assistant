@@ -6,7 +6,7 @@ async function parseJavaHome(): Promise<string | null> {
     const output = await util.spawn(
         "java",
         ["-XshowSettings:properties", "-version"]
-    ).output;
+    );
     const java_home_line = output.stderr.split("\n")
         .find((line) => line.indexOf("java.home") != -1);
     if (java_home_line === undefined) {
