@@ -4,18 +4,20 @@
 // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
 {
 	"version": "0.2.0",
-	"configurations": [{
+	"configurations": [
+		{
 			"name": "Run Extension",
 			"type": "extensionHost",
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
 			"args": [
+				"--disable-extensions",
 				"--extensionDevelopmentPath=${workspaceFolder}"
 			],
 			"outFiles": [
 				"${workspaceFolder}/out/**/*.js"
 			],
-			"preLaunchTask": "npm: watch",
+			"preLaunchTask": "npm: compile",
 			"env": {
 				"PATH": "${env:PATH}"
 			},
@@ -26,16 +28,17 @@
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
 			"args": [
+				"--disable-extensions",
 				"--extensionDevelopmentPath=${workspaceFolder}",
-				"--extensionTestsPath=${workspaceFolder}/out/test"
+				"--extensionTestsPath=${workspaceFolder}/out/test",
 			],
 			"outFiles": [
 				"${workspaceFolder}/out/test/**/*.js"
 			],
-			"preLaunchTask": "npm: watch",
+			"preLaunchTask": "npm: compile",
 			"env": {
 				"PATH": "${env:PATH}"
 			},
-		}
+		},
 	]
 }

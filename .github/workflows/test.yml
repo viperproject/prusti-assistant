@@ -1,0 +1,79 @@
+name: Test
+
+on:
+  push:
+    branches: "master"
+  pull_request:
+  schedule:
+    # At 07:00 UTC on Monday
+    - cron:  '0 7 * * 1'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish a new version?'
+        required: true
+        default: 'No'
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+
+      - name: Set up Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: '12'
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1.0.6
+        with:
+          # On its first activation Prusti Assistant will automatically
+          # install the correct toolchain version and components.
+          toolchain: nightly-2020-09-30
+
+      - name: Install NPM dependencies
+        run: npm ci
+
+      - name: Compile
+        run: npm run compile
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Run tests (headless)
+        uses: GabrielBB/xvfb-action@v1.0
+        with:
+          run: npm test --full-trace
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Collect coverage
+        run: npx nyc report --reporter=lcov
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage/lcov.info
+
+  publish:
+    if: |
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.publish == 'Yes'
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: npm install
+      - uses: lannonbr/vsce-action@master
+        with:
+          args: "publish -p $VSCE_TOKEN"
+        env:
+          VSCE_TOKEN: ${{ secrets.VSCE_TOKEN }}

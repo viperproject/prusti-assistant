@@ -1,24 +1,49 @@
-//
-// PLEASE DO NOT MODIFY / DELETE UNLESS YOU KNOW WHAT YOU ARE DOING
-//
-// This file is providing the test runner to use when running extension tests.
-// By default the test runner in use is Mocha based.
-//
-// You can provide your own test runner if you want to override it by exporting
-// a function run(testsRoot: string, clb: (error: Error, failures?: number) => void): void
-// that the extension host can call to run the tests. The test runner is expected to use console.log
-// to report the results back to the caller. When the tests are finished, return
-// a possible error to the callback or null if none.
+import * as path from "path";
+import * as Mocha from "mocha";
+import * as glob from "glob";
+import NYC = require("nyc");
 
-import * as testRunner from 'vscode/lib/testrunner';
+export async function run(): Promise<void> {
+    const nyc: NYC = new NYC({
+        cwd: path.join(__dirname, "..", ".."),
+        instrument: true,
+        hookRequire: true,
+        hookRunInContext: true,
+        hookRunInThisContext: true,
+    });
+    await nyc.createTempDirectory();
+    await nyc.wrap();
 
-// You can directly control Mocha options by configuring the test runner below
-// See https://github.com/mochajs/mocha/wiki/Using-mocha-programmatically#set-options
-// for more info
-testRunner.configure({
-    ui: "tdd",
-    useColors: true,
-    timeout: 20000 // ms
-});
+    // Create the mocha test
+    const mocha = new Mocha({
+        ui: "tdd",
+        // Installing Rustup and Prusti might take some minutes
+        timeout: 600_000, // ms
+        color: true,
+    });
 
-module.exports = testRunner;
+    const testsRoot = path.resolve(__dirname, "..");
+
+    const files: Array<string> = await new Promise((resolve, reject) =>
+        glob(
+            "**/*.test.js",
+            {
+                cwd: testsRoot,
+            },
+            (err, result) => {
+                if (err) reject(err)
+                else resolve(result)
+            }
+        )
+    )
+
+    // Add files to the test suite
+    files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)));
+
+    const failures: number = await new Promise(resolve => mocha.run(resolve))
+    await nyc.writeCoverageFile()
+
+    if (failures > 0) {
+        throw new Error(`${failures} tests failed.`)
+    }
+}

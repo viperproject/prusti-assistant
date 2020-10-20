@@ -2,7 +2,7 @@
     "name": "prusti-assistant",
     "displayName": "Prusti Assistant",
     "description": "Verify Rust programs with the Prusti verifier.",
-    "version": "0.3.21",
+    "version": "0.4.0",
     "publisher": "viper-admin",
     "repository": {
         "type": "git",
@@ -14,7 +14,7 @@
     },
     "homepage": "https://github.com/viperproject/prusti-assistant",
     "engines": {
-        "vscode": "^1.35.1",
+        "vscode": "^1.43.0",
         "node": "*"
     },
     "categories": [
@@ -41,12 +41,17 @@
         "commands": [
             {
                 "command": "prusti-assistant.update",
-                "title": "install or update dependencies",
+                "title": "update dependencies",
                 "category": "Prusti"
             },
             {
                 "command": "prusti-assistant.verify",
                 "title": "save and verify this file",
+                "category": "Prusti"
+            },
+            {
+                "command": "prusti-assistant.restart-server",
+                "title": "restart Prusti server",
                 "category": "Prusti"
             }
         ],
@@ -54,6 +59,39 @@
             "type": "object",
             "title": "Prusti Assistant",
             "properties": {
+                "prusti-assistant.buildChannel": {
+                    "type": "string",
+                    "default": "Stable",
+                    "enum": [
+                        "Stable",
+                        "Nightly",
+                        "Local"
+                    ],
+                    "enumDescriptions": [
+                        "An old version that is known to work fine.",
+                        "A version with frequent updates that might be unstable or have other issues.",
+                        "A local build of Prusti, specified via localPrustiPath."
+                    ],
+                    "description": "Specifies from which channel Prusti builds are downloaded."
+                },
+                "prusti-assistant.localPrustiPath": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Specifies the path to the local Prusti installation (has no effect if buildChannel is not set to Local)."
+                },
+                "prusti-assistant.verificationMode": {
+                    "type": "string",
+                    "default": "CurrentProgram",
+                    "enum": [
+                        "CurrentProgram",
+                        "AllCratesInWorkspace"
+                    ],
+                    "enumDescriptions": [
+                        "Verify only the currently-open file.",
+                        "Verify all crates in the currently-open workspace."
+                    ],
+                    "description": "Selects what to do upon running the verify command."
+                },
                 "prusti-assistant.verifyOnSave": {
                     "type": "boolean",
                     "default": false,
@@ -72,32 +110,52 @@
                 "prusti-assistant.javaHome": {
                     "type": "string",
                     "default": "",
-                    "description": "Specifies the path of the Java home folder (leave empty to autodetect)."
+                    "description": "Specifies the path of the Java home folder (leave empty to auto-detect)."
+                },
+                "prusti-assistant.serverAddress": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Specifies the address of a Prusti server to use for verification. If not set, the extension will start up and manage its own server."
                 }
             }
         }
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",
-        "compile": "tsc -p ./",
-        "watch": "tsc -watch -p ./",
-        "lint": "tslint --config ./tslint.json './src/**/*.ts'",
-        "postinstall": "node ./node_modules/vscode/bin/install",
-        "test": "npm run compile && node ./node_modules/vscode/bin/test"
+        "compile": "tsc",
+        "watch": "tsc -watch",
+        "lint": "eslint -c .eslintrc.js --ext .ts ./src",
+        "pretest": "npm run compile",
+        "test": "node ./out/test/runTest.js",
+        "report-coverage": "nyc report --reporter=html"
     },
     "devDependencies": {
-        "typescript": "^3.6.3",
-        "vscode": "^1.1.34",
-        "tslint": "^5.20.0",
-        "tslint-config-prettier": "^1.18.0",
-        "@types/node": "^12.7.5",
-        "@types/mocha": "^5.2.7"
+        "@types/glob": "^7.1.3",
+        "@types/mocha": "^8.0.3",
+        "@types/vscode": "^1.50.0",
+        "@typescript-eslint/eslint-plugin": "^4.4.1",
+        "@typescript-eslint/parser": "^4.4.1",
+        "eslint": "^7.11.0",
+        "eslint-plugin-import": "^2.22.1",
+        "eslint-plugin-jsdoc": "^30.6.5",
+        "eslint-plugin-prefer-arrow": "^1.2.2",
+        "eslint-plugin-react": "^7.21.4",
+        "glob": "^7.1.6",
+        "mocha": "^8.1.3",
+        "nyc": "^15.1.0",
+        "typescript": "^4.0.3",
+        "vscode-test": "^1.4.0"
     },
     "dependencies": {
-        "@types/extract-zip": "^1.6.2",
-        "@types/fs-extra": "^8.0.0",
-        "extract-zip": "^1.6.7",
-        "locate-java-home": "^1.1.2",
-        "fs-extra": "^8.1.0"
+        "@types/find-java-home": "^1.0.0",
+        "@types/fs-extra": "^9.0.2",
+        "@types/node": "^14.11.8",
+        "@types/tmp": "^0.2.0",
+        "find-java-home": "^1.1.0",
+        "fs-extra": "^9.0.1",
+        "tmp": "^0.2.1",
+        "tree-kill": "^1.2.2",
+        "ts-prune": "^0.8.4",
+        "vs-verification-toolbox": "git+https://github.com/viperproject/vs-verification-toolbox.git#69ab4b7"
     }
 }

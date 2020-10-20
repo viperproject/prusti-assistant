@@ -1,10 +1,9 @@
-'use strict';
-
-import * as util from './util';
-import * as config from './config';
-import * as vscode from 'vscode';
-import * as path from 'path';
-import * as fs from 'fs';
+import * as util from "./util";
+import * as config from "./config";
+import * as vscode from "vscode";
+import * as path from "path";
+import * as vvt from "vs-verification-toolbox";
+import { PrustiLocation } from "./dependencies";
 
 // ========================================================
 // JSON Schemas
@@ -90,7 +89,7 @@ function parseMultiSpanRange(multiSpan: Span[]): vscode.Range {
             finalRange = finalRange.union(range);
         }
     }
-    return finalRange || dummyRange();
+    return finalRange ?? dummyRange();
 }
 
 function parseSpanRange(span: Span): vscode.Range {
@@ -112,9 +111,7 @@ function parseCargoOutput(output: string): CargoMessage[] {
         seen.add(line);
 
         // Parse the message into a diagnostic.
-        console.log("Parse JSON", line);
-        const diag: CargoMessage = JSON.parse(line);
-        console.log("Parsed JSON", diag);
+        const diag = JSON.parse(line) as CargoMessage;
         if (diag.message !== undefined) {
             messages.push(diag);
         }
@@ -132,9 +129,7 @@ function parseRustcOutput(output: string): Message[] {
         seen.add(line);
 
         // Parse the message into a diagnostic.
-        console.log("Parse JSON", line);
-        const diag: Message = JSON.parse(line);
-        console.log("Parsed JSON", diag);
+        const diag = JSON.parse(line) as Message;
         if (diag.message !== undefined) {
             messages.push(diag);
         }
@@ -143,7 +138,7 @@ function parseRustcOutput(output: string): Message[] {
 }
 
 function getCallSiteSpan(span: Span): Span {
-    while (span.expansion) {
+    while (span.expansion !== null) {
         span = span.expansion.span;
     }
     return span;
@@ -181,10 +176,10 @@ function parseCargoMessage(msgDiag: CargoMessage, rootPath: string): Diagnostic 
     }
 
     let primaryMessage = msg.message;
-    if (msg.code) {
+    if (msg.code !== null) {
         primaryMessage = `[${msg.code.code}] ${primaryMessage}.`;
     }
-    if (primarySpan.label) {
+    if (primarySpan.label !== null) {
         primaryMessage = `${primaryMessage} \n[Note] ${primarySpan.label}`;
     }
     const primaryCallSiteSpan = getCallSiteSpan(primarySpan);
@@ -205,7 +200,7 @@ function parseCargoMessage(msgDiag: CargoMessage, rootPath: string): Diagnostic 
         }
 
         let message = "";
-        if (span.label) {
+        if (span.label !== null) {
             message = `[Note] ${span.label}`;
         }
         const callSiteSpan = getCallSiteSpan(span);
@@ -258,7 +253,7 @@ function parseRustcMessage(msg: Message, mainFilePath: string): Diagnostic {
     const level = parseMessageLevel(msg.level);
 
     let primaryMessage = msg.message;
-    if (msg.code) {
+    if (msg.code !== null) {
         primaryMessage = `[${msg.code.code}] ${primaryMessage}.`;
     }
 
@@ -268,7 +263,7 @@ function parseRustcMessage(msg: Message, mainFilePath: string): Diagnostic {
         if (!span.is_primary) {
             continue;
         }
-        if (span.label) {
+        if (span.label !== null) {
             primaryMessage = `${primaryMessage}\n[Note] ${span.label}`;
         }
         primaryCallSiteSpans.push(getCallSiteSpan(span));
@@ -300,10 +295,7 @@ function parseRustcMessage(msg: Message, mainFilePath: string): Diagnostic {
             continue;
         }
 
-        let message = "[Note] related expression";
-        if (span.label) {
-            message = `[Note] ${span.label}`;
-        }
+        const message = `[Note] ${span.label ?? "related expression"}`;
         const callSiteSpan = getCallSiteSpan(span);
         const range = parseSpanRange(callSiteSpan);
         const filePath = callSiteSpan.file_name;
@@ -348,15 +340,12 @@ function parseRustcMessage(msg: Message, mainFilePath: string): Diagnostic {
  * @param rootPath The root path of a rust project.
  */
 async function removeDiagnosticMetadata(rootPath: string) {
-    const pattern = new vscode.RelativePattern(path.join(rootPath, 'target', 'debug'), '*.rmeta');
-    const files = (await vscode.workspace.findFiles(pattern));
-    for (const file of files) {
-        await fs.unlink(file.fsPath, error => {
-            if (error !== null) {
-                console.warn('Unlink failed', error);
-            }
-        });
-    }
+    const pattern = new vscode.RelativePattern(path.join(rootPath, "target", "debug"), "*.rmeta");
+    const files = await vscode.workspace.findFiles(pattern);
+    const promises = files.map(file => {
+        return (new vvt.Location(file.fsPath)).remove()
+    });
+    await Promise.all(promises)
 }
 
 enum VerificationStatus {
@@ -371,22 +360,24 @@ enum VerificationStatus {
  * @param rootPath The root path of a rust project.
  * @returns An array of diagnostics for the given rust project.
  */
-async function queryCrateDiagnostics(context: vscode.ExtensionContext, rootPath: string): Promise<[Diagnostic[], VerificationStatus]> {
+async function queryCrateDiagnostics(prusti: PrustiLocation, rootPath: string): Promise<[Diagnostic[], VerificationStatus]> {
     // FIXME: Workaround for warning generation for libs.
     await removeDiagnosticMetadata(rootPath);
     const output = await util.spawn(
-        config.cargoPrustiExe(context),
+        prusti.cargoPrusti,
         ["--message-format=json"],
         {
-            cwd: rootPath,
-            env: {
-                RUST_BACKTRACE: "1",
-                RUST_LOG: "info",
-                JAVA_HOME: await config.javaHome(),
-                VIPER_HOME: config.viperHome(context),
-                Z3_EXE: config.z3Exe(context),
-                BOOGIE_EXE: config.boogieExe(context),
-                PATH: process.env.PATH  // Needed e.g. to run Rustup
+            options: {
+                cwd: rootPath,
+                env: {
+                    ...process.env,  // Needed e.g. to run Rustup
+                    RUST_BACKTRACE: "1",
+                    RUST_LOG: "info",
+                    JAVA_HOME: (await config.javaHome())!.path,
+                    VIPER_HOME: prusti.viperHome,
+                    Z3_EXE: prusti.z3,
+                    BOOGIE_EXE: prusti.boogie
+                }
             }
         }
     );
@@ -400,10 +391,10 @@ async function queryCrateDiagnostics(context: vscode.ExtensionContext, rootPath:
     if (output.code === 101) {
         status = VerificationStatus.Errors;
     }
-    if (output.stderr.match(/error: internal compiler error/)) {
+    if (/error: internal compiler error/.exec(output.stderr) !== null) {
         status = VerificationStatus.Crash;
     }
-    if (output.stderr.match(/^thread '.*' panicked at/)) {
+    if (/^thread '.*' panicked at/.exec(output.stderr) !== null) {
         status = VerificationStatus.Crash;
     }
     const diagnostics: Diagnostic[] = [];
@@ -421,20 +412,36 @@ async function queryCrateDiagnostics(context: vscode.ExtensionContext, rootPath:
  * @param programPath The root path of a rust program.
  * @returns An array of diagnostics for the given rust project.
  */
-async function queryProgramDiagnostics(context: vscode.ExtensionContext, programPath: string): Promise<[Diagnostic[], VerificationStatus]> {
+async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: string, serverAddress: string): Promise<[Diagnostic[], VerificationStatus]> {
+    // For backward compatibility
+    const isStable = config.isStableBuildChannel();
+    const args = isStable ? [
+            "--crate-type=lib",
+            "--error-format=json",
+            programPath
+        ] : [
+            "--crate-type=lib",
+            "--error-format=json",
+            "--edition=2018",
+            programPath
+        ];
     const output = await util.spawn(
-        config.prustiRustcExe(context),
-        ["--crate-type=lib", "--error-format=json", programPath],
+        prusti.prustiRustc,
+        args,
         {
-            cwd: path.dirname(programPath),
-            env: {
-                RUST_BACKTRACE: "1",
-                RUST_LOG: "info",
-                JAVA_HOME: await config.javaHome(),
-                VIPER_HOME: config.viperHome(context),
-                Z3_EXE: config.z3Exe(context),
-                BOOGIE_EXE: config.boogieExe(context),
-                PATH: process.env.PATH  // Needed e.g. to run Rustup
+            options: {
+                cwd: path.dirname(programPath),
+                env: {
+                    ...process.env,  // Needed e.g. to run Rustup
+                    PRUSTI_SERVER_ADDRESS: serverAddress,
+                    RUST_BACKTRACE: "1",
+                    PRUSTI_LOG: "info",
+                    PRUSTI_QUIET: "true",
+                    JAVA_HOME: (await config.javaHome())!.path,
+                    VIPER_HOME: prusti.viperHome,
+                    Z3_EXE: prusti.z3,
+                    BOOGIE_EXE: prusti.boogie
+                }
             }
         }
     );
@@ -442,16 +449,22 @@ async function queryProgramDiagnostics(context: vscode.ExtensionContext, program
     if (output.code === 0) {
         status = VerificationStatus.Verified;
     }
-    // TODO: after upgrading the Rust compiler:
-    // * exit code 1 --> error
-    // * exit code 101 --> crash
-    if (output.code === 101) {
-        status = VerificationStatus.Errors;
+    if (isStable) {
+        if (output.code === 101) {	
+            status = VerificationStatus.Errors;
+        }
+    } else {
+        if (output.code === 1) {
+            status = VerificationStatus.Errors;
+        }
+        if (output.code === 101) {
+            status = VerificationStatus.Crash;
+        }
     }
-    if (output.stderr.match(/error: internal compiler error/)) {
+    if (/error: internal compiler error/.exec(output.stderr) !== null) {
         status = VerificationStatus.Crash;
     }
-    if (output.stderr.match(/^thread '.*' panicked at/)) {
+    if (/^thread '.*' panicked at/.exec(output.stderr) !== null) {
         status = VerificationStatus.Crash;
     }
     const diagnostics: Diagnostic[] = [];
@@ -469,12 +482,12 @@ async function queryProgramDiagnostics(context: vscode.ExtensionContext, program
 
 export class DiagnosticsSet {
     private diagnostics: Map<string, vscode.Diagnostic[]>;
-    
+
     constructor() {
-        this.diagnostics = new Map();
+        this.diagnostics = new Map<string, vscode.Diagnostic[]>();
     }
 
-    public hasErros(): boolean {
+    public hasErrors(): boolean {
         let count = 0;
         this.diagnostics.forEach((value: vscode.Diagnostic[], _: string) => {
             value.forEach((value: vscode.Diagnostic) => {
@@ -502,13 +515,24 @@ export class DiagnosticsSet {
         return this.diagnostics.size === 0;
     }
 
-    public addAll(diagnostics: Diagnostic[]) {
+    public countsBySeverity(): Map<vscode.DiagnosticSeverity, number> {
+        const counts = new Map<vscode.DiagnosticSeverity, number>();
+        this.diagnostics.forEach((diags, _) => {
+            diags.forEach(diag => {
+                const count = counts.get(diag.severity);
+                counts.set(diag.severity, (count === undefined ? 0 : count) + 1);
+            });
+        });
+        return counts;
+    }
+
+    public addAll(diagnostics: Diagnostic[]):void {
         for (const diag of diagnostics) {
             this.add(diag);
         }
     }
 
-    public add(diagnostic: Diagnostic) {
+    public add(diagnostic: Diagnostic):void {
         if (this.reportDiagnostic(diagnostic)) {
             const set = this.diagnostics.get(diagnostic.file_path);
             if (set !== undefined) {
@@ -517,15 +541,15 @@ export class DiagnosticsSet {
                 this.diagnostics.set(diagnostic.file_path, [diagnostic.diagnostic]);
             }
         } else {
-            console.log("Hide diagnostics", diagnostic);
+            util.trace(`Hide diagnostics: ${diagnostic}`);
         }
     }
 
-    public render(diagnosticsCollection: vscode.DiagnosticCollection) {
+    public render(diagnosticsCollection: vscode.DiagnosticCollection):void {
         diagnosticsCollection.clear();
         for (const [path, fileDiagnostics] of this.diagnostics.entries()) {
             const uri = vscode.Uri.file(path);
-            console.log("Render diagnostics", uri, fileDiagnostics);
+            util.trace(`Render diagnostics: ${uri}, ${fileDiagnostics}`);
             diagnosticsCollection.set(uri, fileDiagnostics);
         }
     }
@@ -533,12 +557,13 @@ export class DiagnosticsSet {
     /// Returns false if the diagnostic should be ignored
     private reportDiagnostic(diagnostic: Diagnostic): boolean {
         if (config.reportErrorsOnly()) {
-            if (diagnostic.diagnostic.severity !== vscode.DiagnosticSeverity.Error && !diagnostic.diagnostic.message.match(/^\[Prusti\]/)) {
-                console.log("Ignore non-error diagnostic", diagnostic);
+            if (diagnostic.diagnostic.severity !== vscode.DiagnosticSeverity.Error
+                && /^\[Prusti\]/.exec(diagnostic.diagnostic.message) === null) {
+                util.trace(`Ignore non-error diagnostic: ${diagnostic}`);
                 return false;
             }
-            if (diagnostic.diagnostic.message.match(/^aborting due to ([0-9]+ |)previous error(s|)$/)) {
-                console.log("Ignore non-error diagnostic", diagnostic);
+            if (/^aborting due to ([0-9]+ |)previous error(s|)/.exec(diagnostic.diagnostic.message) !== null) {
+                util.trace(`Ignore non-error diagnostic: ${diagnostic}`);
                 return false;
             }
         }
@@ -546,22 +571,22 @@ export class DiagnosticsSet {
     }
 }
 
-export async function generatesCratesDiagnostics(context: vscode.ExtensionContext, projectList: util.ProjectList): Promise<DiagnosticsSet> {
+export async function generatesCratesDiagnostics(prusti: PrustiLocation, projectList: util.ProjectList): Promise<DiagnosticsSet> {
     const resultDiagnostics = new DiagnosticsSet();
 
     for (const project of projectList.projects) {
-        if (!project.path) {
+        if (project.path.length === 0) {
             continue; // FIXME: why this?
         }
         try {
-            const [diagnostics, status] = await queryCrateDiagnostics(context, project.path);
+            const [diagnostics, status] = await queryCrateDiagnostics(prusti, project.path);
             resultDiagnostics.addAll(diagnostics);
             if (status === VerificationStatus.Crash) {
                 resultDiagnostics.add({
                     file_path: path.join(project.path, "Cargo.toml"),
                     diagnostic: new vscode.Diagnostic(
                         dummyRange(),
-                        "Prusti encountered an error. See other reported errors and the log (View -> Output -> Prusti Assistant) for more details.",
+                        "Prusti encountered an error. See other reported errors and the log (View -> Output -> Prusti Assistant ...) for more details.",
                         vscode.DiagnosticSeverity.Error
                     )
                 });
@@ -569,12 +594,15 @@ export async function generatesCratesDiagnostics(context: vscode.ExtensionContex
         } catch (err) {
             console.error(err);
             util.log(`Error: ${err}`);
-            const errorMessage = err.message || err.toString();
+            let errorMessage = "<unknown error type>";
+            if (err instanceof Error) {
+                errorMessage = err.message ?? err.toString();
+            }
             resultDiagnostics.add({
                 file_path: path.join(project.path, "Cargo.toml"),
                 diagnostic: new vscode.Diagnostic(
                     dummyRange(),
-                    `Unexpected error. ${errorMessage}. See the log for more details.`,
+                    `Unexpected error. ${errorMessage}. See the log (View -> Output -> Prusti Assistant ...) for more details.`,
                     vscode.DiagnosticSeverity.Error
                 )
             });
@@ -585,18 +613,18 @@ export async function generatesCratesDiagnostics(context: vscode.ExtensionContex
 }
 
 
-export async function generatesProgramDiagnostics(context: vscode.ExtensionContext, programPath: string): Promise<DiagnosticsSet> {
+export async function generatesProgramDiagnostics(prusti: PrustiLocation, programPath: string, serverAddress: string | undefined): Promise<DiagnosticsSet> {
     const resultDiagnostics = new DiagnosticsSet();
 
     try {
-        const [diagnostics, status] = await queryProgramDiagnostics(context, programPath);
+        const [diagnostics, status] = await queryProgramDiagnostics(prusti, programPath, serverAddress || "");
         resultDiagnostics.addAll(diagnostics);
         if (status === VerificationStatus.Crash) {
             resultDiagnostics.add({
                 file_path: programPath,
                 diagnostic: new vscode.Diagnostic(
                     dummyRange(),
-                    "Prusti encountered an error. See other reported errors and the log (View -> Output -> Prusti Assistant) for more details.",
+                    "Prusti encountered an error. See other reported errors and the log (View -> Output -> Prusti Assistant ...) for more details.",
                     vscode.DiagnosticSeverity.Error
                 )
             });
@@ -604,12 +632,15 @@ export async function generatesProgramDiagnostics(context: vscode.ExtensionConte
     } catch (err) {
         console.error(err);
         util.log(`Error: ${err}`);
-        const errorMessage = err.message || err.toString();
+        let errorMessage = "<unknown error type>";
+        if (err instanceof Error) {
+            errorMessage = err.message ?? err.toString();
+        }
         resultDiagnostics.add({
             file_path: programPath,
             diagnostic: new vscode.Diagnostic(
                 dummyRange(),
-                `Unexpected error: ${errorMessage}. See the log for more details.`,
+                `Unexpected error: ${errorMessage}. See the log (View -> Output -> Prusti Assistant ...) for more details.`,
                 vscode.DiagnosticSeverity.Error
             )
         });

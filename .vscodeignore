@@ -1,11 +1,10 @@
 .vscode/**
 .vscode-test/**
+.github/**
 out/test/**
 src/**
 .gitignore
-vsc-extension-quickstart.md
-**/tsconfig.json
-**/tslint.json
+.eslint.json
 **/*.map
 **/*.ts
 
@@ -13,3 +12,4 @@ vsc-extension-quickstart.md
 log/
 nll-facts/
 report.csv
+*.log

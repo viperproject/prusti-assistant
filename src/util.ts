@@ -1,65 +1,88 @@
-import * as child_process from 'child_process';
-import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as http from 'http';
-import * as extract_zip from 'extract-zip';
+import * as childProcess from "child_process";
+import * as vscode from "vscode";
+import * as fs from "fs";
+import * as path from "path";
 
-export function userInfo(message: string, popup = true, restart = false) {
+export function userInfo(message: string, popup = true, requestReload = false, statusBar = true): void {
     log(message);
-    vscode.window.setStatusBarMessage(message);
+    if (statusBar) {
+        vscode.window.setStatusBarMessage(message);
+    }
     if (popup) {
-        if (restart) {
-            const action = "Restart Now";
+        if (requestReload) {
+            const action = "Reload Now";
             vscode.window.showInformationMessage(message, action)
                 .then(selection => {
                     if (selection === action) {
                         vscode.commands.executeCommand(
                             "workbench.action.reloadWindow"
+                        ).then(
+                            undefined,
+                            err => log(`Error: ${err}`)
                         );
                     }
-                });
+                }).then(
+                    undefined,
+                    err => log(`Error: ${err}`)
+                );
         } else {
-            vscode.window.showInformationMessage(message);
+            vscode.window.showInformationMessage(message).then(
+                undefined,
+                err => log(`Error: ${err}`)
+            );
         }
     }
 }
 
-export function userWarn(message: string, popup = true) {
+export function userWarn(message: string, popup = true): void {
     log(message);
     vscode.window.setStatusBarMessage(message);
     if (popup) {
-        vscode.window.showWarningMessage(message);
+        vscode.window.showWarningMessage(message).then(
+            undefined,
+            err => log(`Error: ${err}`)
+        );
     }
 }
 
-export function userError(message: string, popup = true, restart = false) {
+export function userError(message: string, popup = true, restart = false): void {
     log(message);
     vscode.window.setStatusBarMessage(message);
     if (popup) {
         if (restart) {
-            const action = "Restart Now";
-            vscode.window.showInformationMessage(message, action)
-                .then(selection => {
-                    if (selection === action) {
-                        vscode.commands.executeCommand(
-                            "workbench.action.reloadWindow"
-                        );
-                    }
-                });
+            userErrorPopup(message, "Restart Now", () => {
+                vscode.commands.executeCommand("workbench.action.reloadWindow")
+                    .then(undefined, err => log(`Error: ${err}`));
+            });
         } else {
-            vscode.window.showInformationMessage(message);
+            vscode.window.showErrorMessage(message)
+                .then(undefined, err => log(`Error: ${err}`));
         }
     }
 }
 
-let _channel: vscode.OutputChannel;
-export function log(message: string) {
+export function userErrorPopup(message: string, actionLabel: string, action: () => void): void {
+    log(message);
+    vscode.window.setStatusBarMessage(message);
+    vscode.window.showErrorMessage(message, actionLabel)
+        .then(selection => {
+            if (selection === actionLabel) {
+                action();
+            }
+        })
+        .then(undefined, err => log(`Error: ${err}`));
+}
+
+const logChannel = vscode.window.createOutputChannel("Prusti Assistant");
+export function log(message: string): void {
     console.log(message);
-    if (!_channel) {
-        _channel = vscode.window.createOutputChannel("Prusti Assistant");
-    }
-    _channel.appendLine(message);
+    logChannel.appendLine(message);
+    trace(message);
+}
+
+const traceChannel = vscode.window.createOutputChannel("Prusti Assistant Trace");
+export function trace(message: string): void {
+    traceChannel.appendLine(message);
 }
 
 export interface Output {
@@ -71,34 +94,55 @@ export interface Output {
 export function spawn(
     cmd: string,
     args?: string[] | undefined,
-    options?: child_process.SpawnOptionsWithoutStdio | undefined
+    { options, onStdout, onStderr }: {
+        options?: childProcess.SpawnOptionsWithoutStdio;
+        onStdout?: ((data: string) => void);
+        onStderr?: ((data: string) => void);
+    } = {}
 ): Promise<Output> {
-    log(`Prusti Assistant: Running '${cmd} ${args ? args.join(' ') : ''}'`);
+    const description = `${cmd} ${args?.join(" ") ?? ""}`;
+    log(`Prusti Assistant: run '${description}'`);
+
+    let stdout = "";
+    let stderr = "";
+
+    const proc = childProcess.spawn(cmd, args, options);
+
+    proc.stdout.on("data", (data) => {
+        stdout += data;
+        try {
+            onStdout?.(data);
+        } catch (e) {
+            log(`error in stdout handler for '${description}': ${e}`);
+        }
+    });
+    proc.stderr.on("data", (data) => {
+        stderr += data;
+        try {
+            onStderr?.(data);
+        } catch (e) {
+            log(`error in stderr handler for '${description}': ${e}`);
+        }
+    });
+
+    function printOutput() {
+        trace("");
+        trace(`Output from '${description}'`);
+        trace("┌──── Begin stdout ────┐");
+        trace(stdout);
+        trace("└──── End stdout ──────┘");
+        trace("┌──── Begin stderr ────┐");
+        trace(stderr);
+        trace("└──── End stderr ──────┘");
+    }
+
     return new Promise((resolve, reject) => {
-        let stdout = '';
-        let stderr = '';
-
-        const proc = child_process.spawn(cmd, args, options);
-
-        proc.stdout.on('data', (data) => stdout += data);
-        proc.stderr.on('data', (data) => stderr += data);
-        proc.on('close', (code) => {
-            log("┌──── Begin stdout ────┐");
-            log(stdout);
-            log("└──── End stdout ──────┘");
-            log("┌──── Begin stderr ────┐");
-            log(stderr);
-            log("└──── End stderr ──────┘");
+        proc.on("close", (code) => {
+            printOutput();
             resolve({ stdout, stderr, code });
         });
-        proc.on('error', (err) => {
-            log("┌──── Begin stdout ────┐");
-            log(stdout);
-            log("└──── End stdout ──────┘");
-            log("┌──── Begin stderr ────┐");
-            log(stderr);
-            log("└──── End stderr ──────┘");
-            console.log("Error", err);
+        proc.on("error", (err) => {
+            printOutput();
             log(`Error: ${err}`);
             reject(err);
         });
@@ -106,41 +150,31 @@ export function spawn(
 }
 
 export class Project {
-    private _path: string;
+    readonly path;
 
-    public constructor(path: string) {
-        this._path = path;
-    }
-
-    public get path() {
-        return this._path;
+    public constructor(_path: string) {
+        this.path = _path;
     }
 
     public hasRootFile(fileName: string): Promise<boolean> {
-        const filePath = path.join(this._path, fileName);
+        const filePath = path.join(this.path, fileName);
         return new Promise((resolve, reject) => {
-            fs.access(filePath, fs.constants.F_OK, (err) => resolve(err ? false : true));
+            fs.access(filePath, fs.constants.F_OK, (err) => resolve(err === null));
         });
     }
 }
 
 export class ProjectList {
-    private _projects: Project[];
+    public constructor(
+        readonly projects: Project[]
+    ) { }
 
-    public constructor(projects: Project[]) {
-        this._projects = projects;
+    public hasProjects(): boolean {
+        return this.projects.length > 0;
     }
 
-    public get projects() {
-        return this._projects;
-    }
-
-    public hasProjects() {
-        return this._projects.length > 0;
-    }
-
-    public getParent(file: string) {
-        for (const project of this._projects) {
+    public getParent(file: string): Project | undefined {
+        for (const project of this.projects) {
             if (file.startsWith(project.path)) {
                 return project;
             }
@@ -156,49 +190,8 @@ export class ProjectList {
  */
 export async function findProjects(): Promise<ProjectList> {
     const projects: Project[] = [];
-    (await vscode.workspace.findFiles('**/Cargo.toml')).forEach((path: vscode.Uri) => {
-        projects.push(new Project(path.fsPath.replace(/[/\\]?Cargo\.toml$/, '')));
+    (await vscode.workspace.findFiles("**/Cargo.toml")).forEach((uri: vscode.Uri) => {
+        projects.push(new Project(uri.fsPath.replace(/[/\\]?Cargo\.toml$/, "")));
     });
     return new ProjectList(projects);
-}
-
-export async function download(url: string, filePath: string): Promise<[boolean, string | null]> {
-    return new Promise((resolve, reject) => {
-        try {
-            const file = fs.createWriteStream(filePath);
-            const request = http.get(url, (response) => {
-                response.pipe(file);
-                file.on("finish", () => {
-                    file.close();
-                    resolve([true, null]);
-                });
-                request.on("error", (err) => {
-                    fs.unlink(filePath, (_) => {
-                        log("Could not remove downloaded file.");
-                    });
-                    resolve([false, err.message]);
-                });
-            });
-        }
-        catch (err) {
-            resolve([false, err.message]);
-        }
-    });
-}
-
-export async function extract(filePath: string, targetDir: string): Promise<[boolean, string | null]> {
-    return new Promise((resolve, reject) => {
-        try {
-            extract_zip(filePath, { dir: targetDir }, (err) => {
-                if (err) {
-                    resolve([false, err.message]);
-                } else {
-                    resolve([true, null]);
-                }
-            });
-        }
-        catch (err) {
-            resolve([false, err.message]);
-        }
-    });
 }
