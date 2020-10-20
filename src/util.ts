@@ -76,6 +76,7 @@ export function userErrorPopup(message: string, actionLabel: string, action: () 
 
 const logChannel = vscode.window.createOutputChannel("Prusti Assistant");
 export function log(message: string): void {
+    console.log(message);
     logChannel.appendLine(message);
     trace(message);
 }
@@ -83,7 +84,6 @@ export function log(message: string): void {
 const traceChannel = vscode.window.createOutputChannel("Prusti Assistant Trace");
 export function trace(message: string): void {
     traceChannel.appendLine(message);
-    console.log(message);
 }
 
 export interface Output {
