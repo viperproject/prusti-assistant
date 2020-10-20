@@ -5,7 +5,7 @@ out/test/**
 src/**
 .eslintrc.js
 .gitignore
-.tslint.json
+tsconfig.json
 **/*.map
 **/*.ts
 
