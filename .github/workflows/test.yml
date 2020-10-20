@@ -4,10 +4,15 @@ on:
   push:
     branches: "master"
   pull_request:
-    branches: [ "**" ]
   schedule:
     # At 07:00 UTC on Monday
     - cron:  '0 7 * * 1'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish a new version?'
+        required: true
+        default: 'No'
 
 jobs:
   test:
@@ -57,3 +62,18 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage/lcov.info
+
+  publish:
+    if: |
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.publish == 'Yes'
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: npm install
+      - uses: lannonbr/vsce-action@master
+        with:
+          args: "publish -p $VSCE_TOKEN"
+        env:
+          VSCE_TOKEN: ${{ secrets.VSCE_TOKEN }}
