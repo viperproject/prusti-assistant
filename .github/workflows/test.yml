@@ -63,6 +63,11 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage/lcov.info
 
+      - name: Package VSCode extension
+        uses: lannonbr/vsce-action@master
+        with:
+          args: package
+
   publish:
     if: |
       github.event_name == 'workflow_dispatch' &&
@@ -70,9 +75,14 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - run: npm install
-      - uses: lannonbr/vsce-action@master
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      
+      - name: Install NPM dependencies
+        run: npm ci
+      
+      - name: Publish extension in the VSCode Marketplace
+        uses: lannonbr/vsce-action@master
         with:
           args: "publish -p $VSCE_TOKEN"
         env:
