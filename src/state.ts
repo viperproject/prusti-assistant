@@ -33,13 +33,11 @@ export function notifyExtensionActivation(): void {
 const waitingForConfigUpdate: Listener[] = [];
 
 export function waitConfigUpdate(): Promise<void> {
-    util.log("waitConfigUpdate");
     return new Promise(resolve => {
         waitingForConfigUpdate.push(resolve);
     });
 }
 
 export function notifyConfigUpdate(): void {
-    util.log("The configuration has been updated.");
     waitingForConfigUpdate.forEach(listener => listener());
 }

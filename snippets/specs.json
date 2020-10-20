@@ -2,22 +2,22 @@
     "requires": {
         "prefix": "requires",
         "body": [
-            "requires(${1})"
+            "#[requires(${1:true})]"
         ],
-        "description": "Insert requires(...)"
+        "description": "Insert #[requires(...)]"
     },
     "ensures": {
         "prefix": "ensures",
         "body": [
-            "ensures(${1})"
+            "#[ensures(${1:true})]"
         ],
-        "description": "Insert ensures(...)"
+        "description": "Insert #[ensures(...)]"
     },
     "body_invariant": {
         "prefix": "body_invariant",
         "body": [
-            "body_invariant!(${1});"
+            "body_invariant!(${1:true});"
         ],
-        "description": "Insert body_invariant(...);"
+        "description": "Insert body_invariant!(...);"
     }
 }
