@@ -1,7 +1,7 @@
 import * as vvt from "vs-verification-toolbox";
 import * as path from "path";
 import * as vscode from "vscode";
-
+import * as process from "process";
 import * as config from "../config";
 
 export function prustiTools(
@@ -12,13 +12,19 @@ export function prustiTools(
     const channel = config.BuildChannel;
     const getStableUrl = (): Promise<string> => {
         const url = vvt.GitHubReleaseAsset.getLatestAssetUrl(
-            "viperproject", "prusti-dev", `prusti-release-${id}.zip`
+            "viperproject", "prusti-dev", `prusti-release-${id}.zip`,
+            false,
+            // Avoid rate limit while testing
+            process.env.GITHUB_TOKEN,
         );
         return url;
     }
     const getNightlyUrl = (): Promise<string> => {
         const url = vvt.GitHubReleaseAsset.getLatestAssetUrl(
-            "viperproject", "prusti-dev", `prusti-release-${id}.zip`, true
+            "viperproject", "prusti-dev", `prusti-release-${id}.zip`,
+            true,
+            // Avoid rate limit while testing
+            process.env.GITHUB_TOKEN,
         );
         return url;
     }
