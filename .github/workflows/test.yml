@@ -90,3 +90,11 @@ jobs:
           args: "publish -p $VSCE_TOKEN"
         env:
           VSCE_TOKEN: ${{ secrets.VSCE_TOKEN }}
+
+      - name: Create a tag for the published version
+        uses: richardsimko/update-tag@master
+        if: env.CURRENT_VERSION != env.LAST_PUBLISHED_VERSION
+        with:
+          tag_name: v-${{ env.CURRENT_VERSION }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
