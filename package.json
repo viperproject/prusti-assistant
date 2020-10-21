@@ -30,7 +30,7 @@
     "activationEvents": [
         "onLanguage:rust"
     ],
-    "main": "./out/extension.js",
+    "main": "./dist/extension",
     "contributes": {
         "snippets": [
             {
@@ -121,11 +121,12 @@
         }
     },
     "scripts": {
-        "vscode:prepublish": "npm run compile",
-        "compile": "tsc",
-        "watch": "tsc -watch",
+        "vscode:prepublish": "webpack --mode production",
+        "compile": "webpack --mode development",
+        "watch": "webpack --mode development --watch",
+        "test-compile": "tsc",
         "lint": "eslint -c .eslintrc.js --ext .ts ./src",
-        "pretest": "npm run compile",
+        "pretest": "npm run test-compile",
         "test": "node ./out/test/runTest.js",
         "report-coverage": "nyc report --reporter=html"
     },
@@ -143,8 +144,12 @@
         "glob": "^7.1.6",
         "mocha": "^8.2.0",
         "nyc": "^15.1.0",
+        "ts-loader": "^8.0.6",
         "typescript": "^4.0.3",
-        "vscode-test": "^1.4.0"
+        "vsce": "^1.81.1",
+        "vscode-test": "^1.4.0",
+        "webpack": "^5.1.3",
+        "webpack-cli": "^4.1.0"
     },
     "dependencies": {
         "@types/find-java-home": "^1.0.0",
@@ -155,7 +160,6 @@
         "fs-extra": "^9.0.1",
         "tmp": "^0.2.1",
         "tree-kill": "^1.2.2",
-        "ts-prune": "^0.8.4",
         "vs-verification-toolbox": "git+https://github.com/viperproject/vs-verification-toolbox.git#69ab4b7"
     }
 }

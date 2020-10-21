@@ -67,6 +67,12 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+
+      - name: Install NPM dependencies
+        run: npm install
+
       - name: Package VSCode extension
         uses: lannonbr/vsce-action@master
         with:
