@@ -2,7 +2,7 @@ Prusti Assistant
 ================
 
 [![](https://vsmarketplacebadge.apphb.com/version/viper-admin.prusti-assistant.svg)](https://marketplace.visualstudio.com/items?itemName=viper-admin.prusti-assistant)
-[![Test](https://github.com/viperproject/prusti-assistant/workflows/Test/badge.svg)](https://github.com/viperproject/prusti-assistant/actions?query=workflow%3A"Test"+branch%3Amaster)
+[![Test and publish](https://github.com/viperproject/prusti-assistant/workflows/Test%20and%20publish/badge.svg)](https://github.com/viperproject/prusti-assistant/actions?query=workflow%3A"Test+and+publish"+branch%3Amaster)
 [![Test coverage](https://codecov.io/gh/viperproject/prusti-assistant/branch/master/graph/badge.svg?token=D4HOAD0KRU)](https://codecov.io/gh/viperproject/prusti-assistant)
 [![Quality checks](https://sonarcloud.io/api/project_badges/quality_gate?project=viperproject_prusti-assistant)](https://sonarcloud.io/dashboard?id=viperproject_prusti-assistant)
 

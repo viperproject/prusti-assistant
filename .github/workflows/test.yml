@@ -1,20 +1,15 @@
-name: Test
+name: Test and publish
 
 on:
-  push:
-    branches: "master"
   pull_request:
   schedule:
     # At 07:00 UTC on Monday
     - cron:  '0 7 * * 1'
-  workflow_dispatch:
-    inputs:
-      publish:
-        description: 'Publish a new version?'
-        required: true
-        default: 'No'
+  push:
+    branches: "master"
 
 jobs:
+  # Test the extension on multiple OSs.
   test:
     strategy:
       matrix:
@@ -63,10 +58,10 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage/lcov.info
 
+  # Publish the extension when we are on master and the version specified in
+  # package.json is not the latest published version of the extension.
   publish:
-    if: |
-      github.event_name == 'workflow_dispatch' &&
-      github.event.inputs.publish == 'Yes'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -76,8 +71,21 @@ jobs:
       - name: Install NPM dependencies
         run: npm install
       
+      - name: Obtain version information
+        run: |
+          LAST_PUBLISHED_VERSION="$(
+            npx vsce show viper-admin.prusti-assistant --json \
+              | jq '.versions[0].version' --raw-output
+          )"
+          CURRENT_VERSION="$(
+            cat package.json | jq '.version' --raw-output
+          )"
+          echo "LAST_PUBLISHED_VERSION=$LAST_PUBLISHED_VERSION" >> $GITHUB_ENV
+          echo "CURRENT_VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
+
       - name: Publish the extension
         uses: lannonbr/vsce-action@master
+        if: env.CURRENT_VERSION != env.LAST_PUBLISHED_VERSION
         with:
           args: "publish -p $VSCE_TOKEN"
         env:
