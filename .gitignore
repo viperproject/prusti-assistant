@@ -4,7 +4,6 @@
 out/
 node_modules/
 coverage/
-dist/
 *.vsix
 
 # Prusti temporary files
