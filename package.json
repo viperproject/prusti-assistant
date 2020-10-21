@@ -131,7 +131,8 @@
         "pretest": "npm run test-compile",
         "test": "node ./out/test/runTest.js",
         "report-coverage": "nyc report --reporter=html",
-        "clean": "rimraf out"
+        "clean": "rimraf out",
+        "package": "vsce package"
     },
     "devDependencies": {
         "@types/glob": "^7.1.3",

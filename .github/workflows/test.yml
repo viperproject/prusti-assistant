@@ -41,11 +41,11 @@ jobs:
       - name: Install NPM dependencies
         run: npm ci
 
-      - name: Compile
-        run: npm run compile
-
       - name: Run linter
         run: npm run lint
+
+      - name: Package the extension
+        run: npm run package
 
       - name: Run tests (headless)
         uses: GabrielBB/xvfb-action@v1.0
@@ -63,21 +63,6 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage/lcov.info
 
-  package:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out the repo
-        uses: actions/checkout@v2
-
-      - name: Install NPM dependencies
-        run: npm install
-
-      - name: Package VSCode extension
-        uses: lannonbr/vsce-action@master
-        with:
-          args: package
-
   publish:
     if: |
       github.event_name == 'workflow_dispatch' &&
@@ -91,7 +76,7 @@ jobs:
       - name: Install NPM dependencies
         run: npm ci
       
-      - name: Publish extension in the VSCode Marketplace
+      - name: Publish the extension
         uses: lannonbr/vsce-action@master
         with:
           args: "publish -p $VSCE_TOKEN"
