@@ -307,15 +307,15 @@ function parseRustcMessage(msg: Message, mainFilePath: string): Diagnostic {
 
     // Recursively parse child messages.
     for (const child of msg.children) {
-        const { file_path, diagnostic } = parseRustcMessage(child, mainFilePath);
-        const fileUri = vscode.Uri.file(file_path);
+        const diagnostic = parseRustcMessage(child, mainFilePath);
+        const fileUri = vscode.Uri.file(diagnostic.file_path);
         relatedInformation.push(
             new vscode.DiagnosticRelatedInformation(
                 new vscode.Location(
                     fileUri,
-                    diagnostic.range
+                    diagnostic.diagnostic.range
                 ),
-                diagnostic.message
+                diagnostic.diagnostic.message
             )
         );
     }
