@@ -3,6 +3,7 @@
 .github
 .nyc_output
 src/
+typings/
 node_modules/
 .eslintrc.js
 .gitignore
@@ -11,7 +12,7 @@ tsconfig.json
 webpack.config.js
 
 # Prusti temporary files
-src/**/log
-src/**/nll-facts/
-src/**/report.csv
-src/**/*.log
+log
+nll-facts/
+report.csv
+*.log
