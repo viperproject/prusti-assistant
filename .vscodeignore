@@ -1,15 +1,17 @@
-.vscode/**
-.vscode-test/**
-.github/**
-out/test/**
-src/**
+.vscode
+.vscode-test
+.github
+.nyc_output
+src/
+node_modules/
+.eslintrc.js
 .gitignore
-.eslint.json
-**/*.map
-**/*.ts
+codecov.yml
+tsconfig.json
+webpack.config.js
 
 # Prusti temporary files
-log/
-nll-facts/
-report.csv
-*.log
+src/**/log
+src/**/nll-facts/
+src/**/report.csv
+src/**/*.log

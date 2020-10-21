@@ -1,10 +1,10 @@
-out
-node_modules
 .vscode-test/
-*.vsix
 .idea/
 .nyc_output/
+out/
+node_modules/
 coverage/
+*.vsix
 
 # Prusti temporary files
 log/

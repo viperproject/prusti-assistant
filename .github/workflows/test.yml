@@ -39,13 +39,13 @@ jobs:
           toolchain: nightly-2020-09-30
 
       - name: Install NPM dependencies
-        run: npm ci
-
-      - name: Compile
-        run: npm run compile
+        run: npm install
 
       - name: Run linter
         run: npm run lint
+
+      - name: Package the extension
+        run: npm run package
 
       - name: Run tests (headless)
         uses: GabrielBB/xvfb-action@v1.0
@@ -70,9 +70,14 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - run: npm install
-      - uses: lannonbr/vsce-action@master
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      
+      - name: Install NPM dependencies
+        run: npm install
+      
+      - name: Publish the extension
+        uses: lannonbr/vsce-action@master
         with:
           args: "publish -p $VSCE_TOKEN"
         env:
