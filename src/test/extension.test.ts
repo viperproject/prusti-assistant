@@ -27,8 +27,8 @@ function openFile(fileName: string): Promise<vscode.TextDocument> {
         vscode.workspace.openTextDocument(filePath).then(document => {
             vscode.window.showTextDocument(document).then(() => {
                 resolve(document);
-            }).then(undefined, err => log(`Error: ${err}`));
-        }).then(undefined, err => log(`Error: ${err}`));
+            }).then(undefined, reject);
+        }).then(undefined, reject);
     });
 }
 

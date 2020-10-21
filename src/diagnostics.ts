@@ -485,7 +485,7 @@ export class DiagnosticsSet {
 
     public hasErrors(): boolean {
         let count = 0;
-        this.diagnostics.forEach((documentDiagnostics: vscode.Diagnostic[], _) => {
+        this.diagnostics.forEach((documentDiagnostics: vscode.Diagnostic[]) => {
             documentDiagnostics.forEach((diagnostic: vscode.Diagnostic) => {
                 if (diagnostic.severity === vscode.DiagnosticSeverity.Error) {
                     count += 1;
@@ -497,7 +497,7 @@ export class DiagnosticsSet {
 
     public hasWarnings(): boolean {
         let count = 0;
-        this.diagnostics.forEach((documentDiagnostics: vscode.Diagnostic[], _) => {
+        this.diagnostics.forEach((documentDiagnostics: vscode.Diagnostic[]) => {
             documentDiagnostics.forEach((diagnostic: vscode.Diagnostic) => {
                 if (diagnostic.severity === vscode.DiagnosticSeverity.Warning) {
                     count += 1;
@@ -513,7 +513,7 @@ export class DiagnosticsSet {
 
     public countsBySeverity(): Map<vscode.DiagnosticSeverity, number> {
         const counts = new Map<vscode.DiagnosticSeverity, number>();
-        this.diagnostics.forEach((diags, _) => {
+        this.diagnostics.forEach((diags) => {
             diags.forEach(diag => {
                 const count = counts.get(diag.severity);
                 counts.set(diag.severity, (count === undefined ? 0 : count) + 1);

@@ -158,7 +158,7 @@ export class Project {
 
     public hasRootFile(fileName: string): Promise<boolean> {
         const filePath = path.join(this.path, fileName);
-        return new Promise((resolve, reject) => {
+        return new Promise(resolve => {
             fs.access(filePath, fs.constants.F_OK, (err) => resolve(err === null));
         });
     }
@@ -169,8 +169,8 @@ export class ProjectList {
         readonly projects: Project[]
     ) { }
 
-    public hasProjects(): boolean {
-        return this.projects.length > 0;
+    public isEmpty(): boolean {
+        return this.projects.length === 0;
     }
 
     public getParent(file: string): Project | undefined {

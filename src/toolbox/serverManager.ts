@@ -40,7 +40,7 @@ export class ServerManager {
     private readonly name: string;
     private readonly state: StateMachine;
     private readonly log: (data: string) => void;
-    private readonly procExitCallback: (code: any) => void;
+    private readonly procExitCallback: (code: unknown) => void;
     private proc?: childProcess.ChildProcessWithoutNullStreams;
 
     /**
@@ -56,7 +56,7 @@ export class ServerManager {
             State[State.Stopped],
             stateKeys,
         )
-        this.procExitCallback = (code: any) => {
+        this.procExitCallback = (code: unknown) => {
             this.log(`Server process unexpected terminated with exit code ${code}`);
             this.proc = undefined;
             this.setState(State.Crashed);
