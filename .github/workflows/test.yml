@@ -95,6 +95,6 @@ jobs:
         uses: richardsimko/update-tag@master
         if: env.CURRENT_VERSION != env.LAST_PUBLISHED_VERSION
         with:
-          tag_name: v-${{ env.CURRENT_VERSION }}
+          tag_name: v${{ env.CURRENT_VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
