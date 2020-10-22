@@ -24,8 +24,7 @@
         "rust",
         "verification",
         "prusti",
-        "viper",
-        "eth"
+        "viper"
     ],
     "activationEvents": [
         "onLanguage:rust"
