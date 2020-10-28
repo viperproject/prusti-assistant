@@ -83,6 +83,9 @@ jobs:
           echo "LAST_PUBLISHED_VERSION=$LAST_PUBLISHED_VERSION" >> $GITHUB_ENV
           echo "CURRENT_VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
 
+      - name: Package the extension
+        run: npm run package
+
       - name: Publish the extension
         uses: lannonbr/vsce-action@master
         if: env.CURRENT_VERSION != env.LAST_PUBLISHED_VERSION
@@ -91,10 +94,23 @@ jobs:
         env:
           VSCE_TOKEN: ${{ secrets.VSCE_TOKEN }}
 
-      - name: Create a tag for the published version
-        uses: richardsimko/update-tag@master
+      - name: Create a release for the published version
+        id: create_release
+        uses: actions/create-release@v1
         if: env.CURRENT_VERSION != env.LAST_PUBLISHED_VERSION
-        with:
-          tag_name: v${{ env.CURRENT_VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ env.CURRENT_VERSION }}
+          release_name: Release v${{ env.CURRENT_VERSION }}
+
+      - name: Upload release asset
+        uses: actions/upload-release-asset@v1
+        if: env.CURRENT_VERSION != env.LAST_PUBLISHED_VERSION
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: prusti-assistant-${{ env.CURRENT_VERSION }}.vsix
+          asset_name: prusti-assistant-${{ env.CURRENT_VERSION }}.vsix
+          asset_content_type: application/zip
