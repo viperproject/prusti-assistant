@@ -184,7 +184,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Verify on save
     context.subscriptions.push(
         vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {
-            if (config.verifyOnSave()) {
+            if (document.languageId === "rust" && config.verifyOnSave()) {
                 await runVerification(document);
             }
         })
@@ -193,7 +193,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Verify on open
     context.subscriptions.push(
         vscode.workspace.onDidOpenTextDocument(async (document: vscode.TextDocument) => {
-            if (config.verifyOnOpen()) {
+            if (document.languageId === "rust" && config.verifyOnOpen()) {
                 await runVerification(document);
             }
         })
