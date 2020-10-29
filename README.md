@@ -44,3 +44,11 @@ This extension provides the following commands:
 ### Snippets
 
 Basic code-completion snippets are provided for Prusti annotations.
+
+### Configuration
+
+The main configuration options used by this extension are the following:
+
+* `prusti-assistant.verifyOnSave`: Specifies if programs should be verified on save.
+* `prusti-assistant.verifyOnOpen`: Specifies if programs should be verified when opened.
+* `prusti-assistant.buildChannel`: Allows to choose between the latest Prusti version and an older, but more stable, version.
