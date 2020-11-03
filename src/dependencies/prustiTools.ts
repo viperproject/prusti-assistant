@@ -10,7 +10,7 @@ export function prustiTools(
 ): vvt.Dependency<config.BuildChannel> {
     const id = identifier(platform);
     const channel = config.BuildChannel;
-    const getStableUrl = (): Promise<string> => {
+    const getReleaseUrl = (): Promise<string> => {
         const url = vvt.GitHubReleaseAsset.getLatestAssetUrl(
             "viperproject", "prusti-dev", `prusti-release-${id}.zip`,
             false,
@@ -19,7 +19,7 @@ export function prustiTools(
         );
         return url;
     }
-    const getNightlyUrl = (): Promise<string> => {
+    const getDevUrl = (): Promise<string> => {
         const url = vvt.GitHubReleaseAsset.getLatestAssetUrl(
             "viperproject", "prusti-dev", `prusti-release-${id}.zip`,
             true,
@@ -30,8 +30,8 @@ export function prustiTools(
     }
     return new vvt.Dependency(
         path.join(context.globalStoragePath, "prustiTools"),
-        [channel.Stable, new vvt.GitHubZipExtractor(getStableUrl, "prusti")],
-        [channel.Nightly, new vvt.GitHubZipExtractor(getNightlyUrl, "prusti")],
+        [channel.LatestRelease, new vvt.GitHubZipExtractor(getReleaseUrl, "prusti")],
+        [channel.LatestDev, new vvt.GitHubZipExtractor(getDevUrl, "prusti")],
         [channel.Local, new vvt.LocalReference(config.localPrustiPath())],
     );
 }

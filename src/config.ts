@@ -10,8 +10,8 @@ export function config(): vscode.WorkspaceConfiguration {
 }
 
 export enum BuildChannel {
-    Stable = "Stable",
-    Nightly = "Nightly",
+    LatestRelease = "LatestRelease",
+    LatestDev = "LatestDev",
     Local = "Local"
 }
 
@@ -19,7 +19,7 @@ export const buildChannelKey = "buildChannel";
 export const buildChannelPath = `${namespace}.${buildChannelKey}`;
 
 export function buildChannel(): BuildChannel {
-    const defaultChannel = BuildChannel.Nightly;
+    const defaultChannel = BuildChannel.LatestDev;
     const channelName = config().get(buildChannelKey, defaultChannel as string);
     const channel = BuildChannel[
         // Convert string to enum. See https://stackoverflow.com/a/17381004/2491528
@@ -36,8 +36,8 @@ export function buildChannel(): BuildChannel {
     }
 }
 
-export function isStableBuildChannel(): boolean {
-    return buildChannel() === BuildChannel.Stable
+export function isDevBuildChannel(): boolean {
+    return buildChannel() === BuildChannel.LatestDev
 }
 
 const localPrustiPathKey = "localPrustiPath";

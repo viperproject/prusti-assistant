@@ -60,14 +60,14 @@
             "properties": {
                 "prusti-assistant.buildChannel": {
                     "type": "string",
-                    "default": "Stable",
+                    "default": "LatestRelease",
                     "enum": [
-                        "Stable",
-                        "Nightly",
+                        "LatestRelease",
+                        "LatestDev",
                         "Local"
                     ],
                     "enumDescriptions": [
-                        "An old version that is known to work fine.",
+                        "The latest release of Prusti.",
                         "A version with frequent updates that might be unstable or have other issues.",
                         "A local build of Prusti, specified via localPrustiPath."
                     ],

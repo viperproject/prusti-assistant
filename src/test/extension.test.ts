@@ -86,19 +86,19 @@ suite("Extension", () => {
         assert.strictEqual(diagnostics.length, 0);
     });
 
-    test("Choose 'stable' and underline 'false' in the failing postcondition", async () => {
-        // Choose the stable toolchain
-        const shouldWait = config.buildChannel() !== config.BuildChannel.Stable;
+    test("Choose 'LatestRelease' and underline 'false' in the failing postcondition", async () => {
+        // Choose the LatestRelease toolchain
+        const shouldWait = config.buildChannel() !== config.BuildChannel.LatestRelease;
         const configUpdateEvent = shouldWait
             ? state.waitConfigUpdate()
             : new Promise(resolve => resolve());
         await config.config().update(
             config.buildChannelKey, 
-            config.BuildChannel.Stable.toString()
+            config.BuildChannel.LatestRelease.toString()
         );
         await configUpdateEvent;
         // Test
-        const filePath = path.join("stable", "failing_post.rs");
+        const filePath = path.join("latest-release", "failing_post.rs");
         const document = await openFile(filePath);
         await vscode.commands.executeCommand("prusti-assistant.verify");
         const diagnostics = vscode.languages.getDiagnostics(document.uri);
@@ -112,19 +112,19 @@ suite("Extension", () => {
         );
     });
 
-    test("Choose 'nightly' and underline 'false' in the failing postcondition", async () => {
-        // Choose the nightly toolchain
-        const shouldWait = config.buildChannel() !== config.BuildChannel.Nightly;
+    test("Choose 'LatestDev' and underline 'false' in the failing postcondition", async () => {
+        // Choose the LatestDev toolchain
+        const shouldWait = config.buildChannel() !== config.BuildChannel.LatestDev;
         const configUpdateEvent = shouldWait
             ? state.waitConfigUpdate()
             : new Promise(resolve => resolve());
         await config.config().update(
             config.buildChannelKey, 
-            config.BuildChannel.Nightly.toString()
+            config.BuildChannel.LatestDev.toString()
         );
         await configUpdateEvent;
         // Test
-        const filePath = path.join("nightly", "failing_post.rs");
+        const filePath = path.join("latest-dev", "failing_post.rs");
         const document = await openFile(filePath);
         await vscode.commands.executeCommand("prusti-assistant.verify");
         const diagnostics = vscode.languages.getDiagnostics(document.uri);

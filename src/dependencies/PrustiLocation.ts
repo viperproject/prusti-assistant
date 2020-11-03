@@ -44,9 +44,9 @@ export class PrustiLocation {
             const values = value.replace(/[[]]/g, '').trim().split(",");
             return values.map((x) => x.replace(/"/g, '').trim());
         } else {
-            return config.isStableBuildChannel()
-                ? []
-                : ["rustc-dev", "llvm-tools-preview"];
+            return config.isDevBuildChannel()
+                ? ["rustc-dev", "llvm-tools-preview"]
+                : [];
         }
     }
 
