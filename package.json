@@ -2,7 +2,7 @@
     "name": "prusti-assistant",
     "displayName": "Prusti Assistant",
     "description": "Verify Rust programs with the Prusti verifier.",
-    "version": "0.4.2",
+    "version": "0.5.0",
     "publisher": "viper-admin",
     "repository": {
         "type": "git",
