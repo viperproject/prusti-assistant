@@ -86,13 +86,21 @@ jobs:
       - name: Package the extension
         run: npm run package
 
-      - name: Publish the extension
-        uses: lannonbr/vsce-action@master
+      - name: Publish the extension to Open VSX Registry
+        id: publishToOpenVSX
+        uses: HaaLeo/publish-vscode-extension@v0
         if: env.CURRENT_VERSION != env.LAST_PUBLISHED_VERSION
         with:
-          args: "publish -p $VSCE_TOKEN"
-        env:
-          VSCE_TOKEN: ${{ secrets.VSCE_TOKEN }}
+          pat: ${{ secrets.OPEN_VSX_TOKEN }}
+
+      - name: Publish the extension to Visual Studio Marketplace
+        uses: HaaLeo/publish-vscode-extension@v0
+        if: env.CURRENT_VERSION != env.LAST_PUBLISHED_VERSION
+        with:
+          pat: ${{ secrets.VSCE_TOKEN }}
+          registryUrl: https://marketplace.visualstudio.com
+          extensionFile: ${{ steps.publishToOpenVSX.outputs.vsixPath }}
+          packagePath: ''
 
       - name: Create a release for the published version
         id: create_release
