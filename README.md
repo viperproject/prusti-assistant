@@ -13,14 +13,14 @@ This Visual Studio Code extension provides interactive IDE features for verifyin
 
 In order to use this extension, please install the following components:
 
-* [Java Runtime Environment (or JDK), 64 bit, version 1.8 or later](https://www.java.com/en/download/).
-* [Rustup](https://rustup.rs/) (on Windows this also requires the [C++ build tools for Visual Studio 2013 or later](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019)).
+* Java JDK version 12 or later, 64 bit. We recommend [OpenJDK 15.0.1](https://jdk.java.net/15/).
+* [Rustup version 1.23.0 or later](https://rustup.rs/) (on Windows this also requires the [C++ build tools for Visual Studio 2013 or later](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019)).
 
 ## First usage
 
 1. Install the requirements (listed above). Restart Visual Studio Code to make sure that `rustup` is in the program path used by the IDE.
 2. Install the ["Prusti Assistant" extension](https://marketplace.visualstudio.com/items?itemName=viper-admin.prusti-assistant) in Visual Studio Code.
-3. Open a Rust file to activate the extension. At its first activation, this extension will automatically download Prusti.
+3. Open a Rust file to activate the extension. At its first activation, this extension will automatically download Prusti and install the required Rust toolchain.
 
 To verify a Rust program, open the command palette (View -> Command Palette, or Shift+Ctrl+P on Ubuntu) and run the command `Prusti: save and verify this file`. You should see a "Running Prusti..." message in the status bar while Prusti is running. When Prusti terminates the result of the verification is reported in the status bar and in the "Problems" tab (open it with View -> Problems).
 
