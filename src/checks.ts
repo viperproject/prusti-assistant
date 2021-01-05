@@ -35,7 +35,7 @@ export async function hasPrerequisites(): Promise<[boolean, string]> {
         console.error(err);
         util.log(`Error: ${err}`);
         const msg = (
-            "[Prusti] Could not run Java. Please install Java 1.8+ 64bit, " +
+            "[Prusti] Could not run Java. Please install Java 12+ 64bit, " +
             "then restart the IDE."
         );
         return [false, msg];

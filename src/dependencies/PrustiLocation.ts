@@ -20,7 +20,7 @@ export class PrustiLocation {
         const content = buffer.toString("utf8").trim();
         if (content.startsWith("[toolchain]")) {
             const channel_line = content.split("\n")
-                .find((line) => line.startsWith("channel"));
+                .find((line: string) => line.startsWith("channel"));
             if (channel_line === undefined) {
                 throw new Error("failed to parse rust-toolchain file");
             }
@@ -36,13 +36,13 @@ export class PrustiLocation {
         const content = buffer.toString("utf8").trim();
         if (content.startsWith("[toolchain]")) {
             const components_line = content.split("\n")
-                .find((line) => line.startsWith("components"));
+                .find((line: string) => line.startsWith("components"));
             if (components_line === undefined) {
                 return [];
             }
             const value = components_line.split("=")[1];
-            const values = value.replace(/[[]]/g, '').trim().split(",");
-            return values.map((x) => x.replace(/"/g, '').trim());
+            const values = value.replace(/[\[\]]/g, '').trim().split(",");
+            return values.map((x: string) => x.replace(/"/g, '').trim());
         } else {
             return config.isDevBuildChannel()
                 ? ["rustc-dev", "llvm-tools-preview"]
