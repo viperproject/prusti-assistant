@@ -88,13 +88,6 @@ jobs:
       - name: Package the extension
         run: npm run package
 
-      - name: Publish the extension to Open VSX Registry
-        id: publishToOpenVSX
-        uses: HaaLeo/publish-vscode-extension@v0
-        if: env.CURRENT_VERSION != env.LAST_PUBLISHED_VERSION
-        with:
-          pat: ${{ secrets.OPEN_VSX_TOKEN }}
-
       - name: Publish the extension to Visual Studio Marketplace
         uses: HaaLeo/publish-vscode-extension@v0
         if: env.CURRENT_VERSION != env.LAST_PUBLISHED_VERSION
@@ -103,6 +96,13 @@ jobs:
           registryUrl: https://marketplace.visualstudio.com
           extensionFile: ${{ steps.publishToOpenVSX.outputs.vsixPath }}
           packagePath: ''
+
+      - name: Publish the extension to Open VSX Registry
+        id: publishToOpenVSX
+        uses: HaaLeo/publish-vscode-extension@v0
+        if: env.CURRENT_VERSION != env.LAST_PUBLISHED_VERSION
+        with:
+          pat: ${{ secrets.OPEN_VSX_TOKEN }}
 
       - name: Create a release for the published version
         id: create_release
