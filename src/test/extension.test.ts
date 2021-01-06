@@ -68,14 +68,22 @@ suite("Extension", () => {
         const document = await openFile(ASSERT_TRUE);
         await vscode.commands.executeCommand("prusti-assistant.verify");
         const diagnostics = vscode.languages.getDiagnostics(document.uri);
-        assert.strictEqual(diagnostics.length, 0);
+        assert.strictEqual(
+            diagnostics.length,
+            0,
+            `Unexpected diagnostics: [${diagnostics}]`
+        );
     });
 
     test("Verify simple incorrect program", async () => {
         const document = await openFile(ASSERT_FALSE);
         await vscode.commands.executeCommand("prusti-assistant.verify");
         const diagnostics = vscode.languages.getDiagnostics(document.uri);
-        assert.strictEqual(diagnostics.length, 1);
+        assert.strictEqual(
+            diagnostics.length,
+            1,
+            `Reported diagnostics: [${diagnostics}]`
+        );
         assert.strictEqual(diagnostics[0].severity, vscode.DiagnosticSeverity.Error);
     });
 
@@ -83,7 +91,11 @@ suite("Extension", () => {
         const document = await openFile("lib_assert_true.rs");
         await vscode.commands.executeCommand("prusti-assistant.verify");
         const diagnostics = vscode.languages.getDiagnostics(document.uri);
-        assert.strictEqual(diagnostics.length, 0);
+        assert.strictEqual(
+            diagnostics.length,
+            0,
+            `Unexpected diagnostics: [${diagnostics}]`
+        );
     });
 
     test("Choose 'LatestRelease' and underline 'false' in the failing postcondition", async () => {
@@ -108,7 +120,8 @@ suite("Extension", () => {
                     document.getText(diagnostic.range).includes("false")
                 )
             ),
-            "The 'false' expression in the postcondition was not reported."
+            "The 'false' expression in the postcondition was not reported. "
+            + `Reported diagnostics: [${diagnostics}]`
         );
     });
 
@@ -134,7 +147,8 @@ suite("Extension", () => {
                     document.getText(diagnostic.range).includes("false")
                 )
             ),
-            "The 'false' expression in the postcondition was not reported."
+            "The 'false' expression in the postcondition was not reported. "
+            + `Reported diagnostics: [${diagnostics}]`
         );
     });
 });
