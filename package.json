@@ -144,14 +144,13 @@
         "webpack-cli": "^4.1.0"
     },
     "dependencies": {
-        "@types/find-java-home": "^1.0.0",
         "@types/fs-extra": "^9.0.1",
         "@types/node": "^14.11.8",
         "@types/tmp": "^0.2.0",
-        "find-java-home": "^1.1.0",
         "fs-extra": "^9.0.1",
         "tmp": "^0.2.1",
         "tree-kill": "^1.2.2",
+        "locate-java-home": "git://github.com/viperproject/locate-java-home",
         "vs-verification-toolbox": "git+https://github.com/viperproject/vs-verification-toolbox.git"
     }
 }

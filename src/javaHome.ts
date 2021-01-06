@@ -1,50 +1,35 @@
 import { Location } from "vs-verification-toolbox";
-import * as findJavaHomeLib from 'find-java-home';
-import * as process from 'process';
+import * as locatejavaHome from 'locate-java-home';
 import * as util from './util';
-
-async function parseJavaHome(): Promise<string | null> {
-    const output = await util.spawn(
-        "java",
-        ["-XshowSettings:properties", "-version"]
-    );
-    const java_home_line = output.stderr.split("\n")
-        .find((line) => line.indexOf("java.home") != -1);
-    if (java_home_line === undefined) {
-        return null;
-    }
-    return java_home_line.split("=")[1].trim()
-}
 
 export async function findJavaHome(): Promise<string | null> {
     console.log("Searching for Java home...");
     let javaHome: string | null = null;
     try {
-        const options: findJavaHomeLib.IOptions = {
-            allowJre: false,
-            registry: "x64",
-        };
-        javaHome = await new Promise(resolve => {
-            findJavaHomeLib(options, (err: unknown, home: string) => {
+        javaHome = await new Promise((resolve, reject) => {
+            const options = {
+                version: ">=12"
+            };
+            locatejavaHome.default(options, (err, javaHomes) => {
                 if (err) {
                     console.error(err);
-                    resolve(null);
+                    reject(err);
                 } else {
-                    console.log("Using Java home", home);
-                    resolve(home);
+                    if (!Array.isArray(javaHomes) || javaHomes.length === 0) {
+                        util.log("Could not find Java home");
+                        resolve(null);
+                    } else {
+                        const javaHome = javaHomes[0];
+                        console.log(`Using Java home ${JSON.stringify(javaHome, null, 2)}`);
+                        resolve(javaHome.path);
+                    }
                 }
             });
         });
     } catch (err) {
         util.log(`Error while searching for Java home: ${err}`);
     }
-    if (javaHome === null) {
-        javaHome = process.env.JAVA_HOME || null;
-    }
-    if (javaHome === null) {
-        javaHome = await parseJavaHome();
-    }
-    return javaHome || null;
+    return javaHome;
 }
 
 export class JavaHome {
