@@ -19,9 +19,9 @@ export async function findJavaHome(): Promise<string | null> {
                         util.log("Could not find Java home");
                         resolve(null);
                     } else {
-                        const javaHome = javaHomes[0];
-                        console.log(`Using Java home ${JSON.stringify(javaHome, null, 2)}`);
-                        resolve(javaHome.path);
+                        const firstJavaHome = javaHomes[0];
+                        console.log(`Using Java home ${JSON.stringify(firstJavaHome, null, 2)}`);
+                        resolve(firstJavaHome.path);
                     }
                 }
             });
