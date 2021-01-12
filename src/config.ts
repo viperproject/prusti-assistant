@@ -29,8 +29,8 @@ export function buildChannel(): BuildChannel {
         return channel;
     } else {
         util.userError(
-            `Prusti has no build channel named ${channelName}; ` +
-            `defaulting to ${defaultChannel}`
+            `Prusti has no build channel named ${channelName}; defaulting to ${defaultChannel}. ` +
+            "Please choose a valid build channel in the settings of the extension."
         );
         return defaultChannel;
     }

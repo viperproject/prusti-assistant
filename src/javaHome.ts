@@ -16,7 +16,10 @@ export async function findJavaHome(): Promise<string | null> {
                     reject(err);
                 } else {
                     if (!Array.isArray(javaHomes) || javaHomes.length === 0) {
-                        util.log("Could not find Java home");
+                        util.log(
+                            `Could not find a Java home with version ${options.version}. ` +
+                            "See the requirements in the description of the extension."
+                        );
                         resolve(null);
                     } else {
                         const firstJavaHome = javaHomes[0];
