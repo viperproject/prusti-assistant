@@ -19,7 +19,7 @@ export const buildChannelKey = "buildChannel";
 export const buildChannelPath = `${namespace}.${buildChannelKey}`;
 
 export function buildChannel(): BuildChannel {
-    const defaultChannel = BuildChannel.LatestDev;
+    const defaultChannel = BuildChannel.LatestRelease;
     const channelName = config().get(buildChannelKey, defaultChannel as string);
     const channel = BuildChannel[
         // Convert string to enum. See https://stackoverflow.com/a/17381004/2491528
@@ -30,7 +30,8 @@ export function buildChannel(): BuildChannel {
     } else {
         util.userError(
             `Prusti has no build channel named ${channelName}; defaulting to ${defaultChannel}. ` +
-            "Please choose a valid build channel in the settings of the extension."
+            "This has been probably caused by an update of the extension. " +
+            "To fix this error, please choose a valid build channel in the settings."
         );
         return defaultChannel;
     }
