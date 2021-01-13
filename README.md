@@ -13,7 +13,7 @@ This Visual Studio Code extension provides interactive IDE features for verifyin
 
 In order to use this extension, please install the following components:
 
-* Java JDK version 12 or later, 64 bit. We recommend [OpenJDK 15.0.1](https://jdk.java.net/15/).
+* Java JDK version 11 or later, 64 bit. We recommend [OpenJDK 15.0.1](https://jdk.java.net/15/).
 * [Rustup version 1.23.0 or later](https://rustup.rs/) (on Windows this also requires the [C++ build tools for Visual Studio 2013 or later](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019)).
 
 ## First usage

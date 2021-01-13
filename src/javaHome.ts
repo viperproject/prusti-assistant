@@ -8,7 +8,7 @@ export async function findJavaHome(): Promise<string | null> {
     try {
         javaHome = await new Promise((resolve, reject) => {
             const options = {
-                version: ">=12"
+                version: ">=11"
             };
             locatejavaHome.default(options, (err, javaHomes) => {
                 if (err) {
