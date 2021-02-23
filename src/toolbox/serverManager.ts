@@ -12,7 +12,7 @@ enum State {
     Ready = "Ready",
     /** A process that never started, or that has been explicitly stopped. */
     Stopped = "Stopped",
-    /** A process that terminated without being explicely stopped. */
+    /** A process that terminated without being explicitly stopped. */
     Crashed = "Crashed",
     /** A process that failed to get killed. */
     Unrecoverable = "Unrecoverable",

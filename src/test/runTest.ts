@@ -18,6 +18,9 @@ async function main() {
     const extensionTestsPath = path.resolve(__dirname, "./index");
 
     // Download VS Code, unzip it and run the integration test
+    console.info("Reading VS Code version...");
+    const vscode_version = fs.readFileSync(path.join(DATA_ROOT, "vscode-version")).toString().trim();
+    console.info(`Tests will use VS Code version '${vscode_version}'`);
     console.info("Reading list of settings...");
     const settings_list = fs.readdirSync(path.join(DATA_ROOT, "settings")).sort();
     assert(settings_list.length > 0, "There are no settings to test");
@@ -35,6 +38,7 @@ async function main() {
             
             // Run the tests in the workspace
             await runTests({
+                version: vscode_version,
                 extensionDevelopmentPath,
                 extensionTestsPath,
                 // Disable any other extension
