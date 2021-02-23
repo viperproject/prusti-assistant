@@ -1,0 +1,41 @@
+name: Update VS Code
+
+on:
+  workflow_dispatch:
+  schedule:
+    # At 07:00 UTC on day-of-month 1 and 15. Use https://crontab.guru/ to edit this.
+    - cron:  '0 7 1,15 * *'
+
+jobs:
+  # Update the version of rustc, open a PR and assign a developer.
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+
+      - name: Update VS Code version used by the tests
+        run: |
+          TEST_VSCODE_VERSION="$(cat src/test/data/vscode-version)"
+          echo "The current version of VS Code used in tests is $TEST_VSCODE_VERSION"
+          LATEST_VSCODE_VERSION="$(
+            curl -s https://api.github.com/repos/microsoft/vscode/releases/latest | jq -r '.tag_name'
+          )"
+          echo "The latest version of VS Code is $LATEST_VSCODE_VERSION"
+          echo "$LATEST_VSCODE_VERSION" > src/test/data/vscode-version
+          echo "TEST_VSCODE_VERSION=$TEST_VSCODE_VERSION" >> $GITHUB_ENV
+          echo "LATEST_VSCODE_VERSION=$LATEST_VSCODE_VERSION" >> $GITHUB_ENV
+
+      - name: Open a pull request
+        uses: peter-evans/create-pull-request@v3
+        if: env.TEST_VSCODE_VERSION != env.LATEST_VSCODE_VERSION
+        with:
+          # Use viper-admin's token to workaround a restriction of GitHub.
+          # See: https://github.com/peter-evans/create-pull-request/issues/48
+          token: ${{ secrets.VIPER_ADMIN_TOKEN }}
+          commit-message: Update VS Code to ${{ env.LATEST_VSCODE_VERSION }}
+          title: Update VS Code to ${{ env.LATEST_VSCODE_VERSION }}
+          branch: auto-update-vscode
+          delete-branch: true
+          body: |
+            * Update VS Code version used in tests to `${{ env.LATEST_VSCODE_VERSION }}`.
