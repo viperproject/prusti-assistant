@@ -56,8 +56,8 @@ jobs:
         with:
           name: debug-info-${{ matrix.os }}
           path: |
-            profile-*.cpuprofile
-            heapdump-*.heapsnapshot
+            tests-*.cpuprofile
+            tests-*.heapsnapshot
 
       - name: Collect coverage
         run: npx nyc report --reporter=lcov
