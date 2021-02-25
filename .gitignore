@@ -5,6 +5,7 @@ out/
 node_modules/
 coverage/
 *.vsix
+*.cpuprofile
 
 # Prusti temporary files
 log/

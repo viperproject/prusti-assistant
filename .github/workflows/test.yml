@@ -48,6 +48,14 @@ jobs:
           run: npm test --full-trace
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DUMP_CPU_PROFILE: true
+
+      - name: Upload CPU profile of the tests in case of failure
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: cpu-profile-${{ matrix.os }}
+          path: profile.*.cpuprofile
 
       - name: Collect coverage
         run: npx nyc report --reporter=lcov
