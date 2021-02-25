@@ -42,7 +42,7 @@ async function main() {
                 extensionDevelopmentPath,
                 extensionTestsPath,
                 // Disable any other extension
-                launchArgs: ["--disable-extensions", tmpWorkspace.name, "--disable-gpu", "--log", "debug"],
+                launchArgs: ["--disable-extensions", tmpWorkspace.name],
             });
         } finally {
             tmpWorkspace.removeCallback();
