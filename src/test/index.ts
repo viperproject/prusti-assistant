@@ -58,7 +58,7 @@ export async function run(): Promise<void> {
         failures = await new Promise(resolve => mocha.run(resolve));
 
         // Take a heap snapshot
-        const heapsnapshot_filename = `./tests-${timestamp}.heapsnapshot`;
+        const heapsnapshot_filename = `tests-${timestamp}.heapsnapshot`;
         console.log(`Dump heap snapshot to '${heapsnapshot_filename}'...`)
         const heapsnapshot_file = fs.openSync(heapsnapshot_filename, "w");
         session.on("HeapProfiler.addHeapSnapshotChunk", (m) => {
@@ -85,7 +85,7 @@ export async function run(): Promise<void> {
                 }
             });
         });
-        const cpuprofile_filename = `./tests-${timestamp}.cpuprofile`;
+        const cpuprofile_filename = `tests-${timestamp}.cpuprofile`;
         console.log(`Dump CPU profile to '${cpuprofile_filename}'...`)
         fs.writeFileSync(cpuprofile_filename, JSON.stringify(cpuprofile));
 
