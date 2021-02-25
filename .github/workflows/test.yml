@@ -48,6 +48,16 @@ jobs:
           run: npm test --full-trace
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DUMP_DEBUG_INFO: true
+
+      - name: Upload debug information in case of failure
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: debug-info-${{ matrix.os }}
+          path: |
+            tests-*.cpuprofile
+            tests-*.heapsnapshot
 
       - name: Collect coverage
         run: npx nyc report --reporter=lcov
