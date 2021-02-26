@@ -47,7 +47,7 @@ jobs:
         with:
           run: npm test --full-trace
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.VIPER_ADMIN_TOKEN }}
           DUMP_DEBUG_INFO: true
 
       - name: Upload debug information in case of failure
