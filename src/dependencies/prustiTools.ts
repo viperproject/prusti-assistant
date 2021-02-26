@@ -11,22 +11,20 @@ export function prustiTools(
     const id = identifier(platform);
     const channel = config.BuildChannel;
     const getReleaseUrl = (): Promise<string> => {
-        const url = vvt.GitHubReleaseAsset.getLatestAssetUrl(
+        return vvt.GitHubReleaseAsset.getLatestAssetUrl(
             "viperproject", "prusti-dev", `prusti-release-${id}.zip`,
             false,
             // Avoid rate limit while testing
             process.env.GITHUB_TOKEN,
         );
-        return url;
     }
     const getDevUrl = (): Promise<string> => {
-        const url = vvt.GitHubReleaseAsset.getLatestAssetUrl(
+        return vvt.GitHubReleaseAsset.getLatestAssetUrl(
             "viperproject", "prusti-dev", `prusti-release-${id}.zip`,
             true,
             // Avoid rate limit while testing
             process.env.GITHUB_TOKEN,
         );
-        return url;
     }
     return new vvt.Dependency(
         path.join(context.globalStoragePath, "prustiTools"),
