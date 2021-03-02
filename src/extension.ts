@@ -212,16 +212,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // Stand ready to deactivate the extension
     context.subscriptions.push({
-        dispose: async () => {
+        dispose: () => {
             console.log("Dispose Prusti Assistant");
-            await deactivate();
+            deactivate().catch(
+                err => console.error(`Failed to deactivate the extension: ${err}`)
+            );
         }
     });
     process.on("SIGTERM", () => {
         console.log("Received SIGTERM");
         deactivate().catch(
             err => console.error(`Failed to deactivate the extension: ${err}`)
-        )
+        );
     });
 
     state.notifyExtensionActivation();
