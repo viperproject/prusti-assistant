@@ -18,9 +18,6 @@ export async function ensureRustToolchainInstalled(context: vscode.ExtensionCont
     );
 
     if (rustupOutput.code != 0) {
-        console.log(`Rustup terminated with exit code ${rustupOutput.code} and signal ${rustupOutput.signal}`);
-        console.log(`Stdout:\n${rustupOutput.stdout}`);
-        console.log(`Stderr:\n${rustupOutput.stderr}`);
         throw new Error(`Rustup terminated with exit code ${rustupOutput.code} and signal ${rustupOutput.signal}`);
     }
 }
