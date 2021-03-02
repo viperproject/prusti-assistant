@@ -103,15 +103,14 @@ suite("Extension", () => {
         const shouldWait = config.buildChannel() !== config.BuildChannel.LatestRelease;
         const configUpdateEvent = shouldWait
             ? state.waitConfigUpdate()
-            : new Promise(resolve => resolve());
+            : new Promise(resolve => resolve(null));
         await config.config().update(
             config.buildChannelKey, 
             config.BuildChannel.LatestRelease.toString()
         );
         await configUpdateEvent;
         // Test
-        const filePath = path.join("latest-release", "failing_post.rs");
-        const document = await openFile(filePath);
+        const document = await openFile("failing_post.rs");
         await vscode.commands.executeCommand("prusti-assistant.verify");
         const diagnostics = vscode.languages.getDiagnostics(document.uri);
         assert.ok(
@@ -130,15 +129,14 @@ suite("Extension", () => {
         const shouldWait = config.buildChannel() !== config.BuildChannel.LatestDev;
         const configUpdateEvent = shouldWait
             ? state.waitConfigUpdate()
-            : new Promise(resolve => resolve());
+            : new Promise(resolve => resolve(null));
         await config.config().update(
             config.buildChannelKey, 
             config.BuildChannel.LatestDev.toString()
         );
         await configUpdateEvent;
         // Test
-        const filePath = path.join("latest-dev", "failing_post.rs");
-        const document = await openFile(filePath);
+        const document = await openFile("failing_post.rs");
         await vscode.commands.executeCommand("prusti-assistant.verify");
         const diagnostics = vscode.languages.getDiagnostics(document.uri);
         assert.ok(
