@@ -410,20 +410,14 @@ async function queryCrateDiagnostics(prusti: PrustiLocation, rootPath: string): 
  */
 async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: string, serverAddress: string): Promise<[Diagnostic[], VerificationStatus]> {
     // For backward compatibility
-    const isDev = config.isDevBuildChannel();
-    const args = isDev ? [
+    const output = await util.spawn(
+        prusti.prustiRustc,
+        [
             "--crate-type=lib",
             "--error-format=json",
             "--edition=2018",
             programPath
-        ] : [
-            "--crate-type=lib",
-            "--error-format=json",
-            programPath
-        ];
-    const output = await util.spawn(
-        prusti.prustiRustc,
-        args,
+        ],
         {
             options: {
                 cwd: path.dirname(programPath),
@@ -445,17 +439,11 @@ async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: stri
     if (output.code === 0) {
         status = VerificationStatus.Verified;
     }
-    if (isDev) {
-        if (output.code === 1) {
-            status = VerificationStatus.Errors;
-        }
-        if (output.code === 101) {
-            status = VerificationStatus.Crash;
-        }
-    } else {
-        if (output.code === 101) {
-            status = VerificationStatus.Errors;
-        }
+    if (output.code === 1) {
+        status = VerificationStatus.Errors;
+    }
+    if (output.code === 101) {
+        status = VerificationStatus.Crash;
     }
     if (/error: internal compiler error/.exec(output.stderr) !== null) {
         status = VerificationStatus.Crash;

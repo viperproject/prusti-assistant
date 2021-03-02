@@ -37,10 +37,6 @@ export function buildChannel(): BuildChannel {
     }
 }
 
-export function isDevBuildChannel(): boolean {
-    return buildChannel() === BuildChannel.LatestDev
-}
-
 const localPrustiPathKey = "localPrustiPath";
 export const localPrustiPathPath = `${namespace}.${localPrustiPathKey}`;
 
