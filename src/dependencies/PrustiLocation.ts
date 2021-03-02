@@ -14,8 +14,8 @@ export class PrustiLocation {
         fs.chmodSync(this.prustiServer, 0o775);
     }
 
-    public rustToolchainFolder(): Location {
-        return this.location
+    public rustToolchainFile(): Location {
+        return this.location.child("rust-toolchain");
     }
 
     public get prustiDriver(): string {

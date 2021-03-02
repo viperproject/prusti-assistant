@@ -39,7 +39,7 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
         // Install Rust toolchain
         await ensureRustToolchainInstalled(
             context,
-            prusti.rustToolchainFolder(),
+            prusti.rustToolchainFile(),
         );
     } catch (err) {
         util.userError(`Error installing Prusti: ${err}`);
