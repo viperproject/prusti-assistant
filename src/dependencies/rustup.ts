@@ -5,6 +5,7 @@ import * as util from "../util";
 export async function ensureRustToolchainInstalled(context: vscode.ExtensionContext, toolchainFolder: Location): Promise<void> {
     util.log("Checking rust toolchain version and components...");
 
+    // `rustup show` will install the missing toolchain and components
     const rustupOutput = await util.spawn(
         "rustup",
         ["show"],
