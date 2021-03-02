@@ -103,7 +103,7 @@ suite("Extension", () => {
         const shouldWait = config.buildChannel() !== config.BuildChannel.LatestRelease;
         const configUpdateEvent = shouldWait
             ? state.waitConfigUpdate()
-            : new Promise(resolve => resolve(null));
+            : Promise.resolve();
         await config.config().update(
             config.buildChannelKey, 
             config.BuildChannel.LatestRelease.toString()
@@ -129,7 +129,7 @@ suite("Extension", () => {
         const shouldWait = config.buildChannel() !== config.BuildChannel.LatestDev;
         const configUpdateEvent = shouldWait
             ? state.waitConfigUpdate()
-            : new Promise(resolve => resolve(null));
+            : Promise.resolve();
         await config.config().update(
             config.buildChannelKey, 
             config.BuildChannel.LatestDev.toString()
