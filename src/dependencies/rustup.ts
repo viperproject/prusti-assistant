@@ -17,10 +17,10 @@ export async function ensureRustToolchainInstalled(context: vscode.ExtensionCont
         { options: { cwd: toolchainFile.enclosingFolder.path() }}
     );
 
-    if (rustupOutput.code !== null && rustupOutput.code != 0) {
-        throw new Error(`Rustup terminated with exit code ${rustupOutput.code}`);
-    }
-    if (rustupOutput.code === null) {
-        throw new Error(`Rustup was terminated by signal ${rustupOutput.signal}`);
+    if (rustupOutput.code != 0) {
+        console.log(`Rustup terminated with exit code ${rustupOutput.code} and signal ${rustupOutput.signal}`);
+        console.log(`Stdout:\n${rustupOutput.stdout}`);
+        console.log(`Stderr:\n${rustupOutput.stderr}`);
+        throw new Error(`Rustup terminated with exit code ${rustupOutput.code} and signal ${rustupOutput.signal}`);
     }
 }
