@@ -88,7 +88,8 @@ export function trace(message: string): void {
 export interface Output {
     stdout: string;
     stderr: string;
-    code: number;
+    code: number | null;
+    signal: string | null;
 }
 
 export function spawn(
@@ -137,9 +138,9 @@ export function spawn(
     }
 
     return new Promise((resolve, reject) => {
-        proc.on("close", (code) => {
+        proc.on("close", (code, signal ) => {
             printOutput();
-            resolve({ stdout, stderr, code });
+            resolve({ stdout, stderr, code, signal });
         });
         proc.on("error", (err) => {
             printOutput();

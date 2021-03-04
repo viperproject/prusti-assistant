@@ -10,6 +10,15 @@ export async function run(): Promise<void> {
     const nyc: NYC = new NYC({
         cwd: path.join(__dirname, "..", ".."),
         instrument: true,
+        extension: [
+            ".ts",
+            ".tsx"
+        ],
+        exclude: [
+            "**/*.d.ts",
+            "**/.vscode-test/**"
+        ],
+        all: true,
         hookRequire: true,
         hookRunInContext: true,
         hookRunInThisContext: true,
