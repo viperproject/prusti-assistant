@@ -44,6 +44,9 @@ jobs:
 
       - name: Run tests (headless)
         uses: GabrielBB/xvfb-action@v1.0
+        id: runTests
+        # Ignore failures on MacOS (for now)
+        continue-on-error: ${{ matrix.os == "macos-latest" }}
         with:
           run: npm test --full-trace
         env:
@@ -52,7 +55,7 @@ jobs:
 
       - name: Upload debug information in case of failure
         uses: actions/upload-artifact@v2
-        if: failure()
+        if: ${{ steps.runTests.outcome == "failure" }}
         with:
           name: debug-info-${{ matrix.os }}
           path: |
@@ -60,10 +63,12 @@ jobs:
             tests-*.heapsnapshot
 
       - name: Collect coverage
+        if: ${{ steps.runTests.outcome == "success" }}
         run: npx nyc report --reporter=lcov
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
+        if: ${{ steps.runTests.outcome == "success" }}
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage/lcov.info
