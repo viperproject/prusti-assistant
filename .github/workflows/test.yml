@@ -51,7 +51,6 @@ jobs:
           run: npm test --full-trace
         env:
           GITHUB_TOKEN: ${{ secrets.VIPER_ADMIN_TOKEN }}
-          DUMP_DEBUG_INFO: false
 
       - name: Upload debug information in case of failure
         uses: actions/upload-artifact@v2
