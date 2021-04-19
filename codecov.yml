@@ -1,6 +1,17 @@
-coverage:
-  precision: 2
-  round: down
-  range: "50...100"
-
 comment: false
+
+coverage:
+  precision: 1
+  round: down
+  range: 0..100
+
+coverage:
+  status:
+    project:
+      default:
+        target: 30
+        threshold: 0.10
+    patch:
+      default:
+        target: 30
+        threshold: 0.10
