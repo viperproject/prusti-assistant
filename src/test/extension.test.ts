@@ -98,6 +98,27 @@ suite("Extension", () => {
         );
     });
 
+    test("Underline 'false' in a failing postcondition", async () => {
+        const document = await openFile("failing_post.rs");
+        await vscode.commands.executeCommand("prusti-assistant.verify");
+        const diagnostics = vscode.languages.getDiagnostics(document.uri);
+        assert.ok(
+            diagnostics.some(
+                (diagnostic) => (
+                    document.getText(diagnostic.range).includes("false")
+                )
+            ),
+            "The 'false' expression in the postcondition was not reported. "
+            + `Reported diagnostics: [${diagnostics}]`
+        );
+    });
+
+    // FIXME: The following tests have been disabled because:
+    // * When running as GitHub actions they randomly fail on MacOS and
+    //   sometimes on Windows.
+    // * The failures cannot be reproduced locally.
+    // * There seem to be no good way of debugging GitHub action runs.
+    /*
     test("Choose 'LatestRelease' and underline 'false' in the failing postcondition", async () => {
         // Choose the LatestRelease toolchain
         const shouldWait = config.buildChannel() !== config.BuildChannel.LatestRelease;
@@ -149,4 +170,5 @@ suite("Extension", () => {
             + `Reported diagnostics: [${diagnostics}]`
         );
     });
+    */
 });
