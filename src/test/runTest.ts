@@ -41,6 +41,7 @@ async function main() {
                 version: vscode_version,
                 extensionDevelopmentPath,
                 extensionTestsPath,
+                extensionTestsEnv: process.env,
                 // Disable any other extension
                 launchArgs: ["--disable-extensions", tmpWorkspace.name],
             });
