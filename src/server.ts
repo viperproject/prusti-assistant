@@ -114,9 +114,6 @@ export async function restart(context: vscode.ExtensionContext): Promise<void> {
                 RUST_BACKTRACE: "1",
                 RUST_LOG: "info",
                 JAVA_HOME: (await config.javaHome())!.path,
-                VIPER_HOME: prusti!.viperHome,
-                Z3_EXE: prusti!.z3,
-                BOOGIE_EXE: prusti!.boogie
             },
             onStdout: data => {
                 serverChannel.append(`[stdout] ${data}`);
