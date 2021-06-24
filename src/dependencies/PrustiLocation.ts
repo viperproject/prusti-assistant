@@ -10,6 +10,7 @@ export class PrustiLocation {
         fs.chmodSync(this.prustiRustc, 0o775);
         fs.chmodSync(this.cargoPrusti, 0o775);
         fs.chmodSync(this.z3, 0o775);
+        fs.chmodSync(this.boogie, 0o775);
         fs.chmodSync(this.prustiServerDriver, 0o775);
         fs.chmodSync(this.prustiServer, 0o775);
     }
@@ -46,9 +47,5 @@ export class PrustiLocation {
     public get boogie(): string {
         return this.location.child("viper_tools").child("boogie")
             .child("Binaries").executable("Boogie");
-    }
-
-    public get viperHome(): string {
-        return this.location.child("viper_tools").path("backends");
     }
 }
