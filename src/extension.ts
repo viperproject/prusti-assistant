@@ -1,5 +1,4 @@
 import * as vscode from "vscode";
-import { performance } from "perf_hooks";
 import * as config from "./config";
 import * as util from "./util";
 import * as diagnostics from "./diagnostics";

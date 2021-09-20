@@ -544,7 +544,7 @@ export class VerificationDiagnostics {
                 util.trace(`Ignore non-error diagnostic: ${diagnostic}`);
                 return false;
             }
-            if (/^aborting due to ([0-9]+ |)previous error(s|)/.exec(diagnostic.diagnostic.message) !== null) {
+            if (/^aborting due to (\d+ |)previous error(s|)/.exec(diagnostic.diagnostic.message) !== null) {
                 util.trace(`Ignore non-error diagnostic: ${diagnostic}`);
                 return false;
             }
