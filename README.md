@@ -22,11 +22,13 @@ In order to use this extension, please install the following components:
 2. Install the ["Prusti Assistant" extension](https://marketplace.visualstudio.com/items?itemName=viper-admin.prusti-assistant) in Visual Studio Code.
 3. Open a Rust file to activate the extension. At its first activation, this extension will automatically download Prusti and install the required Rust toolchain.
 
-To verify a Rust program, open the command palette (View -> Command Palette, or Shift+Ctrl+P on Ubuntu) and run the command `Prusti: save and verify this file`. You should see a "Running Prusti..." message in the status bar while Prusti is running. When Prusti terminates the result of the verification is reported in the status bar and in the "Problems" tab (open it with View -> Problems).
+**To verify a standalone Rust program**, open the command palette (View -> Command Palette, or Shift+Ctrl+P on Ubuntu) and run the command `Prusti: verify the current file or crate`. You should see a "Running Prusti..." message in the status bar while Prusti is running. When Prusti terminates the result of the verification is reported in the status bar and in the "Problems" tab (open it with View -> Problems).
+
+**To verify crates** instead of standalone programs, enable the corresponding flag in the settings (Preferences -> Settings -> type "Prusti" -> choose "CurrentCrate" from "verificationMode").
 
 To automatically run Prusti when a Rust file is opened or saved, enable the corresponding flag in the settings (Preferences -> Settings -> type "Prusti" -> enable "Verify On Open" and "Verify On Save").
 
-To update Prusti run the command `Prusti: update dependencies` in the command palette.
+To update Prusti, run the command `Prusti: update verifier` in the command palette.
 
 ## Features
 
@@ -38,7 +40,7 @@ This extension automatically provides inline diagnostics for Rust by running Pru
 
 This extension provides the following commands:
 
-* `Prusti: save and verify this file` to verify a Rust program;
+* `Prusti: verify the current file or crate` to verify a Rust program;
 * `Prusti: update dependencies` to update Prusti.
 * `Prusti: restart Prusti server` to restart the Prusti server used by this extension.
 
@@ -53,3 +55,4 @@ The main configuration options used by this extension are the following:
 * `prusti-assistant.verifyOnSave`: Specifies if programs should be verified on save.
 * `prusti-assistant.verifyOnOpen`: Specifies if programs should be verified when opened.
 * `prusti-assistant.buildChannel`: Allows to choose between the latest Prusti release version (the default) and a slightly newer but potentially unstable Prusti development version.
+* `prusti-assistant.verificationMode`: Allows to choose between verifying standalone Rust programs (without crate dependencies) and crates.

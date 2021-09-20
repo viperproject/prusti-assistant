@@ -2,7 +2,6 @@ import * as assert from "assert";
 import * as vscode from "vscode";
 import * as path from "path";
 import * as state from "../state";
-import * as config from "../config";
 import * as extension from "../extension"
 
 const PROJECT_ROOT = path.join(__dirname, "..", "..");

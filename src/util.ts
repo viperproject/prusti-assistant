@@ -3,61 +3,41 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
 
-export function userInfo(message: string, popup = true, requestReload = false, statusBar = true): void {
+export function userInfo(message: string, statusBar?: vscode.StatusBarItem): void {
     log(message);
     if (statusBar) {
-        vscode.window.setStatusBarMessage(message);
+        statusBar.text = message;
     }
-    if (popup) {
-        if (requestReload) {
-            const action = "Reload Now";
-            vscode.window.showInformationMessage(message, action)
-                .then(selection => {
-                    if (selection === action) {
-                        vscode.commands.executeCommand(
-                            "workbench.action.reloadWindow"
-                        ).then(
-                            undefined,
-                            err => log(`Error: ${err}`)
-                        );
-                    }
-                }).then(
-                    undefined,
-                    err => log(`Error: ${err}`)
-                );
-        } else {
-            vscode.window.showInformationMessage(message).then(
-                undefined,
-                err => log(`Error: ${err}`)
-            );
-        }
-    }
+    vscode.window.showInformationMessage(message).then(
+        undefined,
+        err => log(`Error: ${err}`)
+    );
 }
 
-export function userWarn(message: string, popup = true): void {
+export function userWarn(message: string, statusBar?: vscode.StatusBarItem): void {
     log(message);
-    vscode.window.setStatusBarMessage(message);
-    if (popup) {
-        vscode.window.showWarningMessage(message).then(
-            undefined,
-            err => log(`Error: ${err}`)
-        );
+    if (statusBar) {
+        statusBar.text = message;
     }
+    vscode.window.showWarningMessage(message).then(
+        undefined,
+        err => log(`Error: ${err}`)
+    );
 }
 
-export function userError(message: string, popup = true, restart = false): void {
+export function userError(message: string, restart = false, statusBar?: vscode.StatusBarItem): void {
     log(message);
-    vscode.window.setStatusBarMessage(message);
-    if (popup) {
-        if (restart) {
-            userErrorPopup(message, "Restart Now", () => {
-                vscode.commands.executeCommand("workbench.action.reloadWindow")
-                    .then(undefined, err => log(`Error: ${err}`));
-            });
-        } else {
-            vscode.window.showErrorMessage(message)
+    if (statusBar) {
+        statusBar.text = message;
+    }
+    if (restart) {
+        userErrorPopup(message, "Restart Now", () => {
+            vscode.commands.executeCommand("workbench.action.reloadWindow")
                 .then(undefined, err => log(`Error: ${err}`));
-        }
+        });
+    } else {
+        vscode.window.showErrorMessage(message)
+            .then(undefined, err => log(`Error: ${err}`));
     }
 }
 
@@ -85,11 +65,15 @@ export function trace(message: string): void {
     traceChannel.appendLine(message);
 }
 
+export type Duration = [seconds: number, nanoseconds: number];
+export type KillFunction = () => void;
+
 export interface Output {
     stdout: string;
     stderr: string;
     code: number | null;
     signal: string | null;
+    duration: Duration;
 }
 
 export function spawn(
@@ -99,7 +83,8 @@ export function spawn(
         options?: childProcess.SpawnOptionsWithoutStdio;
         onStdout?: ((data: string) => void);
         onStderr?: ((data: string) => void);
-    } = {}
+    } = {},
+    destructors?: Set<KillFunction>,
 ): Promise<Output> {
     const description = `${cmd} ${args?.join(" ") ?? ""}`;
     log(`Prusti Assistant: run '${description}'`);
@@ -107,7 +92,20 @@ export function spawn(
     let stdout = "";
     let stderr = "";
 
+    const start = process.hrtime();
     const proc = childProcess.spawn(cmd, args, options);
+
+    // Register destructor
+    function killProc() {
+        if (!proc.killed) {
+            proc.kill();
+        } else {
+            log(`Proc ${proc.pid} has already been killed.`);
+        }
+    }
+    if (destructors) {
+        destructors.add(killProc);
+    }
 
     proc.stdout.on("data", (data) => {
         stdout += data;
@@ -126,25 +124,35 @@ export function spawn(
         }
     });
 
-    function printOutput() {
+    function printOutput(duration: Duration, code: number | null, signal: NodeJS.Signals | null) {
+        const durationSecMsg = (duration[0] + duration[1] / 1e9).toFixed(1);
         trace("");
-        trace(`Output from '${description}'`);
+        trace(`Output from '${description}' (${durationSecMsg}s):`);
         trace("┌──── Begin stdout ────┐");
         trace(stdout);
         trace("└──── End stdout ──────┘");
         trace("┌──── Begin stderr ────┐");
         trace(stderr);
         trace("└──── End stderr ──────┘");
+        trace(`Exit code ${code}, signal ${signal}.`);
     }
 
     return new Promise((resolve, reject) => {
-        proc.on("close", (code, signal ) => {
-            printOutput();
-            resolve({ stdout, stderr, code, signal });
+        proc.on("close", (code, signal) => {
+            const duration = process.hrtime(start);
+            printOutput(duration, code, signal);
+            if (destructors) {
+                destructors.delete(killProc);
+            }
+            resolve({ stdout, stderr, code, signal, duration });
         });
         proc.on("error", (err) => {
-            printOutput();
+            const duration = process.hrtime(start);
+            printOutput(duration, null, null);
             log(`Error: ${err}`);
+            if (destructors) {
+                destructors.delete(killProc);
+            }
             reject(err);
         });
     });

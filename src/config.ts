@@ -46,7 +46,7 @@ export function localPrustiPath(): string {
 
 export enum VerificationMode {
     CurrentProgram,
-    AllCratesInWorkspace
+    CurrentCrate,
 }
 
 export function verificationMode(): VerificationMode {
