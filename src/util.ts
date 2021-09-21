@@ -175,16 +175,7 @@ export class Project {
 }
 
 export class ProjectList {
-    // Projects sorted by path
-    readonly projects: Project[];
-
-    public constructor(projects: Project[]) {
-        this.projects = projects.sort((a, b) => {
-            if (a.path > b.path) { return 1; }
-            if (a.path < b.path) { return -1; }
-            return 0;
-        })
-    }
+    public constructor(readonly projects: Project[]) {}
 
     public isEmpty(): boolean {
         return this.projects.length === 0;
@@ -211,6 +202,11 @@ export async function findProjects(): Promise<ProjectList> {
     const projects: Project[] = [];
     (await vscode.workspace.findFiles("**/Cargo.toml")).forEach((uri: vscode.Uri) => {
         projects.push(new Project(uri.fsPath.replace(/[/\\]?Cargo\.toml$/, "")));
+    });
+    projects.sort((a, b) => {
+        if (a.path > b.path) { return 1; }
+        if (a.path < b.path) { return -1; }
+        return 0;
     });
     return new ProjectList(projects);
 }
