@@ -25,26 +25,14 @@ export async function run(): Promise<void> {
 
     // Create the mocha test
     const mocha = new Mocha({
-        ui: "tdd",
+        ui: "bdd",
         // Installing Rustup and Prusti might take some minutes
         timeout: 600_000, // ms
         color: true,
     });
 
     const testsRoot = path.resolve(__dirname, "..");
-
-    const files: Array<string> = await new Promise((resolve, reject) =>
-        glob(
-            "**/*.test.js",
-            {
-                cwd: testsRoot,
-            },
-            (err, result) => {
-                if (err) reject(err)
-                else resolve(result)
-            }
-        )
-    )
+    const files: Array<string> = glob.sync("**/*.test.js", { cwd: testsRoot });
 
     // Add files to the test suite
     files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)));
