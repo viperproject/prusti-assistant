@@ -59,14 +59,13 @@ describe("Extension", () => {
             const document = await openFile(program);
             await vscode.commands.executeCommand("prusti-assistant.verify");
             const diagnostics = vscode.languages.getDiagnostics(document.uri);
-            // Normalize paths
-            diagnostics.forEach(d => {
-                (d.relatedInformation || []).forEach(r => {
-                    r.location.uri = vscode.Uri.file(path.join("DATA", path.relative(DATA_ROOT, r.location.uri.path)));
-                })
-            });
             const extectedData = await fs.readFile(path.join(DATA_ROOT, program + ".json"), "utf-8");
             const exprected = JSON.parse(extectedData) as [{relatedInformation: [ { location: { uri: { path: string } } }]}];
+            exprected.forEach(d => {
+                (d.relatedInformation || []).forEach(r => {
+                    r.location.uri = vscode.Uri.file(path.join(DATA_ROOT, r.location.uri.path));
+                })
+            });
             expect(diagnostics).to.deep.equal(exprected);
         });
     });

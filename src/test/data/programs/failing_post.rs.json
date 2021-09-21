@@ -29,7 +29,7 @@
                         "_fsPath": null,
                         "authority": "",
                         "fragment": "",
-                        "path": "/DATA/programs/failing_post.rs",
+                        "path": "programs/failing_post.rs",
                         "query": "",
                         "scheme": "file"
                     }
