@@ -45,7 +45,7 @@
             },
             {
                 "command": "prusti-assistant.verify",
-                "title": "verify the current file or crate",
+                "title": "verify the current crate or file",
                 "category": "Prusti"
             },
             {
@@ -72,19 +72,6 @@
                         "A local build of Prusti, specified via localPrustiPath."
                     ],
                     "description": "Specifies from which channel Prusti builds are downloaded."
-                },
-                "prusti-assistant.verificationMode": {
-                    "type": "string",
-                    "default": "CurrentProgram",
-                    "enum": [
-                        "CurrentProgram",
-                        "CurrentCrate"
-                    ],
-                    "enumDescriptions": [
-                        "Verifies the file currently active in the editor.",
-                        "Verifies the innermost crate containing the file currently active in the editor."
-                    ],
-                    "description": "Specifies whether Prusti should verify standalone files or crates."
                 },
                 "prusti-assistant.localPrustiPath": {
                     "type": "string",

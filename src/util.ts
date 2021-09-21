@@ -87,13 +87,14 @@ export function spawn(
     destructors?: Set<KillFunction>,
 ): Promise<Output> {
     const description = `${cmd} ${args?.join(" ") ?? ""}`;
-    log(`Prusti Assistant: run '${description}'`);
+    log(`Run command '${description}'`);
 
     let stdout = "";
     let stderr = "";
 
     const start = process.hrtime();
     const proc = childProcess.spawn(cmd, args, options);
+    log(`Spawned PID: ${proc.pid}`);
 
     // Register destructor
     function killProc() {
@@ -174,21 +175,30 @@ export class Project {
 }
 
 export class ProjectList {
-    public constructor(
-        readonly projects: Project[]
-    ) { }
+    // Projects sorted by path
+    readonly projects: Project[];
+
+    public constructor(projects: Project[]) {
+        this.projects = projects.sort((a, b) => {
+            if (a.path > b.path) { return 1; }
+            if (a.path < b.path) { return -1; }
+            return 0;
+        })
+    }
 
     public isEmpty(): boolean {
         return this.projects.length === 0;
     }
 
     public getParent(file: string): Project | undefined {
+        let result: Project | undefined;
+        // Find the last (innermost) project that contains the file.
         for (const project of this.projects) {
             if (file.startsWith(project.path)) {
-                return project;
+                result = project;
             }
         }
-        return undefined;
+        return result;
     }
 }
 

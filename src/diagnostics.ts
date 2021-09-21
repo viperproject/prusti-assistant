@@ -554,8 +554,8 @@ export class VerificationDiagnostics {
 }
 
 export enum VerificationTarget {
-    StandaloneFile,
-    Crate
+    StandaloneFile = "file",
+    Crate = "crate"
 }
 
 export class DiagnosticsManager {
@@ -595,7 +595,8 @@ export class DiagnosticsManager {
 
         // Run verification
         const escapedFileName = path.basename(targetPath).replace("$", "\\$");
-        this.verificationStatus.text = `$(loading~spin) Running Prusti on ${escapedFileName}...`;
+        this.verificationStatus.text = `$(sync~spin) Verifying ${target} '${escapedFileName}'...`;
+
         const verificationDiagnostics = new VerificationDiagnostics();
         let durationSecMsg: string | null = null;
         try {
@@ -644,14 +645,17 @@ export class DiagnosticsManager {
                 const counts = verificationDiagnostics.countsBySeverity();
                 const errors = counts.get(vscode.DiagnosticSeverity.Error);
                 const noun = errors === 1 ? "error" : "errors";
-                this.verificationStatus.text = `$(error) Verification of ${escapedFileName} failed with ${errors} ${noun} (${durationSecMsg} s)`;
+                this.verificationStatus.text = `$(error) Verification of ${target} '${escapedFileName}' failed with ${errors} ${noun} (${durationSecMsg} s)`;
+                this.verificationStatus.command = "workbench.action.problems.focus";
             } else if (verificationDiagnostics.hasWarnings()) {
                 const counts = verificationDiagnostics.countsBySeverity();
                 const warnings = counts.get(vscode.DiagnosticSeverity.Error);
                 const noun = warnings === 1 ? "warning" : "warnings";
-                this.verificationStatus.text = `$(warning) Verification of ${escapedFileName} succeeded with ${warnings} ${noun} (${durationSecMsg} s)`;
+                this.verificationStatus.text = `$(warning) Verification of ${target} '${escapedFileName}' succeeded with ${warnings} ${noun} (${durationSecMsg} s)`;
+                this.verificationStatus.command = "workbench.action.problems.focus";
             } else {
-                this.verificationStatus.text = `$(check) Verification of ${escapedFileName} succeeded (${durationSecMsg} s)`;
+                this.verificationStatus.text = `$(check) Verification of ${target} '${escapedFileName}' succeeded (${durationSecMsg} s)`;
+                this.verificationStatus.command = undefined;
             }
         }
     }

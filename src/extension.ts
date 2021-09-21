@@ -14,14 +14,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // Verification status
     const verificationStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
-    verificationStatus.text = "";
-    verificationStatus.tooltip = "$(loading~spin) Activating Prusti...";
+    verificationStatus.tooltip = "Status of the Prusti verification.";
+    verificationStatus.text = "$(sync~spin) Activating Prusti...";
     verificationStatus.show();
     context.subscriptions.push(verificationStatus);
 
     // Prerequisites checks
     util.log("Checking Prusti prerequisites...");
-    verificationStatus.tooltip = "$(loading~spin) Checking Prusti prerequisites...";
+    verificationStatus.text = "$(sync~spin) Checking Prusti prerequisites...";
     const [hasPrerequisites, errorMessage] = await checks.hasPrerequisites();
     if (!hasPrerequisites) {
         verificationStatus.tooltip = "Prusti Assistant's prerequisites are not satisfied.";
@@ -34,7 +34,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // Download dependencies and start the server
     util.log("Check the Prusti dependencies...");
-    verificationStatus.tooltip = "$(loading~spin) Checking Prusti dependencies...";
+    verificationStatus.text = "$(sync~spin) Checking Prusti dependencies...";
     await installDependencies(context, false, verificationStatus);
 
     // Check Prusti
@@ -122,6 +122,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Define verification function
     async function verify(document: vscode.TextDocument) {
         util.log(`Run verification on ${document}...`);
+        const projects = await util.findProjects();
+        const cratePath = projects.getParent(document.uri.fsPath);
 
         if (server.address === undefined) {
             // Just warn, as Prusti can run even without a server.
@@ -130,11 +132,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             );
         }
 
-        if (config.verificationMode() === config.VerificationMode.CurrentProgram) {
-            // Verify provided document
+        if (cratePath === undefined) {
             if (document.languageId !== "rust") {
                 util.userWarn(
-                    `The active document is not a Rust program (it's ${document.languageId}), thus Prusti will not try to verify it.`
+                    `The active document is not a Rust program (it is ${document.languageId}) and it is not part of a crate.`
                 );
                 return;
             }
@@ -146,22 +147,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 diagnostics.VerificationTarget.StandaloneFile
             );
         } else {
-            const projects = await util.findProjects();
-            if (projects.isEmpty()) {
-                util.userWarn(
-                    "Prusti Assistant: No 'Cargo.toml' files were found in the workspace."
-                );
-                return;
-            }
-
-            const cratePath = projects.getParent(document.uri.fsPath);
-            if (cratePath === undefined) {
-                util.userWarn(
-                    "Prusti Assistant: No 'Cargo.toml' file has been found in the outer folders of the current file."
-                );
-                return;
-            }
-
             await verificationManager.verify(
                 prusti!,
                 server.address || "",
