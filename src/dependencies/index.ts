@@ -28,8 +28,10 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
                 "Prusti installation has been canceled. Please restart the IDE to retry.",
                 true, verificationStatus
             )
+            // FIXME: The rest of the extension expects `prusti` to be defined.
+            return;
         }
-        const location = (result as tools.Success<tools.Location>).value;
+        const location = result.value as tools.Location;
         util.log(`Using Prusti at ${location}`)
         prusti = new PrustiLocation(location);
 
