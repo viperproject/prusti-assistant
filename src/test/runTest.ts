@@ -2,7 +2,7 @@ import * as path from "path";
 import * as fs from "fs";
 import * as tmp from "tmp";
 
-import { runTests } from "vscode-test";
+import { runTests } from "@vscode/test-electron";
 import { assert } from "console";
 
 const PROJECT_ROOT = path.join(__dirname, "..", "..");
