@@ -121,7 +121,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // Define verification function
     async function verify(document: vscode.TextDocument) {
-        util.log(`Run verification on ${document}...`);
+        util.log(`Run verification on ${document.uri.fsPath}...`);
         const projects = await util.findProjects();
         const cratePath = projects.getParent(document.uri.fsPath);
 
