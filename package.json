@@ -73,6 +73,11 @@
                     ],
                     "description": "Specifies from which channel Prusti builds are downloaded."
                 },
+                "prusti-assistant.checkForUpdates": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Specifies if Prusti should check for updates at startup."
+                },
                 "prusti-assistant.localPrustiPath": {
                     "type": "string",
                     "default": "",
