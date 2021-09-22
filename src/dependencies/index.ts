@@ -1,17 +1,15 @@
 export * from "./PrustiLocation";
-
-import { withProgressInWindow, currentPlatform } from "vs-verification-toolbox";
+import * as tools from "vs-verification-toolbox";
 import * as vscode from "vscode";
-
 import * as config from "../config";
 import * as util from "../util";
 import * as server from "../server";
+import * as rustup from "./rustup";
 import { PrustiLocation } from "./PrustiLocation";
 import { prustiTools } from "./prustiTools";
-import { ensureRustToolchainInstalled } from "./rustup";
 
 export let prusti: PrustiLocation | undefined;
-export async function installDependencies(context: vscode.ExtensionContext, shouldUpdate: boolean): Promise<void> {
+export async function installDependencies(context: vscode.ExtensionContext, shouldUpdate: boolean, verificationStatus: vscode.StatusBarItem): Promise<void> {
     try {
         util.log(`${shouldUpdate ? "Updating" : "Installing"} Prusti dependencies...`);
 
@@ -20,11 +18,20 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
 
         // TODO: Stop prusti-rustc and cargo-prusti
 
-        const tools = prustiTools(currentPlatform!, context);
-        const { result: location, didReportProgress } = await withProgressInWindow(
+        const deps = prustiTools(tools.currentPlatform!, context);
+        const { result, didReportProgress } = await tools.withProgressInWindow(
             `${shouldUpdate ? "Updating" : "Installing"} Prusti`,
-            listener => tools.install(config.buildChannel(), shouldUpdate, listener)
+            listener => deps.install(config.buildChannel(), shouldUpdate, listener)
         );
+        if (!(result instanceof tools.Success)) {
+            util.userError(
+                "Prusti installation has been canceled. Please restart the IDE to retry.",
+                true, verificationStatus
+            )
+            // FIXME: The rest of the extension expects `prusti` to be defined.
+            return;
+        }
+        const location = result.value as tools.Location;
         util.log(`Using Prusti at ${location}`)
         prusti = new PrustiLocation(location);
 
@@ -37,14 +44,14 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
         }
 
         // Install Rust toolchain
-        await ensureRustToolchainInstalled(
+        await rustup.ensureRustToolchainInstalled(
             context,
             prusti.rustToolchainFile(),
         );
     } catch (err) {
-        util.userError(`Error installing Prusti: ${err}`);
+        util.userError(`Error installing Prusti: ${err}`, false, verificationStatus);
         throw err;
     } finally {
-        await server.restart(context);
+        await server.restart(context, verificationStatus);
     }
 }

@@ -1,0 +1,17 @@
+[
+    {
+        "message": "[Prusti: verification error] the asserted expression might not hold",
+        "range": {
+            "_end": {
+                "_character": 19,
+                "_line": 1
+            },
+            "_start": {
+                "_character": 4,
+                "_line": 1
+            }
+        },
+        "relatedInformation": [],
+        "severity": 0
+    }
+]

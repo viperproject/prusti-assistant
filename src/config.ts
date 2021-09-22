@@ -44,25 +44,6 @@ export function localPrustiPath(): string {
     return config().get(localPrustiPathKey, "");
 }
 
-export enum VerificationMode {
-    CurrentProgram,
-    AllCratesInWorkspace
-}
-
-export function verificationMode(): VerificationMode {
-    const modeName = config().get("verificationMode", "CurrentProgram");
-    const mode = VerificationMode[
-        // Convert string to enum. See https://stackoverflow.com/a/17381004/2491528
-        modeName as keyof typeof VerificationMode
-    ];
-    if (mode !== undefined) {
-        return mode;
-    } else {
-        util.userError(`Prusti has no verification mode named ${modeName}; defaulting to "current program"`);
-        return VerificationMode.CurrentProgram;
-    }
-}
-
 export function verifyOnSave(): boolean {
     return config().get("verifyOnSave", true);
 }

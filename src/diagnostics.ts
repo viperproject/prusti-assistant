@@ -3,7 +3,7 @@ import * as config from "./config";
 import * as vscode from "vscode";
 import * as path from "path";
 import * as vvt from "vs-verification-toolbox";
-import { PrustiLocation } from "./dependencies";
+import * as dependencies from "./dependencies";
 
 // ========================================================
 // JSON Schemas
@@ -356,7 +356,7 @@ enum VerificationStatus {
  * @param rootPath The root path of a rust project.
  * @returns An array of diagnostics for the given rust project.
  */
-async function queryCrateDiagnostics(prusti: PrustiLocation, rootPath: string): Promise<[Diagnostic[], VerificationStatus]> {
+async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation, rootPath: string, serverAddress: string, destructors: Set<util.KillFunction>): Promise<[Diagnostic[], VerificationStatus, util.Duration]> {
     // FIXME: Workaround for warning generation for libs.
     await removeDiagnosticMetadata(rootPath);
     const output = await util.spawn(
@@ -367,20 +367,23 @@ async function queryCrateDiagnostics(prusti: PrustiLocation, rootPath: string): 
                 cwd: rootPath,
                 env: {
                     ...process.env,  // Needed e.g. to run Rustup
+                    PRUSTI_SERVER_ADDRESS: serverAddress,
                     RUST_BACKTRACE: "1",
-                    RUST_LOG: "info",
+                    PRUSTI_LOG: "info",
+                    PRUSTI_QUIET: "true",
                     JAVA_HOME: (await config.javaHome())!.path,
                 }
             }
-        }
+        },
+        destructors,
     );
     let status = VerificationStatus.Crash;
     if (output.code === 0) {
         status = VerificationStatus.Verified;
     }
-    // TODO: after upgrading the Rust compiler:
-    // * exit code 1 --> error
-    // * exit code 101 --> crash
+    if (output.code === 1) {
+        status = VerificationStatus.Errors;
+    }
     if (output.code === 101) {
         status = VerificationStatus.Errors;
     }
@@ -396,7 +399,7 @@ async function queryCrateDiagnostics(prusti: PrustiLocation, rootPath: string): 
             parseCargoMessage(messages, rootPath)
         );
     }
-    return [diagnostics, status];
+    return [diagnostics, status, output.duration];
 }
 
 /**
@@ -405,7 +408,7 @@ async function queryCrateDiagnostics(prusti: PrustiLocation, rootPath: string): 
  * @param programPath The root path of a rust program.
  * @returns An array of diagnostics for the given rust project.
  */
-async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: string, serverAddress: string): Promise<[Diagnostic[], VerificationStatus]> {
+async function queryProgramDiagnostics(prusti: dependencies.PrustiLocation, programPath: string, serverAddress: string, destructors: Set<util.KillFunction>): Promise<[Diagnostic[], VerificationStatus, util.Duration]> {
     // For backward compatibility
     const output = await util.spawn(
         prusti.prustiRustc,
@@ -427,7 +430,8 @@ async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: stri
                     JAVA_HOME: (await config.javaHome())!.path,
                 }
             }
-        }
+        },
+        destructors
     );
     let status = VerificationStatus.Crash;
     if (output.code === 0) {
@@ -451,14 +455,14 @@ async function queryProgramDiagnostics(prusti: PrustiLocation, programPath: stri
             parseRustcMessage(messages, programPath)
         );
     }
-    return [diagnostics, status];
+    return [diagnostics, status, output.duration];
 }
 
 // ========================================================
 // Diagnostic Management
 // ========================================================
 
-export class DiagnosticsSet {
+export class VerificationDiagnostics {
     private diagnostics: Map<string, vscode.Diagnostic[]>;
 
     constructor() {
@@ -523,12 +527,12 @@ export class DiagnosticsSet {
         }
     }
 
-    public render(diagnosticsCollection: vscode.DiagnosticCollection):void {
-        diagnosticsCollection.clear();
+    public renderIn(target: vscode.DiagnosticCollection):void {
+        target.clear();
         for (const [filePath, fileDiagnostics] of this.diagnostics.entries()) {
             const uri = vscode.Uri.file(filePath);
             util.trace(`Render diagnostics: ${uri}, ${fileDiagnostics}`);
-            diagnosticsCollection.set(uri, fileDiagnostics);
+            target.set(uri, fileDiagnostics);
         }
     }
 
@@ -540,7 +544,7 @@ export class DiagnosticsSet {
                 util.trace(`Ignore non-error diagnostic: ${diagnostic}`);
                 return false;
             }
-            if (/^aborting due to ([0-9]+ |)previous error(s|)/.exec(diagnostic.diagnostic.message) !== null) {
+            if (/^aborting due to (\d+ |)previous error(s|)/.exec(diagnostic.diagnostic.message) !== null) {
                 util.trace(`Ignore non-error diagnostic: ${diagnostic}`);
                 return false;
             }
@@ -549,19 +553,65 @@ export class DiagnosticsSet {
     }
 }
 
-export async function generatesCratesDiagnostics(prusti: PrustiLocation, projectList: util.ProjectList): Promise<DiagnosticsSet> {
-    const resultDiagnostics = new DiagnosticsSet();
+export enum VerificationTarget {
+    StandaloneFile = "file",
+    Crate = "crate"
+}
 
-    for (const project of projectList.projects) {
-        if (project.path.length === 0) {
-            continue; // FIXME: why this?
-        }
+export class DiagnosticsManager {
+    private target: vscode.DiagnosticCollection;
+    private procDestructors: Set<util.KillFunction> = new Set();
+    private verificationStatus: vscode.StatusBarItem;
+    private killAllButton: vscode.StatusBarItem;
+    private runCount = 0;
+
+    public constructor(target: vscode.DiagnosticCollection, verificationStatus: vscode.StatusBarItem, killAllButton: vscode.StatusBarItem) {
+        this.target = target;
+        this.verificationStatus = verificationStatus;
+        this.killAllButton = killAllButton;
+    }
+
+    public dispose(): void {
+        util.log("Dispose DiagnosticsManager");
+        this.killAll();
+    }
+
+    public inProgress(): number {
+        return this.procDestructors.size
+    }
+
+    public killAll(): void {
+        util.log(`Killing ${this.procDestructors.size} processes.`);
+        this.procDestructors.forEach((kill) => kill());
+    }
+
+    public async verify(prusti: dependencies.PrustiLocation, serverAddress: string, targetPath: string, target: VerificationTarget): Promise<void> {
+        // Prepare verification
+        this.runCount += 1;
+        const currentRun = this.runCount;
+        util.log(`Preparing verification run #${currentRun}.`);
+        this.killAll();
+        this.killAllButton.show();
+
+        // Run verification
+        const escapedFileName = path.basename(targetPath).replace("$", "\\$");
+        this.verificationStatus.text = `$(sync~spin) Verifying ${target} '${escapedFileName}'...`;
+
+        const verificationDiagnostics = new VerificationDiagnostics();
+        let durationSecMsg: string | null = null;
         try {
-            const [diagnostics, status] = await queryCrateDiagnostics(prusti, project.path);
-            resultDiagnostics.addAll(diagnostics);
-            if (status === VerificationStatus.Crash) {
-                resultDiagnostics.add({
-                    file_path: path.join(project.path, "Cargo.toml"),
+            let diagnostics: Diagnostic[], status: VerificationStatus, duration: util.Duration;
+            if (target === VerificationTarget.Crate) {
+                [diagnostics, status, duration] = await queryCrateDiagnostics(prusti, targetPath, serverAddress, this.procDestructors);
+            } else {
+                [diagnostics, status, duration] = await queryProgramDiagnostics(prusti, targetPath, serverAddress, this.procDestructors);
+            }
+
+            verificationDiagnostics.addAll(diagnostics);
+            durationSecMsg = (duration[0] + duration[1] / 1e9).toFixed(1);
+            if (status === VerificationStatus.Crash || (status === VerificationStatus.Errors && !verificationDiagnostics.hasErrors())) {
+                verificationDiagnostics.add({
+                    file_path: targetPath,
                     diagnostic: new vscode.Diagnostic(
                         dummyRange(),
                         "Prusti encountered an error. See other reported errors and the log (View -> Output -> Prusti Assistant ...) for more details.",
@@ -570,59 +620,43 @@ export async function generatesCratesDiagnostics(prusti: PrustiLocation, project
                 });
             }
         } catch (err) {
-            console.error(err);
             util.log(`Error: ${err}`);
             let errorMessage = "<unknown error type>";
             if (err instanceof Error) {
                 errorMessage = err.message ?? err.toString();
             }
-            resultDiagnostics.add({
-                file_path: path.join(project.path, "Cargo.toml"),
+            verificationDiagnostics.add({
+                file_path: targetPath,
                 diagnostic: new vscode.Diagnostic(
                     dummyRange(),
-                    `Unexpected error. ${errorMessage}. See the log (View -> Output -> Prusti Assistant ...) for more details.`,
+                    `Unexpected error: ${errorMessage}. See the log (View -> Output -> Prusti Assistant ...) for more details.`,
                     vscode.DiagnosticSeverity.Error
                 )
             });
         }
-    }
 
-    return resultDiagnostics;
-}
-
-
-export async function generatesProgramDiagnostics(prusti: PrustiLocation, programPath: string, serverAddress: string | undefined): Promise<DiagnosticsSet> {
-    const resultDiagnostics = new DiagnosticsSet();
-
-    try {
-        const [diagnostics, status] = await queryProgramDiagnostics(prusti, programPath, serverAddress || "");
-        resultDiagnostics.addAll(diagnostics);
-        if (status === VerificationStatus.Crash) {
-            resultDiagnostics.add({
-                file_path: programPath,
-                diagnostic: new vscode.Diagnostic(
-                    dummyRange(),
-                    "Prusti encountered an error. See other reported errors and the log (View -> Output -> Prusti Assistant ...) for more details.",
-                    vscode.DiagnosticSeverity.Error
-                )
-            });
+        if (currentRun != this.runCount) {
+            util.log(`Discarding the result of the verification run #${currentRun}, because the latest is #${this.runCount}.`);
+        } else {
+            // Render diagnostics
+            this.killAllButton.hide();
+            verificationDiagnostics.renderIn(this.target);
+            if (verificationDiagnostics.hasErrors()) {
+                const counts = verificationDiagnostics.countsBySeverity();
+                const errors = counts.get(vscode.DiagnosticSeverity.Error);
+                const noun = errors === 1 ? "error" : "errors";
+                this.verificationStatus.text = `$(error) Verification of ${target} '${escapedFileName}' failed with ${errors} ${noun} (${durationSecMsg} s)`;
+                this.verificationStatus.command = "workbench.action.problems.focus";
+            } else if (verificationDiagnostics.hasWarnings()) {
+                const counts = verificationDiagnostics.countsBySeverity();
+                const warnings = counts.get(vscode.DiagnosticSeverity.Error);
+                const noun = warnings === 1 ? "warning" : "warnings";
+                this.verificationStatus.text = `$(warning) Verification of ${target} '${escapedFileName}' succeeded with ${warnings} ${noun} (${durationSecMsg} s)`;
+                this.verificationStatus.command = "workbench.action.problems.focus";
+            } else {
+                this.verificationStatus.text = `$(check) Verification of ${target} '${escapedFileName}' succeeded (${durationSecMsg} s)`;
+                this.verificationStatus.command = undefined;
+            }
         }
-    } catch (err) {
-        console.error(err);
-        util.log(`Error: ${err}`);
-        let errorMessage = "<unknown error type>";
-        if (err instanceof Error) {
-            errorMessage = err.message ?? err.toString();
-        }
-        resultDiagnostics.add({
-            file_path: programPath,
-            diagnostic: new vscode.Diagnostic(
-                dummyRange(),
-                `Unexpected error: ${errorMessage}. See the log (View -> Output -> Prusti Assistant ...) for more details.`,
-                vscode.DiagnosticSeverity.Error
-            )
-        });
     }
-
-    return resultDiagnostics;
 }

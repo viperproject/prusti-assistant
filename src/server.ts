@@ -14,7 +14,8 @@ server.waitForUnrecoverable().then(() => {
     util.log(`Prusti server is unrecorevable.`);
     address = undefined;
     util.userError(
-        "Prusti server stopped working. Please restart the IDE."
+        "Prusti server stopped working. Please restart the IDE.",
+        true
     );
 }).catch(
     err => util.log(`Error: ${err}`)
@@ -23,7 +24,7 @@ server.waitForUnrecoverable().then(() => {
 /**
  * The address of the server.
  */
-export function registerCrashHandler(context: vscode.ExtensionContext): void {
+export function registerCrashHandler(context: vscode.ExtensionContext, verificationStatus: vscode.StatusBarItem): void {
     server.waitForCrashed().then(() => {
         util.log(`Prusti server crashed.`);
         address = undefined;
@@ -32,8 +33,8 @@ export function registerCrashHandler(context: vscode.ExtensionContext): void {
             "Prusti server stopped working.",
             "Restart Server",
             () => {
-                restart(context).then(
-                    () => registerCrashHandler(context)
+                restart(context, verificationStatus).then(
+                    () => registerCrashHandler(context, verificationStatus)
                 ).catch(
                     err => util.log(`Error: ${err}`)
                 );
@@ -93,7 +94,7 @@ function waitUntilReady(timeout = 10_000): Promise<void> {
 /**
  * Start or restart the server.
  */
-export async function restart(context: vscode.ExtensionContext): Promise<void> {
+export async function restart(context: vscode.ExtensionContext, verificationStatus: vscode.StatusBarItem): Promise<void> {
     await stop();
 
     const configAddress = config.serverAddress();
@@ -122,7 +123,7 @@ export async function restart(context: vscode.ExtensionContext): Promise<void> {
                     const port = parseInt(data.toString().split("port: ")[1], 10);
                     util.log(`Prusti server is listening on port ${port}.`);
                     address = `localhost:${port}`;
-                    vscode.window.setStatusBarMessage("Prusti server is ready.");
+                    verificationStatus.text = "Prusti server is ready.";
                     server.setReady();
                 }
             },
