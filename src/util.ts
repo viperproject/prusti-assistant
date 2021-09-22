@@ -31,20 +31,41 @@ export function userError(message: string, restart = false, statusBar?: vscode.S
         statusBar.text = message;
     }
     if (restart) {
-        userErrorPopup(message, "Restart Now", () => {
-            vscode.commands.executeCommand("workbench.action.reloadWindow")
-                .then(undefined, err => log(`Error: ${err}`));
-        });
+        userErrorPopup(
+            message,
+            "Restart Now",
+            () => {
+                vscode.commands.executeCommand("workbench.action.reloadWindow")
+                    .then(undefined, err => log(`Error: ${err}`));
+            },
+            statusBar
+        );
     } else {
         vscode.window.showErrorMessage(message)
             .then(undefined, err => log(`Error: ${err}`));
     }
 }
 
-export function userErrorPopup(message: string, actionLabel: string, action: () => void): void {
+export function userErrorPopup(message: string, actionLabel: string, action: () => void, statusBar?: vscode.StatusBarItem): void {
     log(message);
-    vscode.window.setStatusBarMessage(message);
+    if (statusBar) {
+        statusBar.text = message;
+    }
     vscode.window.showErrorMessage(message, actionLabel)
+        .then(selection => {
+            if (selection === actionLabel) {
+                action();
+            }
+        })
+        .then(undefined, err => log(`Error: ${err}`));
+}
+
+export function userInfoPopup(message: string, actionLabel: string, action: () => void, statusBar?: vscode.StatusBarItem): void {
+    log(message);
+    if (statusBar) {
+        statusBar.text = message;
+    }
+    vscode.window.showInformationMessage(message, actionLabel)
         .then(selection => {
             if (selection === actionLabel) {
                 action();
