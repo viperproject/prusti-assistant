@@ -16,3 +16,4 @@ log
 nll-facts/
 report.csv
 *.log
+target/

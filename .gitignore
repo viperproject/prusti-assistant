@@ -12,6 +12,7 @@ coverage/
 log/
 nll-facts/
 report.csv
+target/
 
 # JVM core dump
 hs_err_pid*.log
