@@ -121,7 +121,7 @@ export function spawn(
     function killProc() {
         if (!proc.killed) {
             // TODO: Try with SIGTERM before.
-            proc.kill("SIGINT");
+            proc.kill("SIGKILL");
         } else {
             log(`Proc ${proc.pid} has already been killed.`);
         }
