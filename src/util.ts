@@ -120,7 +120,7 @@ export function spawn(
     // Register destructor
     function killProc() {
         if (!proc.killed) {
-            proc.kill();
+            proc.kill("SIGINT");
         } else {
             log(`Proc ${proc.pid} has already been killed.`);
         }
