@@ -61,3 +61,9 @@ This extension automatically provides inline diagnostics for Prusti errors.
 ### Snippets
 
 Basic code-completion snippets are provided for Prusti annotations.
+
+## Troubleshooting
+
+### Incompatible version of rustc
+
+If after an upgrade you get the error "found crate `[name]` compiled by an incompatible version of rustc" while verifying a crate, run `cargo clean` or manually delete the `target` folder. Then, rerun Prusti.

@@ -19,33 +19,34 @@ async function main() {
 
     // Download VS Code, unzip it and run the integration test
     console.info("Reading VS Code version...");
-    const vscode_version = fs.readFileSync(path.join(DATA_ROOT, "vscode-version")).toString().trim();
-    console.info(`Tests will use VS Code version '${vscode_version}'`);
+    const vscodeVersion = fs.readFileSync(path.join(DATA_ROOT, "vscode-version")).toString().trim();
+    console.info(`Tests will use VS Code version '${vscodeVersion}'`);
     console.info("Reading list of settings...");
-    const settings_list = fs.readdirSync(path.join(DATA_ROOT, "settings")).sort();
-    assert(settings_list.length > 0, "There are no settings to test");
+    const settingsList = fs.readdirSync(path.join(DATA_ROOT, "settings")).sort();
+    assert(settingsList.length > 0, "There are no settings to test");
 
     let firstIteration = true;
-    for (const settings_file of settings_list) {
+    for (const settingsFile of settingsList) {
         if (!firstIteration) {
             // Workaround for a weird "exit code 55" error that happens on
             // Mac OS when starting a new vscode instance immediately after
             // closing an old one.
             await new Promise(resolve => setTimeout(resolve, 5000));
         }
-        console.info(`Testing with settings '${settings_file}'...`);
+        console.info(`Testing with settings '${settingsFile}'...`);
         const tmpWorkspace = tmp.dirSync({ unsafeCleanup: true });
         try {
             // Prepare the workspace with the settings
-            const settings_path = path.join(DATA_ROOT, "settings", settings_file);
-            const workspace_vscode_path = path.join(tmpWorkspace.name, ".vscode")
-            const workspace_settings_path = path.join(workspace_vscode_path, "settings.json")
-            fs.mkdirSync(workspace_vscode_path);
-            fs.copyFileSync(settings_path, workspace_settings_path)
-            
+            console.info(`Using temporary workspace '${tmpWorkspace.name}'`);
+            const settingsPath = path.join(DATA_ROOT, "settings", settingsFile);
+            const workspaceVSCodePath = path.join(tmpWorkspace.name, ".vscode")
+            const workspaceSettingsPath = path.join(workspaceVSCodePath, "settings.json")
+            fs.mkdirSync(workspaceVSCodePath);
+            fs.copyFileSync(settingsPath, workspaceSettingsPath);
+
             // Run the tests in the workspace
             await runTests({
-                version: vscode_version,
+                version: vscodeVersion,
                 extensionDevelopmentPath,
                 extensionTestsPath,
                 extensionTestsEnv: process.env,

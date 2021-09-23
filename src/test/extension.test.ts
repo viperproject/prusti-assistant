@@ -1,3 +1,4 @@
+import * as assert from "assert";
 import * as vscode from "vscode";
 import * as path from "path";
 import * as glob from "glob";
@@ -8,10 +9,14 @@ import * as extension from "../extension"
 
 const PROJECT_ROOT = path.join(__dirname, "..", "..");
 const DATA_ROOT = path.join(PROJECT_ROOT, "src", "test", "data");
-const ASSERT_TRUE = path.join("programs", "assert_true.rs");
 
-function log(msg: string) {
-    console.log("[test] " + msg);
+function baseDirectory(fsPath: string): string {
+    return fsPath.split(path.sep)[0]
+}
+
+function workspacePath(): string {
+    assert.ok(vscode.workspace.workspaceFolders?.length);
+    return vscode.workspace.workspaceFolders[0].uri.fsPath;
 }
 
 /**
@@ -19,10 +24,9 @@ function log(msg: string) {
  *
  * @param fileName
  */
-function openFile(fileName: string): Promise<vscode.TextDocument> {
+function openFile(filePath: string): Promise<vscode.TextDocument> {
     return new Promise((resolve, reject) => {
-        const filePath = path.join(DATA_ROOT, fileName);
-        log("Open " + filePath);
+        console.log("Open " + filePath);
         vscode.workspace.openTextDocument(filePath).then(document => {
             vscode.window.showTextDocument(document).then(() => {
                 resolve(document);
@@ -33,8 +37,14 @@ function openFile(fileName: string): Promise<vscode.TextDocument> {
 
 describe("Extension", () => {
     before(async () => {
+        // Prepare the workspace
+        for (const dirName of ["crates", "programs"]) {
+            const srcPath = path.join(DATA_ROOT, dirName);
+            const dstPath = path.join(workspacePath(), dirName);
+            await vscode.workspace.fs.copy(vscode.Uri.file(srcPath), vscode.Uri.file(dstPath));
+        }
         // Wait until the extension is active
-        await openFile(ASSERT_TRUE);
+        await openFile(path.join(workspacePath(), "programs", "assert_true.rs"));
         await state.waitExtensionActivation();
     });
 
@@ -47,23 +57,25 @@ describe("Extension", () => {
 
     it("can update Prusti", async () => {
         // tests are run serially, so nothing will run & break while we're updating
-        await openFile(ASSERT_TRUE);
+        await openFile(path.join(workspacePath(), "programs", "assert_true.rs"));
         await vscode.commands.executeCommand("prusti-assistant.update");
     });
 
-    const programs: Array<string> = glob.sync("programs/**.rs", { cwd: DATA_ROOT });
-    console.log(`Creating tests for ${programs.length} standalone programs`);
-    expect(programs.length).to.be.greaterThan(3);
+    const programs: Array<string> = glob.sync("**/*.rs.json", { cwd: DATA_ROOT })
+        .map(filePath => filePath.replace(/\.json$/, ""));
+    console.log(`Creating tests for ${programs.length} standalone programs: ${programs}`);
+    assert.ok(programs.length >= 3);
     programs.forEach(program => {
         it(`reports expected diagnostics on ${program}`, async () => {
-            const document = await openFile(program);
+            const programPath = path.join(workspacePath(), program);
+            const document = await openFile(programPath);
             await vscode.commands.executeCommand("prusti-assistant.verify");
             const diagnostics = vscode.languages.getDiagnostics(document.uri);
-            const extectedData = await fs.readFile(path.join(DATA_ROOT, program + ".json"), "utf-8");
+            const extectedData = await fs.readFile(programPath + ".json", "utf-8");
             const exprected = JSON.parse(extectedData) as [{relatedInformation: [ { location: { uri: { path: string } } }]}];
             exprected.forEach(d => {
                 (d.relatedInformation || []).forEach(r => {
-                    r.location.uri = vscode.Uri.file(path.join(DATA_ROOT, r.location.uri.path));
+                    r.location.uri = vscode.Uri.file(path.join(workspacePath(), r.location.uri.path));
                 })
             });
             expect(diagnostics).to.deep.equal(exprected);
