@@ -1,6 +1,7 @@
 import * as util from "./util";
 import * as config from "./config";
 import * as path from "path";
+import * as fs from "fs-extra";
 import { PrustiLocation } from "./dependencies";
 
 export async function hasPrerequisites(): Promise<[boolean, string]> {
@@ -83,4 +84,11 @@ export async function checkPrusti(prusti: PrustiLocation): Promise<[boolean, str
         return [false, msg];
     }
     return [true, ""];
+}
+
+export async function isOutdated(prusti: PrustiLocation, numDays = 30): Promise<boolean> {
+    // TODO: Lookup if there actually is a more recent version to download.
+    const stats = await fs.stat(prusti.rustToolchainFile().path());
+    const expiry = new Date(new Date().setDate(new Date().getDate() - numDays)).getTime();
+    return stats.ctime.getTime() < expiry;
 }

@@ -44,6 +44,10 @@ export function localPrustiPath(): string {
     return config().get(localPrustiPathKey, "");
 }
 
+export function checkForUpdates(): boolean {
+    return config().get("checkForUpdates", true);
+}
+
 export function verifyOnSave(): boolean {
     return config().get("verifyOnSave", true);
 }

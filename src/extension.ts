@@ -11,6 +11,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     util.log("Activate Prusti Assistant");
     const verifyProgramCommand = "prusti-assistant.verify";
     const killAllCommand = "prusti-assistant.killAll";
+    const updateCommand = "prusti-assistant.update";
 
     // Verification status
     const verificationStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
@@ -48,6 +49,31 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         util.log("Prusti checks completed.");
     }
 
+    // Update dependencies on command
+    context.subscriptions.push(
+        vscode.commands.registerCommand(updateCommand, async () => {
+            await installDependencies(context, true, verificationStatus);
+        })
+    );
+
+    // Check for updates
+    if (config.checkForUpdates()) {
+        util.log("Checking for updates...");
+        if (await checks.isOutdated(prusti!)) {
+            util.log("Prusti is outdated.");
+            util.userInfoPopup(
+                "The Prusti verifier is outdated.",
+                "Download Update",
+                () => {
+                    vscode.commands.executeCommand(updateCommand)
+                        .then(undefined, err => util.log(`Error: ${err}`));
+                }
+            );
+        } else {
+            util.log("Prusti is up-to-date.");
+        }
+    }
+
     // Verify on click
     const verifyProgramButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 12);
     verifyProgramButton.command = verifyProgramCommand;
@@ -66,13 +92,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // Prepare the server
     server.registerCrashHandler(context, verificationStatus);
-
-    // Update dependencies on command
-    context.subscriptions.push(
-        vscode.commands.registerCommand("prusti-assistant.update", async () => {
-            await installDependencies(context, true, verificationStatus);
-        })
-    );
 
     // Restart the server on command
     context.subscriptions.push(

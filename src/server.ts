@@ -38,7 +38,8 @@ export function registerCrashHandler(context: vscode.ExtensionContext, verificat
                 ).catch(
                     err => util.log(`Error: ${err}`)
                 );
-            }
+            },
+            verificationStatus
         );
     }).catch(
         err => util.log(`Error: ${err}`)

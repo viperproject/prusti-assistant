@@ -2,7 +2,7 @@
     "name": "prusti-assistant",
     "displayName": "Prusti Assistant",
     "description": "Verify Rust programs with the Prusti verifier.",
-    "version": "0.7.0",
+    "version": "0.7.1",
     "publisher": "viper-admin",
     "repository": {
         "type": "git",
@@ -72,6 +72,11 @@
                         "A local build of Prusti, specified via localPrustiPath."
                     ],
                     "description": "Specifies from which channel Prusti builds are downloaded."
+                },
+                "prusti-assistant.checkForUpdates": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Specifies if Prusti should check for updates at startup."
                 },
                 "prusti-assistant.localPrustiPath": {
                     "type": "string",
