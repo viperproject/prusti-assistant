@@ -2,6 +2,7 @@ import * as childProcess from "child_process";
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
+import * as treeKill from "tree-kill";
 
 export function userInfo(message: string, statusBar?: vscode.StatusBarItem): void {
     log(message);
@@ -115,15 +116,27 @@ export function spawn(
 
     const start = process.hrtime();
     const proc = childProcess.spawn(cmd, args, options);
+    const status: { killed: boolean } = { killed: false };
     log(`Spawned PID: ${proc.pid}`);
 
     // Register destructor
     function killProc() {
-        if (!proc.killed) {
+        if (!status.killed) {
+            status.killed = true;
             // TODO: Try with SIGTERM before.
-            proc.kill("SIGINT");
+            treeKill(proc.pid, "SIGKILL", (err) => {
+                if (err) {
+                    log(`Failed to kill process tree of ${proc.pid}: ${err}`);
+                    const succeeded = proc.kill("SIGKILL");
+                    if (!succeeded) {
+                        log(`Failed to kill process ${proc}.`);
+                    }
+                } else {
+                    log(`Process ${proc.pid} has been killed successfully.`);
+                }
+            });
         } else {
-            log(`Proc ${proc.pid} has already been killed.`);
+            log(`Process ${proc.pid} has already been killed.`);
         }
     }
     if (destructors) {
