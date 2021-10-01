@@ -9,6 +9,8 @@ Prusti Assistant
 
 This Visual Studio Code extension provides interactive IDE features for verifying Rusti programs with the [Prusti verifier](https://github.com/viperproject/prusti-dev).
 
+For advanced use cases, consider switching to the [command-line version of Prusti](https://github.com/viperproject/prusti-dev).
+
 ## Requirements
 
 In order to use this extension, please install the following components:
