@@ -52,7 +52,7 @@ export async function checkPrusti(prusti: PrustiLocation): Promise<[boolean, str
         console.error(err);
         util.log(`Error: ${err}`);
         const msg = (
-            "[Prusti] Could not run Z3. Please try updating the dependencies, " +
+            "[Prusti] Could not run Z3. Please try updating the verifier, " +
             "then restart the IDE."
         );
         return [false, msg];
@@ -65,7 +65,7 @@ export async function checkPrusti(prusti: PrustiLocation): Promise<[boolean, str
         util.log("Could not run prusti-rustc");
         util.log(`Error: ${err}`);
         const msg = (
-            "Could not run Prusti. Please try updating the dependencies, " +
+            "Could not run Prusti. Please try updating the verifier, " +
             "then restart the IDE."
         );
         return [false, msg];
@@ -78,7 +78,7 @@ export async function checkPrusti(prusti: PrustiLocation): Promise<[boolean, str
         util.log("Could not run cargo-prusti");
         util.log(`Error: ${err}`);
         const msg = (
-            "Could not run Prusti. Please try updating the dependencies, " +
+            "Could not run Prusti. Please try updating the verifier, " +
             "then restart the IDE."
         );
         return [false, msg];
