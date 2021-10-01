@@ -86,9 +86,13 @@ export async function checkPrusti(prusti: PrustiLocation): Promise<[boolean, str
     return [true, ""];
 }
 
+// Check if Prusti is older than numDays or is older than the VS Code extension.
 export async function isOutdated(prusti: PrustiLocation, numDays = 30): Promise<boolean> {
-    // TODO: Lookup if there actually is a more recent version to download.
-    const stats = await fs.stat(prusti.rustToolchainFile().path());
-    const expiry = new Date(new Date().setDate(new Date().getDate() - numDays)).getTime();
-    return stats.ctime.getTime() < expiry;
+    // TODO: Lookup on GitHub if there actually is a more recent version to download.
+    const prustiDownloadDate = (await fs.stat(prusti.rustToolchainFile().path())).ctime.getTime();
+    const pastNumDays = new Date(new Date().setDate(new Date().getDate() - numDays)).getTime();
+    const olderThanNumDays = prustiDownloadDate < pastNumDays;
+    const extensionDownloadDate = (await fs.stat(__filename)).ctime.getTime();
+    const olderThanExtension = prustiDownloadDate < extensionDownloadDate;
+    return olderThanNumDays || olderThanExtension;
 }

@@ -35,6 +35,8 @@ In order to use this extension, please install the following components:
 
 To update Prusti, run the command `Prusti: update verifier` in the command palette.
 
+If something fails, check the "Troubleshooting" section below.
+
 ## Features
 
 ### Commands
@@ -64,6 +66,11 @@ Basic code-completion snippets are provided for Prusti annotations.
 
 ## Troubleshooting
 
-### Incompatible version of rustc
+If Prusti fails to run, you can inspect Prusti's log from VS Code (View -> Output -> Prusti Assistant ...) and see if one of the following solutions applies to you.
 
-If after an upgrade you get the error "found crate `[name]` compiled by an incompatible version of rustc" while verifying a crate, run `cargo clean` or manually delete the `target` folder. Then, rerun Prusti.
+| Problem | Solution |
+|---------|----------|
+| `error[E0514]: found crate 'cfg_if' compiled by an incompatible version of rustc` | There is a conflict between Prusti and a previous Cargo compilation. Run `cargo clean` or manually delete the `target` folder. Then, rerun Prusti. |
+| `error: the 'cargo' binary, normally provided by the 'cargo' component, is not applicable to the 'nightly-2021-09-20-x86_64-unknown-linux-gnu' toolchain` <br/> or <br/> `error[E0463]: can't find crate for std` <br/> or <br/> `error[E0463]: can't find crate for core` | The Rust toolchain installed by Rustup is probably corrupted (see issue [rustup/#2417](https://github.com/rust-lang/rustup/issues/2417)). [Uninstall](https://stackoverflow.com/questions/42322879/how-to-remove-rust-compiler-toolchains-with-rustup) the nightly toolchain mentioned in the error (or all installed nightly toolchains). Then, rerun Prusti. |
+
+Thanks to @Pointerbender for reporting issues and suggesting solutions!
