@@ -18,7 +18,4 @@ coverage:
       default:
         target: 30
         threshold: 0.10
-    patch:
-      default:
-        target: 30
-        threshold: 0.10
+    patch: off
