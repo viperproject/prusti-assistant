@@ -597,6 +597,7 @@ export class DiagnosticsManager {
         const escapedFileName = path.basename(targetPath).replace("$", "\\$");
         this.verificationStatus.text = `$(sync~spin) Verifying ${target} '${escapedFileName}'...`;
 
+        let crashed = false;
         const verificationDiagnostics = new VerificationDiagnostics();
         let durationSecMsg: string | null = null;
         try {
@@ -610,14 +611,8 @@ export class DiagnosticsManager {
             verificationDiagnostics.addAll(diagnostics);
             durationSecMsg = (duration[0] + duration[1] / 1e9).toFixed(1);
             if (status === VerificationStatus.Crash || (status === VerificationStatus.Errors && !verificationDiagnostics.hasErrors())) {
-                verificationDiagnostics.add({
-                    file_path: targetPath,
-                    diagnostic: new vscode.Diagnostic(
-                        dummyRange(),
-                        "Prusti encountered an error. See other reported errors and the log (View -> Output -> Prusti Assistant ...) for more details.",
-                        vscode.DiagnosticSeverity.Error
-                    )
-                });
+                crashed = true;
+                util.userError("Prusti encountered an error. See other reported errors and the log (View -> Output -> Prusti Assistant ...) for more details.");
             }
         } catch (err) {
             util.log(`Error: ${err}`);
@@ -625,14 +620,8 @@ export class DiagnosticsManager {
             if (err instanceof Error) {
                 errorMessage = err.message ?? err.toString();
             }
-            verificationDiagnostics.add({
-                file_path: targetPath,
-                diagnostic: new vscode.Diagnostic(
-                    dummyRange(),
-                    `Unexpected error: ${errorMessage}. See the log (View -> Output -> Prusti Assistant ...) for more details.`,
-                    vscode.DiagnosticSeverity.Error
-                )
-            });
+            crashed = true;
+            util.userError(`Prusti terminated with an unexpected error: ${errorMessage}. See the log (View -> Output -> Prusti Assistant ...) for more details.`);
         }
 
         if (currentRun != this.runCount) {
@@ -641,7 +630,10 @@ export class DiagnosticsManager {
             // Render diagnostics
             this.killAllButton.hide();
             verificationDiagnostics.renderIn(this.target);
-            if (verificationDiagnostics.hasErrors()) {
+            if (crashed) {
+                this.verificationStatus.text = `$(error) Verification of ${target} '${escapedFileName}' failed with an unexpected error`;
+                this.verificationStatus.command = "workbench.action.output.toggleOutput";
+            } else if (verificationDiagnostics.hasErrors()) {
                 const counts = verificationDiagnostics.countsBySeverity();
                 const errors = counts.get(vscode.DiagnosticSeverity.Error);
                 const noun = errors === 1 ? "error" : "errors";
