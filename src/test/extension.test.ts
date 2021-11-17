@@ -72,13 +72,25 @@ describe("Extension", () => {
             await vscode.commands.executeCommand("prusti-assistant.verify");
             const diagnostics = vscode.languages.getDiagnostics(document.uri);
             const extectedData = await fs.readFile(programPath + ".json", "utf-8");
-            const exprected = JSON.parse(extectedData) as [{relatedInformation: [ { location: { uri: { path: string } } }]}];
-            exprected.forEach(d => {
-                (d.relatedInformation || []).forEach(r => {
-                    r.location.uri = vscode.Uri.file(path.join(workspacePath(), r.location.uri.path));
-                })
-            });
-            expect(diagnostics).to.deep.equal(exprected);
+            type Diagnostics = [{relatedInformation: [ { location: { uri: { path: string } } }]}];
+            const exprected = JSON.parse(extectedData) as Diagnostics | [Diagnostics];
+            function patchUri(toPatch: Diagnostics) {
+                toPatch.forEach(d => {
+                    (d.relatedInformation || []).forEach(r => {
+                        r.location.uri = vscode.Uri.file(path.join(workspacePath(), r.location.uri.path));
+                    })
+                });
+            }
+            // The LatestDev and LatestRelease versions migh report slightly different diagnostics.
+            if (exprected && Array.isArray(exprected[0])) {
+                const exprectedAlternatives = exprected as [Diagnostics];
+                exprectedAlternatives.forEach(alternative => patchUri(alternative));
+                expect(exprectedAlternatives).to.deep.contain(diagnostics);
+            } else {
+                const exprectedDiagnostics = exprected as Diagnostics;
+                patchUri(exprectedDiagnostics);
+                expect(exprectedDiagnostics).to.deep.equal(diagnostics);
+            }
         });
     });
 
