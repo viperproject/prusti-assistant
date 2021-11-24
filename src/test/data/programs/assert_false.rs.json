@@ -1,64 +1,31 @@
 [
-    [
-        {
-            "message": "[Prusti: verification error] the asserted expression might not hold",
-            "range": {
-                "_end": {
-                    "_character": 18,
-                    "_line": 1
-                },
-                "_start": {
-                    "_character": 4,
-                    "_line": 1
-                }
+    {
+        "message": "[Prusti: verification error] the asserted expression might not hold",
+        "range": {
+            "_end": {
+                "_character": 18,
+                "_line": 1
             },
-            "relatedInformation": [],
-            "severity": 0
+            "_start": {
+                "_character": 4,
+                "_line": 1
+            }
         },
-        {
-            "message": "aborting due to previous error",
-            "range": {
-                "_end": {
-                    "_character": 0,
-                    "_line": 0
-                },
-                "_start": {
-                    "_character": 0,
-                    "_line": 0
-                }
+        "relatedInformation": [],
+        "severity": 0
+    },
+    {
+        "message": "aborting due to previous error",
+        "range": {
+            "_end": {
+                "_character": 0,
+                "_line": 0
             },
-            "severity": 0
-        }
-    ],
-    [
-        {
-            "message": "[Prusti: verification error] the asserted expression might not hold",
-            "range": {
-                "_end": {
-                    "_character": 19,
-                    "_line": 1
-                },
-                "_start": {
-                    "_character": 4,
-                    "_line": 1
-                }
-            },
-            "relatedInformation": [],
-            "severity": 0
+            "_start": {
+                "_character": 0,
+                "_line": 0
+            }
         },
-        {
-            "message": "aborting due to previous error",
-            "range": {
-                "_end": {
-                    "_character": 0,
-                    "_line": 0
-                },
-                "_start": {
-                    "_character": 0,
-                    "_line": 0
-                }
-            },
-            "severity": 0
-        }
-    ]
+        "severity": 0
+    }
 ]

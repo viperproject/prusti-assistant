@@ -38,5 +38,19 @@
             }
         ],
         "severity": 0
+    },
+    {
+        "message": "aborting due to previous error",
+        "range": {
+            "_end": {
+                "_character": 0,
+                "_line": 0
+            },
+            "_start": {
+                "_character": 0,
+                "_line": 0
+            }
+        },
+        "severity": 0
     }
 ]
