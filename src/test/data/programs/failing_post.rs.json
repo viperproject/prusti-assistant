@@ -4,11 +4,11 @@
         "range": {
             "_end": {
                 "_character": 35,
-                "_line": 7
+                "_line": 9
             },
             "_start": {
                 "_character": 10,
-                "_line": 7
+                "_line": 9
             }
         },
         "relatedInformation": [
@@ -17,11 +17,11 @@
                     "range": {
                         "_end": {
                             "_character": 20,
-                            "_line": 8
+                            "_line": 10
                         },
                         "_start": {
                             "_character": 0,
-                            "_line": 8
+                            "_line": 10
                         }
                     },
                     "uri": {
@@ -37,6 +37,20 @@
                 "message": "the error originates here"
             }
         ],
+        "severity": 0
+    },
+    {
+        "message": "aborting due to previous error",
+        "range": {
+            "_end": {
+                "_character": 0,
+                "_line": 0
+            },
+            "_start": {
+                "_character": 0,
+                "_line": 0
+            }
+        },
         "severity": 0
     }
 ]
