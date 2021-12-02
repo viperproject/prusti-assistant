@@ -1,6 +1,101 @@
 [
     {
         "filter": {
+            "os": "darwin",
+            "buildChannel": "LatestRelease"
+        },
+        "diagnostics": [
+            {
+                "message": "[Prusti: verification error] precondition might not hold.",
+                "range": {
+                    "_end": {
+                        "_character": 11,
+                        "_line": 8
+                    },
+                    "_start": {
+                        "_character": 4,
+                        "_line": 8
+                    }
+                },
+                "relatedInformation": [
+                    {
+                        "location": {
+                            "range": {
+                                "_end": {
+                                    "_character": 12,
+                                    "_line": 2
+                                },
+                                "_start": {
+                                    "_character": 11,
+                                    "_line": 2
+                                }
+                            },
+                            "uri": {
+                                "_formatted": null,
+                                "_fsPath": null,
+                                "authority": "",
+                                "fragment": "",
+                                "path": "crates/contracts/src/main.rs",
+                                "query": "",
+                                "scheme": "file"
+                            }
+                        },
+                        "message": "the failing assertion is here"
+                    }
+                ],
+                "severity": 0
+            }
+        ]
+    },
+    {
+        "filter": {
+            "os": "darwin"
+        },
+        "diagnostics": [
+            {
+                "message": "[Prusti: verification error] precondition might not hold.",
+                "range": {
+                    "_end": {
+                        "_character": 11,
+                        "_line": 8
+                    },
+                    "_start": {
+                        "_character": 4,
+                        "_line": 8
+                    }
+                },
+                "relatedInformation": [
+                    {
+                        "location": {
+                            "range": {
+                                "_end": {
+                                    "_character": 18,
+                                    "_line": 2
+                                },
+                                "_start": {
+                                    "_character": 11,
+                                    "_line": 2
+                                }
+                            },
+                            "uri": {
+                                "_formatted": null,
+                                "_fsPath": null,
+                                "authority": "",
+                                "fragment": "",
+                                "path": "crates/contracts/src/main.rs",
+                                "query": "",
+                                "scheme": "file"
+                            }
+                        },
+                        "message": "the failing assertion is here"
+                    }
+                ],
+                "severity": 0
+            }
+        ]
+    },
+    {
+        "filter": {
             "buildChannel": "LatestRelease"
         },
         "diagnostics" : [
