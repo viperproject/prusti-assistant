@@ -113,7 +113,7 @@ describe("Extension", () => {
                     if (key == "os") {
                         actualValue = os.platform();
                     } else {
-                        actualValue = config.config().get(key, "");
+                        actualValue = config.config().get(key, "undefined");
                     }
                     if (value != actualValue) {
                         console.log(
