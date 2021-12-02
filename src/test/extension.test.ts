@@ -4,8 +4,10 @@ import * as path from "path";
 import * as glob from "glob";
 import { expect } from "chai";
 import * as fs from "fs-extra";
+import * as config from "../config";
 import * as state from "../state";
 import * as extension from "../extension"
+import * as os from 'os';
 
 const PROJECT_ROOT = path.join(__dirname, "..", "..");
 const DATA_ROOT = path.join(PROJECT_ROOT, "src", "test", "data");
@@ -72,25 +74,71 @@ describe("Extension", () => {
             await vscode.commands.executeCommand("prusti-assistant.verify");
             const diagnostics = vscode.languages.getDiagnostics(document.uri);
             const extectedData = await fs.readFile(programPath + ".json", "utf-8");
-            type Diagnostics = [{relatedInformation: [ { location: { uri: { path: string } } }]}];
-            const exprected = JSON.parse(extectedData) as Diagnostics | [Diagnostics];
-            function patchUri(toPatch: Diagnostics) {
-                toPatch.forEach(d => {
+            type Diagnostics = [
+                { relatedInformation: [{ location: { uri: { path: string } } }] }
+            ];
+            type MultiDiagnostics = [
+                { filter?: [string: string], diagnostics: Diagnostics }
+            ];
+            const expected = JSON.parse(extectedData) as Diagnostics | MultiDiagnostics;
+            let expectedMultiDiagnostics: MultiDiagnostics;
+            if (!expected.length || !("diagnostics" in expected[0])) {
+                expectedMultiDiagnostics = [
+                    { "diagnostics": expected as Diagnostics }
+                ];
+            } else {
+                expectedMultiDiagnostics = expected as MultiDiagnostics;
+            }
+            // Patch URI
+            expectedMultiDiagnostics.forEach(alternative => {
+                alternative.diagnostics.forEach(d => {
                     (d.relatedInformation || []).forEach(r => {
-                        r.location.uri = vscode.Uri.file(path.join(workspacePath(), r.location.uri.path));
+                        r.location.uri = vscode.Uri.file(
+                            path.join(workspacePath(), r.location.uri.path)
+                        );
                     })
                 });
+            });
+            // Different build-channel or OS migh report slightly different diagnostics.
+            let expectedDiagnostics = expectedMultiDiagnostics.find((alternative, index) => {
+                if (!alternative.filter) {
+                    console.log(
+                        `Find expected diagnostics: using default ` +
+                        `alternative ${index}.`
+                    );
+                    return true;
+                }
+                for (const [key, value] of Object.entries(alternative.filter)) {
+                    let actualValue: string
+                    if (key == "os") {
+                        actualValue = os.platform();
+                    } else {
+                        actualValue = config.config().get(key, "undefined");
+                    }
+                    if (value != actualValue) {
+                        console.log(
+                            `Find expected diagnostics: alternative ${index} ` +
+                            `requires '${key}' to be '${value}', but its ` +
+                            `value is '${actualValue}'.`
+                        );
+                        return false;
+                    }
+                }
+                console.log(
+                    `Find expected diagnostics: using alternative ${index}.`
+                );
+                return true
+            });
+            if (!expectedDiagnostics) {
+                console.log(
+                    "Find expected diagnostics: found no matching alternative."
+                );
+                expectedDiagnostics = {
+                    "diagnostics": [] as unknown as Diagnostics
+                };
             }
-            // The LatestDev and LatestRelease versions migh report slightly different diagnostics.
-            if (exprected && Array.isArray(exprected[0])) {
-                const exprectedAlternatives = exprected as [Diagnostics];
-                exprectedAlternatives.forEach(alternative => patchUri(alternative));
-                expect(exprectedAlternatives).to.deep.contain(diagnostics);
-            } else {
-                const exprectedDiagnostics = exprected as Diagnostics;
-                patchUri(exprectedDiagnostics);
-                expect(exprectedDiagnostics).to.deep.equal(diagnostics);
-            }
+            // Compare
+            expect(expectedDiagnostics.diagnostics).to.deep.equal(diagnostics);
         });
     });
 

@@ -57,7 +57,7 @@ export function verifyOnOpen(): boolean {
 }
 
 export function reportErrorsOnly(): boolean {
-    return config().get("reportErrorsOnly", true);
+    return config().get("reportErrorsOnly", false);
 }
 
 // Avoid calling `findJavaHome()` each time.

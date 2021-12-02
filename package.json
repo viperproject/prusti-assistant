@@ -95,7 +95,7 @@
                 },
                 "prusti-assistant.reportErrorsOnly": {
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "description": "Specifies if only error messages should be reported, hiding compiler's warnings."
                 },
                 "prusti-assistant.javaHome": {
