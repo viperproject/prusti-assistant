@@ -82,7 +82,6 @@ describe("Extension", () => {
             ];
             const expected = JSON.parse(extectedData) as Diagnostics | MultiDiagnostics;
             let expectedMultiDiagnostics: MultiDiagnostics;
-            console.log("expected", expected);
             if (!expected.length || !("diagnostics" in expected[0])) {
                 expectedMultiDiagnostics = [
                     { "diagnostics": expected as Diagnostics }
