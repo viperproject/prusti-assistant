@@ -641,7 +641,7 @@ export class DiagnosticsManager {
                 this.verificationStatus.command = "workbench.action.problems.focus";
             } else if (verificationDiagnostics.hasWarnings()) {
                 const counts = verificationDiagnostics.countsBySeverity();
-                const warnings = counts.get(vscode.DiagnosticSeverity.Error);
+                const warnings = counts.get(vscode.DiagnosticSeverity.Warning);
                 const noun = warnings === 1 ? "warning" : "warnings";
                 this.verificationStatus.text = `$(warning) Verification of ${target} '${escapedFileName}' succeeded with ${warnings} ${noun} (${durationSecMsg} s)`;
                 this.verificationStatus.command = "workbench.action.problems.focus";
