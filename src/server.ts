@@ -115,6 +115,7 @@ export async function restart(context: vscode.ExtensionContext, verificationStat
                 PRUSTI_LOG_DIR: context.logPath,
                 RUST_BACKTRACE: "1",
                 RUST_LOG: "info",
+                PRUSTI_CACHE_PATH: util.getCachePath(context),
                 JAVA_HOME: (await config.javaHome())!.path,
             },
             onStdout: data => {

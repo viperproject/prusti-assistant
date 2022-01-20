@@ -52,6 +52,11 @@
                 "command": "prusti-assistant.restart-server",
                 "title": "restart Prusti server",
                 "category": "Prusti"
+            },
+            {
+                "command": "prusti-assistant.clear-cache",
+                "title": "clear verification cache",
+                "category": "Prusti"
             }
         ],
         "configuration": {

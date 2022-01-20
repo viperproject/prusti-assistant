@@ -4,6 +4,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as vvt from "vs-verification-toolbox";
 import * as dependencies from "./dependencies";
+import * as fs from 'fs';
 
 // ========================================================
 // JSON Schemas
@@ -549,6 +550,11 @@ export class VerificationDiagnostics {
                 return false;
             }
         }
+        /// Ignore non-error diagnostics without position information
+        if (diagnostic.diagnostic.severity !== vscode.DiagnosticSeverity.Error
+            && diagnostic.diagnostic.range.isEqual(new vscode.Range(0, 0, 0, 0))) {
+            return false;
+        }
         return true;
     }
 }
@@ -583,6 +589,15 @@ export class DiagnosticsManager {
     public killAll(): void {
         util.log(`Killing ${this.procDestructors.size} processes.`);
         this.procDestructors.forEach((kill) => kill());
+    }
+
+    public clearCache(context: vscode.ExtensionContext): void {
+        const cacheFile = util.getCachePath(context);
+        fs.unlink(cacheFile, (err) => {
+            if (err) {
+                util.log(`Failed to clear cache at "${cacheFile}". ${err}`);
+            }
+        })
     }
 
     public async verify(prusti: dependencies.PrustiLocation, serverAddress: string, targetPath: string, target: VerificationTarget): Promise<void> {

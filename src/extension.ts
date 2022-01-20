@@ -12,6 +12,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const verifyProgramCommand = "prusti-assistant.verify";
     const killAllCommand = "prusti-assistant.killAll";
     const updateCommand = "prusti-assistant.update";
+    const clearCacheCommand = "prusti-assistant.clear-cache";
 
     // Verification status
     const verificationStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
@@ -73,6 +74,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             util.log("Prusti is up-to-date.");
         }
     }
+
+    // Verify on click
+    const clearCacheButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 13);
+    clearCacheButton.command = clearCacheCommand;
+    clearCacheButton.text = "$(trash)";
+    clearCacheButton.tooltip = "Clear Prusti verification cache.";
+    clearCacheButton.show();
+    context.subscriptions.push(clearCacheButton);
 
     // Verify on click
     const verifyProgramButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 12);
@@ -141,8 +150,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Define verification function
     async function verify(document: vscode.TextDocument) {
         util.log(`Run verification on ${document.uri.fsPath}...`);
-        const projects = await util.findProjects();
-        const cratePath = projects.getParent(document.uri.fsPath);
+        const cratePath = await util.getCratePath(document.uri.fsPath);
 
         if (server.address === undefined) {
             // Just warn, as Prusti can run even without a server.
@@ -174,6 +182,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             );
         }
     }
+
+    // Verify on command
+    context.subscriptions.push(
+        vscode.commands.registerCommand(clearCacheCommand, async () => {
+            await server.restart(context, verificationStatus);
+            verificationManager.clearCache(context);
+        })
+    );
 
     // Verify on command
     context.subscriptions.push(
