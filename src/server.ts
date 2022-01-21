@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import * as http from "http";
 import * as util from "./util";
 import { prusti } from "./dependencies";
 import * as config from "./config";
@@ -55,8 +56,25 @@ export let address: string | undefined;
  * Stop the server.
  */
 export async function stop(): Promise<void> {
+    if (address !== undefined) {
+        const options = {
+          hostname: address.split(':')[0],
+          port: parseInt(address.split(':')[1], 10),
+          path: '/save',
+          method: 'POST',
+        }
+        const req = http.request(options, res => {
+          res.on('data', () => {
+            server.initiateStop();
+          })
+        })
+        req.on('error', () => {
+            server.initiateStop();
+        })
+        req.end()
+    }
+
     address = undefined;
-    server.initiateStop();
     await server.waitForStopped();
 }
 
