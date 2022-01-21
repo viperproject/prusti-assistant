@@ -591,13 +591,9 @@ export class DiagnosticsManager {
         this.procDestructors.forEach((kill) => kill());
     }
 
-    public clearCache(context: vscode.ExtensionContext): void {
-        const cacheFile = util.getCachePath(context);
-        fs.unlink(cacheFile, (err) => {
-            if (err) {
-                util.log(`Failed to clear cache at "${cacheFile}". ${err}`);
-            }
-        })
+    public async clearCache(context: vscode.ExtensionContext): Promise<void> {
+        const cacheFile = config.cachePath(context);
+        await fs.promises.unlink(cacheFile).catch(err => util.log(`Failed to clear cache at "${cacheFile}". ${err}`))
     }
 
     public async verify(prusti: dependencies.PrustiLocation, serverAddress: string, targetPath: string, target: VerificationTarget): Promise<void> {

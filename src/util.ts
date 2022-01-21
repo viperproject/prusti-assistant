@@ -254,7 +254,3 @@ export async function findProjects(): Promise<ProjectList> {
     const projects = await findProjects();
     return projects.getParent(file);
 }
-
-export function getCachePath(context: vscode.ExtensionContext): string {
-    return path.join(context.globalStoragePath, "cache.json")
-}

@@ -186,8 +186,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Verify on command
     context.subscriptions.push(
         vscode.commands.registerCommand(clearCacheCommand, async () => {
+            await server.stop();
+            await verificationManager.clearCache(context);
             await server.restart(context, verificationStatus);
-            verificationManager.clearCache(context);
         })
     );
 
