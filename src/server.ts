@@ -105,18 +105,31 @@ export async function restart(context: vscode.ExtensionContext, verificationStat
         return;
     }
 
+    let prustiServerCwd: string | undefined;
+    if (vscode.workspace.workspaceFolders !== undefined) {
+        prustiServerCwd = vscode.workspace.workspaceFolders[0].uri.path;
+        util.log(`Prusti server will be executed in '${prustiServerCwd}'`);
+    }
+
+    const prustiServerArgs = ["--port", "0"].concat(
+        config.extraPrustiServerArgs()
+    );
+    const prustiServerEnv = {
+        ...process.env,  // Needed to run Rustup
+        ...{
+            RUST_BACKTRACE: "1",
+            PRUSTI_LOG: "info",
+            JAVA_HOME: (await config.javaHome())!.path,
+        },
+        ...config.extraPrustiEnv(),
+    };
+
     server.initiateStart(
         prusti!.prustiServer,
-        ["--port", "0"],
+        prustiServerArgs,
         {
-            env: {
-                ...process.env,  // Needed e.g. to run Rustup
-                // Might not exist yet, but that's handled on the rust side
-                PRUSTI_LOG_DIR: context.logPath,
-                RUST_BACKTRACE: "1",
-                RUST_LOG: "info",
-                JAVA_HOME: (await config.javaHome())!.path,
-            },
+            cwd: prustiServerCwd,
+            env: prustiServerEnv,
             onStdout: data => {
                 serverChannel.append(`[stdout] ${data}`);
                 // Extract the server port from the output
