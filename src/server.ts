@@ -130,6 +130,7 @@ export async function restart(context: vscode.ExtensionContext, verificationStat
             env: prustiServerEnv,
             onStdout: data => {
                 serverChannel.append(`[stdout] ${data}`);
+                console.log(`[Prusti Server][stdout] ${data}`);
                 // Extract the server port from the output
                 if (address === undefined) {
                     const port = parseInt(data.toString().split("port: ")[1], 10);
@@ -141,6 +142,7 @@ export async function restart(context: vscode.ExtensionContext, verificationStat
             },
             onStderr: data => {
                 serverChannel.append(`[stderr] ${data}`);
+                console.log(`[Prusti Server][stderr] ${data}`);
             }
         }
     );
