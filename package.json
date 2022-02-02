@@ -55,7 +55,6 @@
             }
         ],
         "configuration": {
-            "type": "object",
             "title": "Prusti Assistant",
             "properties": {
                 "prusti-assistant.buildChannel": {
@@ -107,6 +106,42 @@
                     "type": "string",
                     "default": "",
                     "description": "Specifies the address of a Prusti server to use for verification. If not set, the extension will start up and manage its own server."
+                },
+                "prusti-assistant.extraPrustiEnv": {
+                    "type": "object",
+                    "properties": {
+                        "RUST_BACKTRACE": "true",
+                        "PRUSTI_LOG": "info"
+                    },
+                    "additionalProperties": { "type": "string" },
+                    "default": {},
+                    "description": "Specifies additional environment variables to be passed to all Prusti runs. Remember to restart the Prusti Server after modifying this setting."
+                },
+                "prusti-assistant.extraPrustiRustcArgs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [
+                        "--edition=2018"
+                    ],
+                    "description": "Specifies additional arguments to be passed to Prusti-Rustc. Used when verifying a Rust file that is not part of a crate."
+                },
+                "prusti-assistant.extraCargoPrustiArgs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [],
+                    "description": "Specifies additional arguments to be passed to Cargo-Prusti. Used when verifying a crate."
+                },
+                "prusti-assistant.extraPrustiServerArgs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [],
+                    "description": "Specifies additional arguments to be passed to the Prusti Server. Remember to restart the Prusti Server after modifying this setting."
                 }
             }
         }
@@ -149,7 +184,7 @@
         "rimraf": "^3.0.2",
         "ts-loader": "^9.0.0",
         "typescript": "^4.4.3",
-        "vsce": "^1.99.0",
+        "vsce": "^2.6.6",
         "webpack": "^5.53.0",
         "webpack-cli": "^4.8.0"
     },
