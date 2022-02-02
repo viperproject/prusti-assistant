@@ -107,7 +107,7 @@ export async function restart(context: vscode.ExtensionContext, verificationStat
 
     let prustiServerCwd: string | undefined;
     if (vscode.workspace.workspaceFolders !== undefined) {
-        prustiServerCwd = vscode.workspace.workspaceFolders[0].uri.path;
+        prustiServerCwd = vscode.workspace.workspaceFolders[0].uri.fsPath;
         util.log(`Prusti server will be executed in '${prustiServerCwd}'`);
     }
 
