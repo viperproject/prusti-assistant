@@ -79,11 +79,12 @@ const logChannel = vscode.window.createOutputChannel("Prusti Assistant");
 export function log(message: string): void {
     console.log(message);
     logChannel.appendLine(message);
-    trace(message);
+    traceChannel.appendLine(message);
 }
 
 const traceChannel = vscode.window.createOutputChannel("Prusti Assistant Trace");
 export function trace(message: string): void {
+    console.log(message);
     traceChannel.appendLine(message);
 }
 

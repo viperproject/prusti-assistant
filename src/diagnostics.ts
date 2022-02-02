@@ -359,20 +359,25 @@ enum VerificationStatus {
 async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation, rootPath: string, serverAddress: string, destructors: Set<util.KillFunction>): Promise<[Diagnostic[], VerificationStatus, util.Duration]> {
     // FIXME: Workaround for warning generation for libs.
     await removeDiagnosticMetadata(rootPath);
+    const cargoPrustiArgs = ["--message-format=json"].concat(
+        config.extraCargoPrustiArgs()
+    );
+    const cargoPrustiEnv = {
+        ...process.env,  // Needed to run Rustup
+        ...{
+            PRUSTI_SERVER_ADDRESS: serverAddress,
+            PRUSTI_QUIET: "true",
+            JAVA_HOME: (await config.javaHome())!.path,
+        },
+        ...config.extraPrustiEnv(),
+    };
     const output = await util.spawn(
         prusti.cargoPrusti,
-        ["--message-format=json"],
+        cargoPrustiArgs,
         {
             options: {
                 cwd: rootPath,
-                env: {
-                    ...process.env,  // Needed e.g. to run Rustup
-                    PRUSTI_SERVER_ADDRESS: serverAddress,
-                    RUST_BACKTRACE: "1",
-                    PRUSTI_LOG: "info",
-                    PRUSTI_QUIET: "true",
-                    JAVA_HOME: (await config.javaHome())!.path,
-                }
+                env: cargoPrustiEnv,
             }
         },
         destructors,
@@ -409,26 +414,29 @@ async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation, rootPa
  * @returns An array of diagnostics for the given rust project.
  */
 async function queryProgramDiagnostics(prusti: dependencies.PrustiLocation, programPath: string, serverAddress: string, destructors: Set<util.KillFunction>): Promise<[Diagnostic[], VerificationStatus, util.Duration]> {
-    // For backward compatibility
+    const prustiRustcArgs = [
+        "--crate-type=lib",
+        "--error-format=json",
+        programPath
+    ].concat(
+        config.extraPrustiRustcArgs()
+    );
+    const prustiRustcEnv = {
+        ...process.env,  // Needed to run Rustup
+        ...{
+            PRUSTI_SERVER_ADDRESS: serverAddress,
+            PRUSTI_QUIET: "true",
+            JAVA_HOME: (await config.javaHome())!.path,
+        },
+        ...config.extraPrustiEnv(),
+    };
     const output = await util.spawn(
         prusti.prustiRustc,
-        [
-            "--crate-type=lib",
-            "--error-format=json",
-            "--edition=2018",
-            programPath
-        ],
+        prustiRustcArgs,
         {
             options: {
                 cwd: path.dirname(programPath),
-                env: {
-                    ...process.env,  // Needed e.g. to run Rustup
-                    PRUSTI_SERVER_ADDRESS: serverAddress,
-                    RUST_BACKTRACE: "1",
-                    PRUSTI_LOG: "info",
-                    PRUSTI_QUIET: "true",
-                    JAVA_HOME: (await config.javaHome())!.path,
-                }
+                env: prustiRustcEnv,
             }
         },
         destructors
