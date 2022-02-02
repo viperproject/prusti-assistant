@@ -111,14 +111,12 @@ export async function restart(context: vscode.ExtensionContext, verificationStat
         util.log(`Prusti server will be executed in '${prustiServerCwd}'`);
     }
 
-    const prustiServerArgs = ["--port", "0"].concat(
+    const prustiServerArgs = ["--port=0"].concat(
         config.extraPrustiServerArgs()
     );
     const prustiServerEnv = {
         ...process.env,  // Needed to run Rustup
         ...{
-            RUST_BACKTRACE: "1",
-            PRUSTI_LOG: "info",
             JAVA_HOME: (await config.javaHome())!.path,
         },
         ...config.extraPrustiEnv(),

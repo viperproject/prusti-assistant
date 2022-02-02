@@ -366,8 +366,6 @@ async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation, rootPa
         ...process.env,  // Needed to run Rustup
         ...{
             PRUSTI_SERVER_ADDRESS: serverAddress,
-            RUST_BACKTRACE: "1",
-            PRUSTI_LOG: "info",
             PRUSTI_QUIET: "true",
             JAVA_HOME: (await config.javaHome())!.path,
         },
@@ -419,7 +417,6 @@ async function queryProgramDiagnostics(prusti: dependencies.PrustiLocation, prog
     const prustiRustcArgs = [
         "--crate-type=lib",
         "--error-format=json",
-        "--edition=2018",
         programPath
     ].concat(
         config.extraPrustiRustcArgs()
@@ -428,8 +425,6 @@ async function queryProgramDiagnostics(prusti: dependencies.PrustiLocation, prog
         ...process.env,  // Needed to run Rustup
         ...{
             PRUSTI_SERVER_ADDRESS: serverAddress,
-            RUST_BACKTRACE: "1",
-            PRUSTI_LOG: "info",
             PRUSTI_QUIET: "true",
             JAVA_HOME: (await config.javaHome())!.path,
         },

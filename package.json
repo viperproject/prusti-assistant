@@ -109,7 +109,10 @@
                 },
                 "prusti-assistant.extraPrustiEnv": {
                     "type": "object",
-                    "properties": {},
+                    "properties": {
+                        "RUST_BACKTRACE": "true",
+                        "PRUSTI_LOG": "info"
+                    },
                     "additionalProperties": { "type": "string" },
                     "default": {},
                     "description": "Specifies additional environment variables to be passed to all Prusti runs. Remember to restart the Prusti Server after modifying this setting."
@@ -119,7 +122,9 @@
                     "items": {
                         "type": "string"
                     },
-                    "default": [],
+                    "default": [
+                        "--edition=2018"
+                    ],
                     "description": "Specifies additional arguments to be passed to Prusti-Rustc. Used when verifying a Rust file that is not part of a crate."
                 },
                 "prusti-assistant.extraCargoPrustiArgs": {
