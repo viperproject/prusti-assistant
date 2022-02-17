@@ -1,1 +1,66 @@
-[]
+[
+    {
+        "message": "[unused_variables] unused variable: `unused`.",
+        "range": {
+            "_end": {
+                "_character": 14,
+                "_line": 1
+            },
+            "_start": {
+                "_character": 8,
+                "_line": 1
+            }
+        },
+        "relatedInformation": [
+            {
+                "location": {
+                    "range": {
+                        "_end": {
+                            "_character": 14,
+                            "_line": 1
+                        },
+                        "_start": {
+                            "_character": 8,
+                            "_line": 1
+                        }
+                    },
+                    "uri": {
+                        "_formatted": null,
+                        "_fsPath": null,
+                        "authority": "",
+                        "fragment": "",
+                        "path": "programs/notes.rs",
+                        "query": "",
+                        "scheme": "file"
+                    }
+                },
+                "message": "`#[warn(unused_variables)]` on by default"
+            },
+            {
+                "location": {
+                    "range": {
+                        "_end": {
+                            "_character": 14,
+                            "_line": 1
+                        },
+                        "_start": {
+                            "_character": 8,
+                            "_line": 1
+                        }
+                    },
+                    "uri": {
+                        "_formatted": null,
+                        "_fsPath": null,
+                        "authority": "",
+                        "fragment": "",
+                        "path": "programs/notes.rs",
+                        "query": "",
+                        "scheme": "file"
+                    }
+                },
+                "message": "if this is intentional, prefix it with an underscore"
+            }
+        ],
+        "severity": 1
+    }
+]

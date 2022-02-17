@@ -6,10 +6,74 @@
         },
         "diagnostics": [
             {
+                "message": "[unused_variables] unused variable: `unused`.",
+                "range": {
+                    "_end": {
+                        "_character": 22,
+                        "_line": 3
+                    },
+                    "_start": {
+                        "_character": 16,
+                        "_line": 3
+                    }
+                },
+                "relatedInformation": [
+                    {
+                        "location": {
+                            "range": {
+                                "_end": {
+                                    "_character": 22,
+                                    "_line": 3
+                                },
+                                "_start": {
+                                    "_character": 16,
+                                    "_line": 3
+                                }
+                            },
+                            "uri": {
+                                "_formatted": null,
+                                "_fsPath": null,
+                                "authority": "",
+                                "fragment": "",
+                                "path": "crates/contracts/src/main.rs",
+                                "query": "",
+                                "scheme": "file"
+                            }
+                        },
+                        "message": "`#[warn(unused_variables)]` on by default"
+                    },
+                    {
+                        "location": {
+                            "range": {
+                                "_end": {
+                                    "_character": 22,
+                                    "_line": 3
+                                },
+                                "_start": {
+                                    "_character": 16,
+                                    "_line": 3
+                                }
+                            },
+                            "uri": {
+                                "_formatted": null,
+                                "_fsPath": null,
+                                "authority": "",
+                                "fragment": "",
+                                "path": "crates/contracts/src/main.rs",
+                                "query": "",
+                                "scheme": "file"
+                            }
+                        },
+                        "message": "if this is intentional, prefix it with an underscore"
+                    }
+                ],
+                "severity": 1
+            },
+            {
                 "message": "[Prusti: verification error] precondition might not hold.",
                 "range": {
                     "_end": {
-                        "_character": 11,
+                        "_character": 14,
                         "_line": 8
                     },
                     "_start": {
@@ -53,10 +117,74 @@
         },
         "diagnostics": [
             {
+                "message": "[unused_variables] unused variable: `unused`.",
+                "range": {
+                    "_end": {
+                        "_character": 22,
+                        "_line": 3
+                    },
+                    "_start": {
+                        "_character": 16,
+                        "_line": 3
+                    }
+                },
+                "relatedInformation": [
+                    {
+                        "location": {
+                            "range": {
+                                "_end": {
+                                    "_character": 22,
+                                    "_line": 3
+                                },
+                                "_start": {
+                                    "_character": 16,
+                                    "_line": 3
+                                }
+                            },
+                            "uri": {
+                                "_formatted": null,
+                                "_fsPath": null,
+                                "authority": "",
+                                "fragment": "",
+                                "path": "crates/contracts/src/main.rs",
+                                "query": "",
+                                "scheme": "file"
+                            }
+                        },
+                        "message": "`#[warn(unused_variables)]` on by default"
+                    },
+                    {
+                        "location": {
+                            "range": {
+                                "_end": {
+                                    "_character": 22,
+                                    "_line": 3
+                                },
+                                "_start": {
+                                    "_character": 16,
+                                    "_line": 3
+                                }
+                            },
+                            "uri": {
+                                "_formatted": null,
+                                "_fsPath": null,
+                                "authority": "",
+                                "fragment": "",
+                                "path": "crates/contracts/src/main.rs",
+                                "query": "",
+                                "scheme": "file"
+                            }
+                        },
+                        "message": "if this is intentional, prefix it with an underscore"
+                    }
+                ],
+                "severity": 1
+            },
+            {
                 "message": "[Prusti: verification error] precondition might not hold.",
                 "range": {
                     "_end": {
-                        "_character": 11,
+                        "_character": 14,
                         "_line": 8
                     },
                     "_start": {
@@ -100,10 +228,74 @@
         },
         "diagnostics" : [
             {
+                "message": "[unused_variables] unused variable: `unused`.",
+                "range": {
+                    "_end": {
+                        "_character": 22,
+                        "_line": 3
+                    },
+                    "_start": {
+                        "_character": 16,
+                        "_line": 3
+                    }
+                },
+                "relatedInformation": [
+                    {
+                        "location": {
+                            "range": {
+                                "_end": {
+                                    "_character": 22,
+                                    "_line": 3
+                                },
+                                "_start": {
+                                    "_character": 16,
+                                    "_line": 3
+                                }
+                            },
+                            "uri": {
+                                "_formatted": null,
+                                "_fsPath": null,
+                                "authority": "",
+                                "fragment": "",
+                                "path": "crates/contracts/src/main.rs",
+                                "query": "",
+                                "scheme": "file"
+                            }
+                        },
+                        "message": "`#[warn(unused_variables)]` on by default"
+                    },
+                    {
+                        "location": {
+                            "range": {
+                                "_end": {
+                                    "_character": 22,
+                                    "_line": 3
+                                },
+                                "_start": {
+                                    "_character": 16,
+                                    "_line": 3
+                                }
+                            },
+                            "uri": {
+                                "_formatted": null,
+                                "_fsPath": null,
+                                "authority": "",
+                                "fragment": "",
+                                "path": "crates/contracts/src/main.rs",
+                                "query": "",
+                                "scheme": "file"
+                            }
+                        },
+                        "message": "if this is intentional, prefix it with an underscore"
+                    }
+                ],
+                "severity": 1
+            },
+            {
                 "message": "[Prusti: verification error] precondition might not hold.",
                 "range": {
                     "_end": {
-                        "_character": 11,
+                        "_character": 14,
                         "_line": 8
                     },
                     "_start": {
@@ -134,23 +326,9 @@
                                 "scheme": "file"
                             }
                         },
-                            "message": "the failing assertion is here"
+                        "message": "the failing assertion is here"
                     }
                 ],
-                "severity": 0
-            },
-            {
-                "message": "aborting due to previous error",
-                "range": {
-                    "_end": {
-                        "_character": 0,
-                        "_line": 0
-                    },
-                    "_start": {
-                        "_character": 0,
-                        "_line": 0
-                    }
-                },
                 "severity": 0
             }
         ]
@@ -158,10 +336,74 @@
     {
         "diagnostics": [
             {
+                "message": "[unused_variables] unused variable: `unused`.",
+                "range": {
+                    "_end": {
+                        "_character": 22,
+                        "_line": 3
+                    },
+                    "_start": {
+                        "_character": 16,
+                        "_line": 3
+                    }
+                },
+                "relatedInformation": [
+                    {
+                        "location": {
+                            "range": {
+                                "_end": {
+                                    "_character": 22,
+                                    "_line": 3
+                                },
+                                "_start": {
+                                    "_character": 16,
+                                    "_line": 3
+                                }
+                            },
+                            "uri": {
+                                "_formatted": null,
+                                "_fsPath": null,
+                                "authority": "",
+                                "fragment": "",
+                                "path": "crates/contracts/src/main.rs",
+                                "query": "",
+                                "scheme": "file"
+                            }
+                        },
+                        "message": "`#[warn(unused_variables)]` on by default"
+                    },
+                    {
+                        "location": {
+                            "range": {
+                                "_end": {
+                                    "_character": 22,
+                                    "_line": 3
+                                },
+                                "_start": {
+                                    "_character": 16,
+                                    "_line": 3
+                                }
+                            },
+                            "uri": {
+                                "_formatted": null,
+                                "_fsPath": null,
+                                "authority": "",
+                                "fragment": "",
+                                "path": "crates/contracts/src/main.rs",
+                                "query": "",
+                                "scheme": "file"
+                            }
+                        },
+                        "message": "if this is intentional, prefix it with an underscore"
+                    }
+                ],
+                "severity": 1
+            },
+            {
                 "message": "[Prusti: verification error] precondition might not hold.",
                 "range": {
                     "_end": {
-                        "_character": 11,
+                        "_character": 14,
                         "_line": 8
                     },
                     "_start": {
@@ -195,20 +437,6 @@
                             "message": "the failing assertion is here"
                     }
                 ],
-                "severity": 0
-            },
-            {
-                "message": "aborting due to previous error",
-                "range": {
-                    "_end": {
-                        "_character": 0,
-                        "_line": 0
-                    },
-                    "_start": {
-                        "_character": 0,
-                        "_line": 0
-                    }
-                },
                 "severity": 0
             }
         ]
