@@ -55,3 +55,17 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
         await server.restart(context, verificationStatus);
     }
 }
+
+export async function prustiVersion(): Promise<string> {
+    const output = await util.spawn(prusti!.prustiRustc, ["--version"]);
+    let version = output.stderr.split("\n")
+        .filter(line => line.trim().length > 0 && line.indexOf("version") != -1)
+        .join(". ");
+    if (version.trim().length === 0) {
+        version = "<unknown>";
+    }
+    if (version.indexOf("Prusti") === -1) {
+        version = "Prusti version: " + version;
+    }
+    return version;
+}

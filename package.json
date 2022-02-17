@@ -44,6 +44,11 @@
                 "category": "Prusti"
             },
             {
+                "command": "prusti-assistant.show-version",
+                "title": "show version",
+                "category": "Prusti"
+            },
+            {
                 "command": "prusti-assistant.verify",
                 "title": "verify the current crate or file",
                 "category": "Prusti"

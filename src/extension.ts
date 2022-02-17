@@ -3,12 +3,13 @@ import * as config from "./config";
 import * as util from "./util";
 import * as diagnostics from "./diagnostics";
 import * as checks from "./checks";
-import { prusti, installDependencies } from "./dependencies";
+import { prusti, installDependencies, prustiVersion } from "./dependencies";
 import * as server from "./server";
 import * as state from "./state";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     util.log("Activate Prusti Assistant");
+    const showVersionCommand = "prusti-assistant.show-version";
     const verifyProgramCommand = "prusti-assistant.verify";
     const killAllCommand = "prusti-assistant.killAll";
     const updateCommand = "prusti-assistant.update";
@@ -73,6 +74,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             util.log("Prusti is up-to-date.");
         }
     }
+
+    // Show version on command
+    context.subscriptions.push(
+        vscode.commands.registerCommand(showVersionCommand, async () => {
+            util.userInfo(await prustiVersion());
+        })
+    );
 
     // Verify on click
     const verifyProgramButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 12);
