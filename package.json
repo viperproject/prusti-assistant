@@ -109,12 +109,11 @@
                 },
                 "prusti-assistant.extraPrustiEnv": {
                     "type": "object",
-                    "properties": {
+                    "default": {
                         "RUST_BACKTRACE": "true",
                         "PRUSTI_LOG": "info"
                     },
                     "additionalProperties": { "type": "string" },
-                    "default": {},
                     "description": "Specifies additional environment variables to be passed to all Prusti runs. Remember to restart the Prusti Server after modifying this setting."
                 },
                 "prusti-assistant.extraPrustiRustcArgs": {
