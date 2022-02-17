@@ -26,7 +26,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const [hasPrerequisites, errorMessage] = await checks.hasPrerequisites();
     if (!hasPrerequisites) {
         verificationStatus.tooltip = "Prusti Assistant's prerequisites are not satisfied.";
-        util.userError(errorMessage, true);
+        util.userError(errorMessage);
         util.log("Stopping plugin. Reload the IDE to retry.");
         return;
     } else {
