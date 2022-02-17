@@ -240,7 +240,7 @@ function parseCargoMessage(msgDiag: CargoMessage, rootPath: string, defaultRange
  * @param rootPath The root path of the rust project the message was generated
  * for.
  */
-function parseRustcMessage(msg: Message, mainFilePath: string): Diagnostic {
+function parseRustcMessage(msg: Message, mainFilePath: string, defaultRange?: vscode.Range): Diagnostic {
     const level = parseMessageLevel(msg.level);
 
     // Read primary message
@@ -263,7 +263,7 @@ function parseRustcMessage(msg: Message, mainFilePath: string): Diagnostic {
 
     // Convert MultiSpans to Range and Diagnostic
     let primaryFilePath = mainFilePath;
-    let primaryRange = dummyRange();
+    let primaryRange = defaultRange ?? dummyRange();
     if (primaryCallSiteSpans.length > 0) {
         primaryRange = parseMultiSpanRange(primaryCallSiteSpans);
         primaryFilePath = primaryCallSiteSpans[0].file_name;
@@ -297,7 +297,7 @@ function parseRustcMessage(msg: Message, mainFilePath: string): Diagnostic {
 
     // Recursively parse child messages.
     for (const child of msg.children) {
-        const childDiagnostic = parseRustcMessage(child, mainFilePath);
+        const childDiagnostic = parseRustcMessage(child, mainFilePath, primaryRange);
         const fileUri = vscode.Uri.file(childDiagnostic.file_path);
         relatedInformation.push(
             new vscode.DiagnosticRelatedInformation(
@@ -544,7 +544,11 @@ export class VerificationDiagnostics {
             }
         }
         if (/^aborting due to (\d+ |)previous error(s|)/.exec(diagnostic.diagnostic.message) !== null) {
-            util.trace(`Ignore non-error diagnostic: ${diagnostic}`);
+            util.trace(`Ignore summary diagnostic: ${diagnostic}`);
+            return false;
+        }
+        if (/^\d+ warning(s|) emitted/.exec(diagnostic.diagnostic.message) !== null) {
+            util.trace(`Ignore summary diagnostic: ${diagnostic}`);
             return false;
         }
         return true;
