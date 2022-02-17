@@ -147,107 +147,11 @@ function getCallSiteSpan(span: Span): Span {
  * @param rootPath The root path of the rust project the message was generated
  * for.
  */
-function parseCargoMessage(msgDiag: CargoMessage, rootPath: string): Diagnostic {
-    const mainFilePath = msgDiag.target.src_path;
+function parseCargoMessage(msgDiag: CargoMessage, rootPath: string, defaultRange?: vscode.Range): Diagnostic {
     const msg = msgDiag.message;
     const level = parseMessageLevel(msg.level);
 
-    // Parse primary span
-    let primarySpan;
-    for (const span of msg.spans) {
-        if (span.is_primary) {
-            primarySpan = span;
-            break;
-        }
-    }
-    if (primarySpan === undefined) {
-        return {
-            file_path: mainFilePath,
-            diagnostic: new vscode.Diagnostic(
-                dummyRange(),
-                msg.message,
-                level
-            )
-        };
-    }
-
-    let primaryMessage = msg.message;
-    if (msg.code !== null) {
-        primaryMessage = `[${msg.code.code}] ${primaryMessage}.`;
-    }
-    if (primarySpan.label !== null) {
-        primaryMessage = `${primaryMessage} \n[Note] ${primarySpan.label}`;
-    }
-    const primaryCallSiteSpan = getCallSiteSpan(primarySpan);
-    const primaryRange = parseSpanRange(primaryCallSiteSpan);
-    const primaryFilePath = path.join(rootPath, primaryCallSiteSpan.file_name);
-
-    const generatedDiagnostic = new vscode.Diagnostic(
-        primaryRange,
-        primaryMessage,
-        level
-    );
-
-    // Parse all non-primary spans
-    const relatedInformation = [];
-    for (const span of msg.spans) {
-        if (span.is_primary) {
-            continue;
-        }
-
-        let message = "";
-        if (span.label !== null) {
-            message = `[Note] ${span.label}`;
-        }
-        const callSiteSpan = getCallSiteSpan(span);
-        const range = parseSpanRange(callSiteSpan);
-        const filePath = path.join(rootPath, callSiteSpan.file_name);
-        const fileUri = vscode.Uri.file(filePath);
-
-        relatedInformation.push(
-            new vscode.DiagnosticRelatedInformation(
-                new vscode.Location(fileUri, range),
-                message
-            )
-        );
-    }
-
-    // Recursively parse child messages.
-    for (const child of msg.children) {
-        const childMsgDiag = { target: msgDiag.target, message: child };
-        const childDiagnostic = parseCargoMessage(childMsgDiag, rootPath);
-        const fileUri = vscode.Uri.file(childDiagnostic.file_path);
-
-        relatedInformation.push(
-            new vscode.DiagnosticRelatedInformation(
-                new vscode.Location(
-                    fileUri,
-                    childDiagnostic.diagnostic.range
-                ),
-                childDiagnostic.diagnostic.message
-            )
-        );
-    }
-
-    // Set related information
-    generatedDiagnostic.relatedInformation = relatedInformation;
-
-    return {
-        file_path: primaryFilePath,
-        diagnostic: generatedDiagnostic,
-    };
-}
-
-/**
- * Parses a message into diagnostics.
- * 
- * @param msg The message to parse.
- * @param rootPath The root path of the rust project the message was generated
- * for.
- */
-function parseRustcMessage(msg: Message, mainFilePath: string): Diagnostic {
-    const level = parseMessageLevel(msg.level);
-
+    // Read primary message
     let primaryMessage = msg.message;
     if (msg.code !== null) {
         primaryMessage = `[${msg.code.code}] ${primaryMessage}.`;
@@ -264,20 +168,106 @@ function parseRustcMessage(msg: Message, mainFilePath: string): Diagnostic {
         }
         primaryCallSiteSpans.push(getCallSiteSpan(span));
     }
-    if (primaryCallSiteSpans.length === 0) {
-        return {
-            file_path: mainFilePath,
-            diagnostic: new vscode.Diagnostic(
-                dummyRange(),
-                msg.message,
-                level
+
+    // Convert MultiSpans to Range and Diagnostic
+    let primaryFilePath = msgDiag.target.src_path;
+    let primaryRange = defaultRange ?? dummyRange();
+    if (primaryCallSiteSpans.length > 0) {
+        primaryRange = parseMultiSpanRange(primaryCallSiteSpans);
+        primaryFilePath = path.join(rootPath, primaryCallSiteSpans[0].file_name);
+    }
+    const diagnostic = new vscode.Diagnostic(
+        primaryRange,
+        primaryMessage,
+        level
+    );
+
+    // Parse all non-primary spans
+    const relatedInformation = [];
+    for (const span of msg.spans) {
+        if (span.is_primary) {
+            continue;
+        }
+
+        const message = `[Note] ${span.label ?? ""}`;
+        const callSiteSpan = getCallSiteSpan(span);
+        const range = parseSpanRange(callSiteSpan);
+        const filePath = path.join(rootPath, callSiteSpan.file_name);
+        const fileUri = vscode.Uri.file(filePath);
+
+        relatedInformation.push(
+            new vscode.DiagnosticRelatedInformation(
+                new vscode.Location(fileUri, range),
+                message
             )
+        );
+    }
+
+    // Recursively parse child messages.
+    for (const child of msg.children) {
+        const childMsgDiag = {
+            target: {
+                src_path: primaryFilePath
+            },
+            message: child
         };
+        const childDiagnostic = parseCargoMessage(childMsgDiag, rootPath, primaryRange);
+        const fileUri = vscode.Uri.file(childDiagnostic.file_path);
+        relatedInformation.push(
+            new vscode.DiagnosticRelatedInformation(
+                new vscode.Location(
+                    fileUri,
+                    childDiagnostic.diagnostic.range
+                ),
+                childDiagnostic.diagnostic.message
+            )
+        );
+    }
+
+    // Set related information
+    diagnostic.relatedInformation = relatedInformation;
+
+    return {
+        file_path: primaryFilePath,
+        diagnostic: diagnostic,
+    };
+}
+
+/**
+ * Parses a message into diagnostics.
+ * 
+ * @param msg The message to parse.
+ * @param rootPath The root path of the rust project the message was generated
+ * for.
+ */
+function parseRustcMessage(msg: Message, mainFilePath: string, defaultRange?: vscode.Range): Diagnostic {
+    const level = parseMessageLevel(msg.level);
+
+    // Read primary message
+    let primaryMessage = msg.message;
+    if (msg.code !== null) {
+        primaryMessage = `[${msg.code.code}] ${primaryMessage}.`;
+    }
+
+    // Parse primary spans
+    const primaryCallSiteSpans = [];
+    for (const span of msg.spans) {
+        if (!span.is_primary) {
+            continue;
+        }
+        if (span.label !== null) {
+            primaryMessage = `${primaryMessage}\n[Note] ${span.label}`;
+        }
+        primaryCallSiteSpans.push(getCallSiteSpan(span));
     }
 
     // Convert MultiSpans to Range and Diagnostic
-    const primaryRange = parseMultiSpanRange(primaryCallSiteSpans);
-    const primaryFilePath = primaryCallSiteSpans[0].file_name;
+    let primaryFilePath = mainFilePath;
+    let primaryRange = defaultRange ?? dummyRange();
+    if (primaryCallSiteSpans.length > 0) {
+        primaryRange = parseMultiSpanRange(primaryCallSiteSpans);
+        primaryFilePath = primaryCallSiteSpans[0].file_name;
+    }
     const diagnostic = new vscode.Diagnostic(
         primaryRange,
         primaryMessage,
@@ -307,7 +297,7 @@ function parseRustcMessage(msg: Message, mainFilePath: string): Diagnostic {
 
     // Recursively parse child messages.
     for (const child of msg.children) {
-        const childDiagnostic = parseRustcMessage(child, mainFilePath);
+        const childDiagnostic = parseRustcMessage(child, mainFilePath, primaryRange);
         const fileUri = vscode.Uri.file(childDiagnostic.file_path);
         relatedInformation.push(
             new vscode.DiagnosticRelatedInformation(
@@ -516,13 +506,13 @@ export class VerificationDiagnostics {
         return counts;
     }
 
-    public addAll(diagnostics: Diagnostic[]):void {
+    public addAll(diagnostics: Diagnostic[]): void {
         for (const diag of diagnostics) {
             this.add(diag);
         }
     }
 
-    public add(diagnostic: Diagnostic):void {
+    public add(diagnostic: Diagnostic): void {
         if (this.reportDiagnostic(diagnostic)) {
             const set = this.diagnostics.get(diagnostic.file_path);
             if (set !== undefined) {
@@ -535,7 +525,7 @@ export class VerificationDiagnostics {
         }
     }
 
-    public renderIn(target: vscode.DiagnosticCollection):void {
+    public renderIn(target: vscode.DiagnosticCollection): void {
         target.clear();
         for (const [filePath, fileDiagnostics] of this.diagnostics.entries()) {
             const uri = vscode.Uri.file(filePath);
@@ -552,10 +542,14 @@ export class VerificationDiagnostics {
                 util.trace(`Ignore non-error diagnostic: ${diagnostic}`);
                 return false;
             }
-            if (/^aborting due to (\d+ |)previous error(s|)/.exec(diagnostic.diagnostic.message) !== null) {
-                util.trace(`Ignore non-error diagnostic: ${diagnostic}`);
-                return false;
-            }
+        }
+        if (/^aborting due to (\d+ |)previous error(s|)/.exec(diagnostic.diagnostic.message) !== null) {
+            util.trace(`Ignore summary diagnostic: ${diagnostic}`);
+            return false;
+        }
+        if (/^\d+ warning(s|) emitted/.exec(diagnostic.diagnostic.message) !== null) {
+            util.trace(`Ignore summary diagnostic: ${diagnostic}`);
+            return false;
         }
         return true;
     }
