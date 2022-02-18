@@ -34,6 +34,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         util.log("Prerequisites are satisfied.");
     }
 
+    // Catch server crashes
+    server.registerCrashHandler(context, verificationStatus);
+
     // Download dependencies and start the server
     util.log("Checking Prusti dependencies...");
     verificationStatus.text = "$(sync~spin) Checking Prusti dependencies...";
@@ -98,9 +101,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     killAllButton.tooltip = "Kill all Prusti processes.";
     killAllButton.command = killAllCommand;
     context.subscriptions.push(killAllButton);
-
-    // Prepare the server
-    server.registerCrashHandler(context, verificationStatus);
 
     // Restart the server on command
     context.subscriptions.push(
