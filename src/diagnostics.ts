@@ -520,8 +520,6 @@ export class VerificationDiagnostics {
             } else {
                 this.diagnostics.set(diagnostic.file_path, [diagnostic.diagnostic]);
             }
-        } else {
-            util.trace(`Hide diagnostics: ${diagnostic}`);
         }
     }
 
@@ -529,26 +527,27 @@ export class VerificationDiagnostics {
         target.clear();
         for (const [filePath, fileDiagnostics] of this.diagnostics.entries()) {
             const uri = vscode.Uri.file(filePath);
-            util.trace(`Render diagnostics: ${uri}, ${fileDiagnostics}`);
+            util.trace(`Render ${fileDiagnostics.length} diagnostics at ${uri}`);
             target.set(uri, fileDiagnostics);
         }
     }
 
     /// Returns false if the diagnostic should be ignored
     private reportDiagnostic(diagnostic: Diagnostic): boolean {
+        const message = diagnostic.diagnostic.message;
         if (config.reportErrorsOnly()) {
             if (diagnostic.diagnostic.severity !== vscode.DiagnosticSeverity.Error
-                && /^\[Prusti\]/.exec(diagnostic.diagnostic.message) === null) {
-                util.trace(`Ignore non-error diagnostic: ${diagnostic}`);
+                && message.indexOf("Prusti") === -1) {
+                util.trace(`Ignore non-error non-Prusti diagnostic: ${message}`);
                 return false;
             }
         }
-        if (/^aborting due to (\d+ |)previous error(s|)/.exec(diagnostic.diagnostic.message) !== null) {
-            util.trace(`Ignore summary diagnostic: ${diagnostic}`);
+        if (/^aborting due to (\d+ |)previous error(s|)/.exec(message) !== null) {
+            util.trace(`Ignore summary diagnostic: ${message}`);
             return false;
         }
-        if (/^\d+ warning(s|) emitted/.exec(diagnostic.diagnostic.message) !== null) {
-            util.trace(`Ignore summary diagnostic: ${diagnostic}`);
+        if (/^\d+ warning(s|) emitted/.exec(message) !== null) {
+            util.trace(`Ignore summary diagnostic: ${message}`);
             return false;
         }
         return true;
@@ -599,9 +598,12 @@ export class DiagnosticsManager {
         const escapedFileName = path.basename(targetPath).replace("$", "\\$");
         this.verificationStatus.text = `$(sync~spin) Verifying ${target} '${escapedFileName}'...`;
 
-        let crashed = false;
         const verificationDiagnostics = new VerificationDiagnostics();
         let durationSecMsg: string | null = null;
+        const crashErrorMsg = "Prusti encountered an unexpected error. " +
+            "We would appreciate a [bug report](https://github.com/viperproject/prusti-dev/issues/new). " +
+            "See the log (View -> Output -> Prusti Assistant ...) for more details.";
+        let crashed = false;
         try {
             let diagnostics: Diagnostic[], status: VerificationStatus, duration: util.Duration;
             if (target === VerificationTarget.Crate) {
@@ -612,18 +614,20 @@ export class DiagnosticsManager {
 
             verificationDiagnostics.addAll(diagnostics);
             durationSecMsg = (duration[0] + duration[1] / 1e9).toFixed(1);
-            if (status === VerificationStatus.Crash || (status === VerificationStatus.Errors && !verificationDiagnostics.hasErrors())) {
+            if (status === VerificationStatus.Crash) {
                 crashed = true;
-                util.userError("Prusti encountered an error. See other reported errors and the log (View -> Output -> Prusti Assistant ...) for more details.");
+                util.log("Prusti encountered an unexpected error.");
+                util.userError(crashErrorMsg);
+            }
+            if (status === VerificationStatus.Errors && !verificationDiagnostics.hasErrors()) {
+                crashed = true;
+                util.log("The verification failed, but there are no errors to report.");
+                util.userError(crashErrorMsg);
             }
         } catch (err) {
-            util.log(`Error: ${err}`);
-            let errorMessage = "<unknown error type>";
-            if (err instanceof Error) {
-                errorMessage = err.message ?? err.toString();
-            }
+            util.log(`Error while running Prusti: ${err}`);
             crashed = true;
-            util.userError(`Prusti terminated with an unexpected error: ${errorMessage}. See the log (View -> Output -> Prusti Assistant ...) for more details.`);
+            util.userError(crashErrorMsg);
         }
 
         if (currentRun != this.runCount) {
