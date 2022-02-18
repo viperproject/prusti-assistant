@@ -79,13 +79,6 @@ const logChannel = vscode.window.createOutputChannel("Prusti Assistant");
 export function log(message: string): void {
     console.log(message);
     logChannel.appendLine(message);
-    traceChannel.appendLine(message);
-}
-
-const traceChannel = vscode.window.createOutputChannel("Prusti Assistant Trace");
-export function trace(message: string): void {
-    console.log(message);
-    traceChannel.appendLine(message);
 }
 
 export type Duration = [seconds: number, nanoseconds: number];
@@ -163,15 +156,14 @@ export function spawn(
 
     function printOutput(duration: Duration, code: number | null, signal: NodeJS.Signals | null) {
         const durationSecMsg = (duration[0] + duration[1] / 1e9).toFixed(1);
-        trace("");
-        trace(`Output from '${description}' (${durationSecMsg}s):`);
-        trace("┌──── Begin stdout ────┐");
-        trace(stdout);
-        trace("└──── End stdout ──────┘");
-        trace("┌──── Begin stderr ────┐");
-        trace(stderr);
-        trace("└──── End stderr ──────┘");
-        trace(`Exit code ${code}, signal ${signal}.`);
+        log(`Output from '${description}' (${durationSecMsg}s):`);
+        log("┌──── Begin stdout ────┐");
+        log(stdout);
+        log("└──── End stdout ──────┘");
+        log("┌──── Begin stderr ────┐");
+        log(stderr);
+        log("└──── End stderr ──────┘");
+        log(`Exit code ${code}, signal ${signal}.`);
     }
 
     return new Promise((resolve, reject) => {

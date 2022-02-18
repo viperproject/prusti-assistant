@@ -18,7 +18,6 @@ export async function hasPrerequisites(): Promise<[boolean, string]> {
         await util.spawn("rustup", ["--version"]);
         await util.spawn("cargo", ["--version"]);
     } catch (err) {
-        console.error(err);
         util.log(`Error: ${err}`);
         const msg = (
             "[Prusti] Could not run Rustup. Please visit https://rustup.rs/ " +
@@ -33,7 +32,6 @@ export async function hasPrerequisites(): Promise<[boolean, string]> {
         );
         await util.spawn(javaPath, ["-version"]);
     } catch (err) {
-        console.error(err);
         util.log(`Error: ${err}`);
         const msg = (
             "[Prusti] Could not run Java. Please install Java 12+ 64bit, " +
@@ -49,7 +47,6 @@ export async function checkPrusti(prusti: PrustiLocation): Promise<[boolean, str
     try {
         await util.spawn(prusti.z3, ["--version"]);
     } catch (err) {
-        console.error(err);
         util.log(`Error: ${err}`);
         const msg = (
             "[Prusti] Could not run Z3. Please try updating the verifier, " +
@@ -61,26 +58,20 @@ export async function checkPrusti(prusti: PrustiLocation): Promise<[boolean, str
     try {
         await util.spawn(prusti.prustiRustc, ["--version"]);
     } catch (err) {
-        console.error(err);
         util.log("Could not run prusti-rustc");
         util.log(`Error: ${err}`);
-        const msg = (
-            "Could not run Prusti. Please try updating the verifier, " +
-            "then restart the IDE."
-        );
+        const msg = "Could not run Prusti. Please try updating the verifier, " +
+            "then restart the IDE.";
         return [false, msg];
     }
     util.log("Checking Cargo-Prusti...");
     try {
         await util.spawn(prusti.cargoPrusti, ["--help"]);
     } catch (err) {
-        console.error(err);
         util.log("Could not run cargo-prusti");
         util.log(`Error: ${err}`);
-        const msg = (
-            "Could not run Prusti. Please try updating the verifier, " +
-            "then restart the IDE."
-        );
+        const msg = "Could not run Prusti. Please try updating the verifier, " +
+            "then restart the IDE.";
         return [false, msg];
     }
     return [true, ""];

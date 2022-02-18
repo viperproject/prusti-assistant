@@ -4,7 +4,7 @@ import * as util from "../util";
 
 export async function ensureRustToolchainInstalled(context: vscode.ExtensionContext, toolchainFile: Location): Promise<void> {
     util.log("Checking rust toolchain version and components...");
-    util.trace(`Using rust-toolchain at ${toolchainFile}`);
+    util.log(`Using rust-toolchain at ${toolchainFile}`);
 
     if (!await toolchainFile.exists()) {
         throw new Error(`The rust-toolchain file at ${toolchainFile} does not exist.`);

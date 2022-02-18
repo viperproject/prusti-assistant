@@ -520,6 +520,8 @@ export class VerificationDiagnostics {
             } else {
                 this.diagnostics.set(diagnostic.file_path, [diagnostic.diagnostic]);
             }
+        } else {
+            util.log(`Ignored diagnostic message: '${diagnostic.diagnostic.message}'`);
         }
     }
 
@@ -527,7 +529,7 @@ export class VerificationDiagnostics {
         target.clear();
         for (const [filePath, fileDiagnostics] of this.diagnostics.entries()) {
             const uri = vscode.Uri.file(filePath);
-            util.trace(`Render ${fileDiagnostics.length} diagnostics at ${uri}`);
+            util.log(`Rendering ${fileDiagnostics.length} diagnostics at ${uri}`);
             target.set(uri, fileDiagnostics);
         }
     }
@@ -538,16 +540,13 @@ export class VerificationDiagnostics {
         if (config.reportErrorsOnly()) {
             if (diagnostic.diagnostic.severity !== vscode.DiagnosticSeverity.Error
                 && message.indexOf("Prusti") === -1) {
-                util.trace(`Ignore non-error non-Prusti diagnostic: ${message}`);
                 return false;
             }
         }
         if (/^aborting due to (\d+ |)previous error(s|)/.exec(message) !== null) {
-            util.trace(`Ignore summary diagnostic: ${message}`);
             return false;
         }
         if (/^\d+ warning(s|) emitted/.exec(message) !== null) {
-            util.trace(`Ignore summary diagnostic: ${message}`);
             return false;
         }
         return true;

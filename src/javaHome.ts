@@ -3,7 +3,7 @@ import * as locatejavaHome from 'locate-java-home';
 import * as util from './util';
 
 export async function findJavaHome(): Promise<string | null> {
-    console.log("Searching for Java home...");
+    util.log("Searching for Java home...");
     let javaHome: string | null = null;
     try {
         javaHome = await new Promise((resolve, reject) => {
@@ -12,7 +12,7 @@ export async function findJavaHome(): Promise<string | null> {
             };
             locatejavaHome.default(options, (err, javaHomes) => {
                 if (err) {
-                    console.error(err);
+                    util.log(`Error: ${err}`);
                     reject(err);
                 } else {
                     if (!Array.isArray(javaHomes) || javaHomes.length === 0) {
@@ -23,7 +23,7 @@ export async function findJavaHome(): Promise<string | null> {
                         resolve(null);
                     } else {
                         const firstJavaHome = javaHomes[0];
-                        console.log(`Using Java home ${JSON.stringify(firstJavaHome, null, 2)}`);
+                        util.log(`Using Java home ${JSON.stringify(firstJavaHome, null, 2)}`);
                         resolve(firstJavaHome.path);
                     }
                 }

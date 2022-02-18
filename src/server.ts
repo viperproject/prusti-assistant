@@ -7,7 +7,7 @@ import { ServerManager } from "./toolbox/serverManager";
 const serverChannel = vscode.window.createOutputChannel("Prusti Assistant Server");
 const server = new ServerManager(
     "Prusti server",
-    util.trace
+    util.log
 );
 
 server.waitForUnrecoverable().then(() => {
@@ -26,7 +26,7 @@ server.waitForUnrecoverable().then(() => {
  */
 export function registerCrashHandler(context: vscode.ExtensionContext, verificationStatus: vscode.StatusBarItem): void {
     server.waitForCrashed().then(() => {
-        util.log(`Prusti server crashed.`);
+        util.log("Prusti server crashed.");
         address = undefined;
         // Ask the user to restart the server
         util.userErrorPopup(
