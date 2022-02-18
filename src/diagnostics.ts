@@ -601,7 +601,7 @@ export class DiagnosticsManager {
         let durationSecMsg: string | null = null;
         const crashErrorMsg = "Prusti encountered an unexpected error. " +
             "We would appreciate a [bug report](https://github.com/viperproject/prusti-dev/issues/new). " +
-            "See the log (View -> Output -> Prusti Assistant ...) for more details.";
+            "See the log (View -> Output -> Prusti Assistant) for more details.";
         let crashed = false;
         try {
             let diagnostics: Diagnostic[], status: VerificationStatus, duration: util.Duration;
