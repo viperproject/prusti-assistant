@@ -16,7 +16,7 @@ For advanced use cases, consider switching to the [command-line version of Prust
 In order to use this extension, please install the following components:
 
 * Java JDK version 11 or later, 64 bit. We recommend [OpenJDK 15.0.1](https://jdk.java.net/15/).
-* [Rustup version 1.23.0 or later](https://rustup.rs/) (on Windows this also requires the [C++ build tools for Visual Studio 2013 or later](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019)).
+* [Rustup version 1.23.0 or later](https://rustup.rs/). On Windows, this in turn requires the [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/).
 
 ## First Usage
 
@@ -73,6 +73,7 @@ If Prusti fails to run, you can inspect Prusti's log from VS Code (View -> Outpu
 
 | Problem | Solution |
 |---------|----------|
+| On Windows, Visual Studio is installed but the `rustup` installer still complains that the Microsoft C++ build tools are missing. | When asked which workloads to install in Visual Studio make sure "C++ build tools" is selected and that the Windows 10 SDK and the English language pack components are included. If the problem persists, check [this Microsoft guide](https://docs.microsoft.com/en-us/windows/dev-environment/rust/setup) and [this Rust guide](https://doc.rust-lang.org/book/ch01-01-installation.html#installing-rustup-on-windows). |
 | `error[E0514]: found crate 'cfg_if' compiled by an incompatible version of rustc` | There is a conflict between Prusti and a previous Cargo compilation. Run `cargo clean` or manually delete the `target` folder. Then, rerun Prusti. |
 | `error: the 'cargo' binary, normally provided by the 'cargo' component, is not applicable to the 'nightly-2021-09-20-x86_64-unknown-linux-gnu' toolchain` <br/> or <br/> `error[E0463]: can't find crate for std` <br/> or <br/> `error[E0463]: can't find crate for core` | The Rust toolchain installed by Rustup is probably corrupted (see issue [rustup/#2417](https://github.com/rust-lang/rustup/issues/2417)). [Uninstall](https://stackoverflow.com/questions/42322879/how-to-remove-rust-compiler-toolchains-with-rustup) the nightly toolchain mentioned in the error (or all installed nightly toolchains). Then, rerun Prusti. |
 
