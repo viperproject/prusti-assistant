@@ -18,7 +18,7 @@ In order to use this extension, please install the following components:
 * Java JDK version 11 or later, 64 bit. We recommend [OpenJDK 15.0.1](https://jdk.java.net/15/).
 * [Rustup version 1.23.0 or later](https://rustup.rs/). On Windows, this in turn requires the [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/).
 
-If something fails, check the "Troubleshooting" section below.
+If anything fails, check the "Troubleshooting" section below.
 
 ## First Usage
 
@@ -39,7 +39,7 @@ If something fails, check the "Troubleshooting" section below.
 
 To update Prusti, run the command `Prusti: update verifier` in the command palette.
 
-If something fails, check the "Troubleshooting" section below.
+If anything fails, check the "Troubleshooting" section below.
 
 ## Features
 
