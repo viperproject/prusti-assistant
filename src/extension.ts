@@ -91,7 +91,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const clearCacheButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 13);
     clearCacheButton.command = clearCacheCommand;
     clearCacheButton.text = "$(trash)";
-    clearCacheButton.tooltip = "Clear Prusti verification cache.";
+    clearCacheButton.tooltip = "Restart Prusti server and clear verification cache.";
     clearCacheButton.show();
     context.subscriptions.push(clearCacheButton);
 
