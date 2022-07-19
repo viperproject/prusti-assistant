@@ -25,5 +25,6 @@
         "import/no-cycle": "error",
         "@typescript-eslint/restrict-template-expressions": "off",
         "@typescript-eslint/explicit-module-boundary-types": "error",
+        "@typescript-eslint/no-non-null-assertion": "off"
     }
 }

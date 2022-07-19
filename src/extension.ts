@@ -3,12 +3,13 @@ import * as config from "./config";
 import * as util from "./util";
 import * as diagnostics from "./diagnostics";
 import * as checks from "./checks";
-import { prusti, installDependencies } from "./dependencies";
+import { prusti, installDependencies, prustiVersion } from "./dependencies";
 import * as server from "./server";
 import * as state from "./state";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     util.log("Activate Prusti Assistant");
+    const showVersionCommand = "prusti-assistant.show-version";
     const verifyProgramCommand = "prusti-assistant.verify";
     const killAllCommand = "prusti-assistant.killAll";
     const updateCommand = "prusti-assistant.update";
@@ -27,22 +28,26 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const [hasPrerequisites, errorMessage] = await checks.hasPrerequisites();
     if (!hasPrerequisites) {
         verificationStatus.tooltip = "Prusti Assistant's prerequisites are not satisfied.";
-        util.userError(errorMessage, true);
+        util.userError(errorMessage);
         util.log("Stopping plugin. Reload the IDE to retry.");
         return;
     } else {
         util.log("Prerequisites are satisfied.");
     }
 
+    // Catch server crashes
+    server.registerCrashHandler(context, verificationStatus);
+
     // Download dependencies and start the server
-    util.log("Check the Prusti dependencies...");
+    util.log("Checking Prusti dependencies...");
     verificationStatus.text = "$(sync~spin) Checking Prusti dependencies...";
     await installDependencies(context, false, verificationStatus);
 
     // Check Prusti
-    util.log("Checking Prusti dependencies...");
+    util.log("Checking Prusti...");
     const [isPrustiOk, prustiErrorMessage] = await checks.checkPrusti(prusti!);
     if (!isPrustiOk) {
+        verificationStatus.tooltip = "Prusti's installation seems broken.";
         util.userError(prustiErrorMessage, true, verificationStatus);
         util.log("Stopping plugin. Reload the IDE to retry.");
         return;
@@ -75,6 +80,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         }
     }
 
+    // Show version on command
+    context.subscriptions.push(
+        vscode.commands.registerCommand(showVersionCommand, async () => {
+            util.userInfo(await prustiVersion());
+        })
+    );
+
     // Verify on click
     const clearCacheButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 13);
     clearCacheButton.command = clearCacheCommand;
@@ -99,9 +111,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     killAllButton.command = killAllCommand;
     context.subscriptions.push(killAllButton);
 
-    // Prepare the server
-    server.registerCrashHandler(context, verificationStatus);
-
     // Restart the server on command
     context.subscriptions.push(
         vscode.commands.registerCommand("prusti-assistant.restart-server", async () => {
@@ -118,12 +127,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 && event.affectsConfiguration(config.localPrustiPathPath)
             );
             if (hasChangedChannel || hasChangedLocation) {
-                util.log("Install the dependencies because the configuration changed...");
+                util.log("Install the dependencies because the configuration has changed...");
                 await installDependencies(context, false, verificationStatus);
             }
             const hasChangedServer = event.affectsConfiguration(config.serverAddressPath);
             if (hasChangedServer) {
-                util.log("Restart the server because the configuration changed...");
+                util.log("Restart the server because the configuration has changed...");
                 await server.restart(context, verificationStatus);
             }
             // Let the test suite know that the new configuration has been
@@ -238,16 +247,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Stand ready to deactivate the extension
     context.subscriptions.push({
         dispose: () => {
-            console.log("Dispose Prusti Assistant");
+            util.log("Dispose Prusti Assistant");
             deactivate().catch(
-                err => console.error(`Failed to deactivate the extension: ${err}`)
+                err => util.log(`Failed to deactivate the extension: ${err}`)
             );
         }
     });
     process.on("SIGTERM", () => {
-        console.log("Received SIGTERM");
+        util.log("Received SIGTERM");
         deactivate().catch(
-            err => console.error(`Failed to deactivate the extension: ${err}`)
+            err => util.log(`Failed to deactivate the extension: ${err}`)
         );
     });
 
@@ -255,6 +264,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 }
 
 export async function deactivate(): Promise<void> {
-    console.log("Deactivate Prusti Assistant");
+    util.log("Deactivate Prusti Assistant");
     await server.stop();
 }

@@ -14,7 +14,7 @@ export function prustiTools(
     // Token used to avoid rate limits while testing
     const authorization_token = process.env.GITHUB_TOKEN
     if (authorization_token) {
-        console.log("Using authorization token");
+        console.info("Using authorization token");
     }
 
     const getReleaseUrl = (): Promise<string> => {

@@ -8,7 +8,7 @@ import { ServerManager } from "./toolbox/serverManager";
 const serverChannel = vscode.window.createOutputChannel("Prusti Assistant Server");
 const server = new ServerManager(
     "Prusti server",
-    util.trace
+    util.log
 );
 
 server.waitForUnrecoverable().then(() => {
@@ -27,11 +27,13 @@ server.waitForUnrecoverable().then(() => {
  */
 export function registerCrashHandler(context: vscode.ExtensionContext, verificationStatus: vscode.StatusBarItem): void {
     server.waitForCrashed().then(() => {
-        util.log(`Prusti server crashed.`);
+        util.log("Prusti server crashed.");
         address = undefined;
         // Ask the user to restart the server
         util.userErrorPopup(
-            "Prusti server stopped working.",
+            "Prusti server stopped working. " +
+            "We would appreciate a [bug report](https://github.com/viperproject/prusti-dev/issues/new). " +
+            "See the log (View -> Output -> Prusti Assistant Server) for more details.",
             "Restart Server",
             () => {
                 restart(context, verificationStatus).then(
@@ -123,21 +125,33 @@ export async function restart(context: vscode.ExtensionContext, verificationStat
         return;
     }
 
+    let prustiServerCwd: string | undefined;
+    if (vscode.workspace.workspaceFolders !== undefined) {
+        prustiServerCwd = vscode.workspace.workspaceFolders[0].uri.fsPath;
+        util.log(`Prusti server will be executed in '${prustiServerCwd}'`);
+    }
+
+    const prustiServerArgs = ["--port=0"].concat(
+        config.extraPrustiServerArgs()
+    );
+    const prustiServerEnv = {
+        ...process.env,  // Needed to run Rustup
+        ...{
+            JAVA_HOME: (await config.javaHome())!.path,
+        },
+        DEFAULT_PRUSTI_CACHE_PATH: config.cachePath(context),
+        ...config.extraPrustiEnv(),
+    };
+
     server.initiateStart(
         prusti!.prustiServer,
-        ["--port", "0"],
+        prustiServerArgs,
         {
-            env: {
-                ...process.env,  // Needed e.g. to run Rustup
-                // Might not exist yet, but that's handled on the rust side
-                PRUSTI_LOG_DIR: context.logPath,
-                RUST_BACKTRACE: "1",
-                RUST_LOG: "info",
-                PRUSTI_CACHE_PATH: config.cachePath(context),
-                JAVA_HOME: (await config.javaHome())!.path,
-            },
+            cwd: prustiServerCwd,
+            env: prustiServerEnv,
             onStdout: data => {
                 serverChannel.append(`[stdout] ${data}`);
+                console.log(`[Prusti Server][stdout] ${data}`);
                 // Extract the server port from the output
                 if (address === undefined) {
                     const port = parseInt(data.toString().split("port: ")[1], 10);
@@ -149,6 +163,7 @@ export async function restart(context: vscode.ExtensionContext, verificationStat
             },
             onStderr: data => {
                 serverChannel.append(`[stderr] ${data}`);
+                console.log(`[Prusti Server][stderr] ${data}`);
             }
         }
     );

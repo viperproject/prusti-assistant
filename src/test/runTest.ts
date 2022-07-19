@@ -33,7 +33,7 @@ async function main() {
             // closing an old one.
             await new Promise(resolve => setTimeout(resolve, 5000));
         }
-        console.info(`Testing with settings '${settingsFile}'...`);
+        console.info(`Begin testing with settings '${settingsFile}'...`);
         const tmpWorkspace = tmp.dirSync({ unsafeCleanup: true });
         try {
             // Prepare the workspace with the settings
@@ -54,14 +54,15 @@ async function main() {
                 launchArgs: ["--disable-extensions", tmpWorkspace.name],
             });
         } finally {
+            // Delete folder even in case of errors
             tmpWorkspace.removeCallback();
         }
+        console.info(`End of testing with settings '${settingsFile}'.`);
         firstIteration = false;
     }
 }
 
 main().catch(err => {
-    console.error(err);
-    console.error("Failed to run tests");
+    console.error(`Failed to run tests. Error: ${err}`);
     process.exit(1);
 });

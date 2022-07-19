@@ -89,3 +89,19 @@ export function serverAddress(): string {
 export function cachePath(context: vscode.ExtensionContext): string {
     return path.join(context.globalStoragePath, `cache-${buildChannel()}.bin`)
 }
+
+export function extraPrustiEnv(): Record<string, string> {
+    return config().get("extraPrustiEnv", {});
+}
+
+export function extraPrustiRustcArgs(): string[] {
+    return config().get("extraPrustiRustcArgs", []);
+}
+
+export function extraCargoPrustiArgs(): string[] {
+    return config().get("extraCargoPrustiArgs", []);
+}
+
+export function extraPrustiServerArgs(): string[] {
+    return config().get("extraPrustiServerArgs", []);
+}
