@@ -192,7 +192,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         }
     }
 
-    // Verify on command
+    // Clear cache file on command
     context.subscriptions.push(
         vscode.commands.registerCommand(clearCacheCommand, async () => {
             await server.stop();
