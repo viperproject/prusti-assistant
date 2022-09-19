@@ -50,15 +50,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.VIPER_ADMIN_TOKEN }}
 
-      - name: Upload debug information in case of failure
-        uses: actions/upload-artifact@v2
-        if: ${{ steps.runTests.outcome == 'failure' }}
-        with:
-          name: debug-info-${{ matrix.os }}
-          path: |
-            tests-*.cpuprofile
-            tests-*.heapsnapshot
-
       - name: Collect coverage
         if: ${{ steps.runTests.outcome == 'success' }}
         run: npx nyc report --reporter=lcov
