@@ -117,8 +117,7 @@ export function spawn(
     function killProc() {
         if (!status.killed) {
             status.killed = true;
-            // TODO: Try with SIGTERM before.
-            treeKill(proc.pid, "SIGKILL", (err) => {
+            treeKill(proc.pid, "SIGTERM", (err) => {
                 if (err) {
                     log(`Failed to kill process tree of ${proc.pid}: ${err}`);
                     const succeeded = proc.kill("SIGKILL");
@@ -237,4 +236,14 @@ export async function findProjects(): Promise<ProjectList> {
         return 0;
     });
     return new ProjectList(projects);
+}
+
+/**
+ * Given a file in a crate, get the crate reference
+ *
+ * @returns The Project crate or undefined.
+ */
+ export async function getCratePath(file: string): Promise<Project | undefined> {
+    const projects = await findProjects();
+    return projects.getParent(file);
 }

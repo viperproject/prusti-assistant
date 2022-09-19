@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { Location } from "vs-verification-toolbox";
+import * as path from "path";
 import * as util from "./util";
 import { findJavaHome, JavaHome } from "./javaHome";
 
@@ -83,6 +84,10 @@ export const serverAddressPath = `${namespace}.${serverAddressKey}`;
 
 export function serverAddress(): string {
     return config().get(serverAddressKey, "");
+}
+
+export function cachePath(context: vscode.ExtensionContext): string {
+    return path.join(context.globalStoragePath, `cache-${buildChannel()}.bin`)
 }
 
 export function extraPrustiEnv(): Record<string, string> {

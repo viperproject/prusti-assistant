@@ -2,7 +2,7 @@
     "name": "prusti-assistant",
     "displayName": "Prusti Assistant",
     "description": "Verify Rust programs with the Prusti verifier.",
-    "version": "0.10.2",
+    "version": "0.10.3",
     "publisher": "viper-admin",
     "repository": {
         "type": "git",
@@ -56,6 +56,11 @@
             {
                 "command": "prusti-assistant.restart-server",
                 "title": "restart Prusti server",
+                "category": "Prusti"
+            },
+            {
+                "command": "prusti-assistant.clear-cache",
+                "title": "clear verification cache",
                 "category": "Prusti"
             }
         ],
