@@ -16,13 +16,13 @@ jobs:
 
       - name: Update VS Code version used by the tests
         run: |
-          TEST_VSCODE_VERSION="$(cat src/test/data/vscode-version)"
+          TEST_VSCODE_VERSION="$(cat src/test/scenarios/vscode-version)"
           echo "The current version of VS Code used in tests is $TEST_VSCODE_VERSION"
           LATEST_VSCODE_VERSION="$(
             curl -s https://api.github.com/repos/microsoft/vscode/releases/latest | jq -r '.tag_name'
           )"
           echo "The latest version of VS Code is $LATEST_VSCODE_VERSION"
-          echo "$LATEST_VSCODE_VERSION" > src/test/data/vscode-version
+          echo "$LATEST_VSCODE_VERSION" > src/test/scenarios/vscode-version
           echo "TEST_VSCODE_VERSION=$TEST_VSCODE_VERSION" >> $GITHUB_ENV
           echo "LATEST_VSCODE_VERSION=$LATEST_VSCODE_VERSION" >> $GITHUB_ENV
 

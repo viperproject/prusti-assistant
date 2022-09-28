@@ -1,12 +1,13 @@
 import * as path from "path";
 import * as fs from "fs";
+import * as glob from "glob";
 import * as tmp from "tmp";
 
 import { runTests } from "@vscode/test-electron";
 import { assert } from "console";
 
 const PROJECT_ROOT = path.join(__dirname, "..", "..");
-const DATA_ROOT = path.join(PROJECT_ROOT, "src", "test", "data");
+const SCENARIOS_ROOT = path.join(PROJECT_ROOT, "src", "test", "scenarios");
 
 async function main() {
     // The folder containing the Extension Manifest package.json
@@ -19,26 +20,27 @@ async function main() {
 
     // Download VS Code, unzip it and run the integration test
     console.info("Reading VS Code version...");
-    const vscodeVersion = fs.readFileSync(path.join(DATA_ROOT, "vscode-version")).toString().trim();
+    const vscodeVersion = fs.readFileSync(path.join(SCENARIOS_ROOT, "vscode-version")).toString().trim();
     console.info(`Tests will use VS Code version '${vscodeVersion}'`);
     console.info("Reading list of settings...");
-    const settingsList = fs.readdirSync(path.join(DATA_ROOT, "settings")).sort();
-    assert(settingsList.length > 0, "There are no settings to test");
+    const scenarios: Array<string> = glob.sync("*/settings.json", { cwd: SCENARIOS_ROOT })
+        .map(filePath => path.basename(path.dirname(filePath)));
+    assert(scenarios.length > 0, "There are no scenarios to test");
 
     let firstIteration = true;
-    for (const settingsFile of settingsList) {
+    for (const scenario of scenarios) {
         if (!firstIteration) {
             // Workaround for a weird "exit code 55" error that happens on
             // Mac OS when starting a new vscode instance immediately after
             // closing an old one.
             await new Promise(resolve => setTimeout(resolve, 5000));
         }
-        console.info(`Begin testing with settings '${settingsFile}'...`);
+        console.info(`Begin testing scenario '${scenario}'...`);
         const tmpWorkspace = tmp.dirSync({ unsafeCleanup: true });
         try {
             // Prepare the workspace with the settings
             console.info(`Using temporary workspace '${tmpWorkspace.name}'`);
-            const settingsPath = path.join(DATA_ROOT, "settings", settingsFile);
+            const settingsPath = path.join(SCENARIOS_ROOT, scenario, "settings.json");
             const workspaceVSCodePath = path.join(tmpWorkspace.name, ".vscode")
             const workspaceSettingsPath = path.join(workspaceVSCodePath, "settings.json")
             fs.mkdirSync(workspaceVSCodePath);
@@ -49,7 +51,7 @@ async function main() {
                 version: vscodeVersion,
                 extensionDevelopmentPath,
                 extensionTestsPath,
-                extensionTestsEnv: process.env,
+                extensionTestsEnv: { SCENARIO: scenario, ...process.env },
                 // Disable any other extension
                 launchArgs: ["--disable-extensions", tmpWorkspace.name],
             });
@@ -57,7 +59,7 @@ async function main() {
             // Delete folder even in case of errors
             tmpWorkspace.removeCallback();
         }
-        console.info(`End of testing with settings '${settingsFile}'.`);
+        console.info(`End of testing scenario '${scenario}'.`);
         firstIteration = false;
     }
 }

@@ -1,205 +1,211 @@
 {
-    "name": "prusti-assistant",
-    "displayName": "Prusti Assistant",
-    "description": "Verify Rust programs with the Prusti verifier.",
-    "version": "0.10.2",
-    "publisher": "viper-admin",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/viperproject/prusti-assistant.git"
-    },
-    "license": "MIT",
-    "bugs": {
-        "url": "https://github.com/viperproject/prusti-assistant/issues"
-    },
-    "homepage": "https://github.com/viperproject/prusti-assistant",
-    "engines": {
-        "vscode": "^1.43.0",
-        "node": "*"
-    },
-    "categories": [
-        "Programming Languages"
-    ],
-    "keywords": [
-        "rust",
-        "verification",
-        "prusti",
-        "viper"
-    ],
-    "activationEvents": [
-        "onLanguage:rust"
-    ],
-    "main": "./out/extension",
-    "contributes": {
-        "snippets": [
-            {
-                "language": "rust",
-                "path": "./snippets/specs.json"
-            }
-        ],
-        "commands": [
-            {
-                "command": "prusti-assistant.update",
-                "title": "update verifier",
-                "category": "Prusti"
-            },
-            {
-                "command": "prusti-assistant.show-version",
-                "title": "show version",
-                "category": "Prusti"
-            },
-            {
-                "command": "prusti-assistant.verify",
-                "title": "verify the current crate or file",
-                "category": "Prusti"
-            },
-            {
-                "command": "prusti-assistant.restart-server",
-                "title": "restart Prusti server",
-                "category": "Prusti"
-            }
-        ],
-        "configuration": {
-            "title": "Prusti Assistant",
-            "properties": {
-                "prusti-assistant.buildChannel": {
-                    "type": "string",
-                    "default": "LatestRelease",
-                    "enum": [
-                        "LatestRelease",
-                        "LatestDev",
-                        "Local"
-                    ],
-                    "enumDescriptions": [
-                        "The latest release of Prusti.",
-                        "A version with frequent updates that might be unstable or have other issues.",
-                        "A local build of Prusti, specified via localPrustiPath."
-                    ],
-                    "description": "Specifies from which channel Prusti builds are downloaded."
-                },
-                "prusti-assistant.checkForUpdates": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Specifies if Prusti should check for updates at startup."
-                },
-                "prusti-assistant.localPrustiPath": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Specifies the path to the local Prusti installation (has no effect if buildChannel is not set to Local)."
-                },
-                "prusti-assistant.verifyOnSave": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Specifies if programs should be verified on save."
-                },
-                "prusti-assistant.verifyOnOpen": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Specifies if programs should be verified when opened."
-                },
-                "prusti-assistant.reportErrorsOnly": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Specifies if only error messages should be reported, hiding compiler's warnings."
-                },
-                "prusti-assistant.javaHome": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Specifies the path of the Java home folder (leave empty to auto-detect)."
-                },
-                "prusti-assistant.serverAddress": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Specifies the address of a Prusti server to use for verification. If not set, the extension will start up and manage its own server."
-                },
-                "prusti-assistant.extraPrustiEnv": {
-                    "type": "object",
-                    "default": {
-                        "RUST_BACKTRACE": "true",
-                        "PRUSTI_LOG": "info"
-                    },
-                    "additionalProperties": {
-                        "type": "string"
-                    },
-                    "description": "Specifies additional environment variables to be passed to all Prusti runs. Remember to restart the Prusti Server after modifying this setting."
-                },
-                "prusti-assistant.extraPrustiRustcArgs": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "default": [
-                        "--edition=2018"
-                    ],
-                    "description": "Specifies additional arguments to be passed to Prusti-Rustc. Used when verifying a Rust file that is not part of a crate."
-                },
-                "prusti-assistant.extraCargoPrustiArgs": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "default": [],
-                    "description": "Specifies additional arguments to be passed to Cargo-Prusti. Used when verifying a crate."
-                },
-                "prusti-assistant.extraPrustiServerArgs": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "default": [],
-                    "description": "Specifies additional arguments to be passed to the Prusti Server. Remember to restart the Prusti Server after modifying this setting."
-                }
-            }
-        }
-    },
-    "scripts": {
-        "webpack-production": "webpack --mode production",
-        "webpack-development": "webpack --mode development",
-        "tsc": "tsc",
-        "vscode:prepublish": "npm-run-all --sequential clean webpack-production",
-        "compile": "npm-run-all --sequential clean webpack-development",
-        "lint": "eslint -c .eslintrc --ext .ts ./src",
-        "test-compile": "npm-run-all --sequential clean tsc",
-        "pretest": "npm run test-compile",
-        "test": "node ./out/test/runTest.js",
-        "report-coverage": "nyc report --reporter=html",
-        "clean": "rimraf out",
-        "package": "vsce package --no-dependencies"
-    },
-    "devDependencies": {
-        "@types/chai": "^4.3.3",
-        "@types/fs-extra": "^9.0.13",
-        "@types/glob": "^7.2.0",
-        "@types/mocha": "^9.1.1",
-        "@types/node": "^14.18.29",
-        "@types/tmp": "^0.2.3",
-        "@types/vscode": "^1.43.0",
-        "@typescript-eslint/eslint-plugin": "^4.33.0",
-        "@typescript-eslint/parser": "^4.33.0",
-        "@vscode/test-electron": "^1.6.2",
-        "chai": "^4.3.6",
-        "eslint": "^7.32.0",
-        "eslint-plugin-import": "^2.26.0",
-        "eslint-plugin-jsdoc": "^36.1.1",
-        "eslint-plugin-prefer-arrow": "^1.2.3",
-        "eslint-plugin-react": "^7.31.8",
-        "glob": "^7.2.3",
-        "mocha": "^9.2.2",
-        "npm-run-all": "^4.1.5",
-        "nyc": "^15.1.0",
-        "rimraf": "^3.0.2",
-        "ts-loader": "^9.4.0",
-        "typescript": "^4.8.3",
-        "vsce": "^2.11.0",
-        "webpack": "^5.74.0",
-        "webpack-cli": "^4.10.0"
-    },
-    "dependencies": {
-        "@viperproject/locate-java-home": "git+https://github.com/viperproject/locate-java-home.git",
-        "fs-extra": "^10.1.0",
-        "locate-java-home": "git+https://github.com/viperproject/locate-java-home.git",
-        "tmp": "^0.2.1",
-        "tree-kill": "^1.2.2",
-        "vs-verification-toolbox": "git+https://github.com/viperproject/vs-verification-toolbox.git"
-    }
+	"name": "prusti-assistant",
+	"displayName": "Prusti Assistant",
+	"description": "Verify Rust programs with the Prusti verifier.",
+	"version": "0.10.2",
+	"publisher": "viper-admin",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/viperproject/prusti-assistant.git"
+	},
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/viperproject/prusti-assistant/issues"
+	},
+	"homepage": "https://github.com/viperproject/prusti-assistant",
+	"engines": {
+		"vscode": "^1.43.0",
+		"node": "*"
+	},
+	"categories": [
+		"Programming Languages"
+	],
+	"keywords": [
+		"rust",
+		"verification",
+		"prusti",
+		"viper"
+	],
+	"activationEvents": [
+		"onLanguage:rust"
+	],
+	"main": "./out/extension",
+	"contributes": {
+		"snippets": [
+			{
+				"language": "rust",
+				"path": "./snippets/specs.json"
+			}
+		],
+		"commands": [
+			{
+				"command": "prusti-assistant.update",
+				"title": "update verifier",
+				"category": "Prusti"
+			},
+			{
+				"command": "prusti-assistant.show-version",
+				"title": "show version",
+				"category": "Prusti"
+			},
+			{
+				"command": "prusti-assistant.verify",
+				"title": "verify the current crate or file",
+				"category": "Prusti"
+			},
+			{
+				"command": "prusti-assistant.restart-server",
+				"title": "restart Prusti server",
+				"category": "Prusti"
+			}
+		],
+		"configuration": {
+			"title": "Prusti Assistant",
+			"properties": {
+				"prusti-assistant.buildChannel": {
+					"type": "string",
+					"default": "LatestRelease",
+					"enum": [
+						"LatestRelease",
+						"LatestDev",
+						"Local"
+					],
+					"enumDescriptions": [
+						"The latest release of Prusti.",
+						"A version with frequent updates that might be unstable or have other issues.",
+						"A local build of Prusti, specified via localPrustiPath."
+					],
+					"description": "Specifies from which channel Prusti builds are downloaded."
+				},
+				"prusti-assistant.checkForUpdates": {
+					"type": "boolean",
+					"default": true,
+					"description": "Specifies if Prusti should check for updates at startup."
+				},
+				"prusti-assistant.localPrustiPath": {
+					"type": "string",
+					"default": "",
+					"description": "Specifies the path to the local Prusti installation (has no effect if buildChannel is not set to Local)."
+				},
+				"prusti-assistant.verifyOnSave": {
+					"type": "boolean",
+					"default": false,
+					"description": "Specifies if programs should be verified on save."
+				},
+				"prusti-assistant.verifyOnOpen": {
+					"type": "boolean",
+					"default": false,
+					"description": "Specifies if programs should be verified when opened."
+				},
+				"prusti-assistant.reportErrorsOnly": {
+					"type": "boolean",
+					"default": false,
+					"description": "Specifies if only error messages should be reported, hiding compiler's warnings."
+				},
+				"prusti-assistant.javaHome": {
+					"type": "string",
+					"default": "",
+					"description": "Specifies the path of the Java home folder (leave empty to auto-detect)."
+				},
+				"prusti-assistant.serverAddress": {
+					"type": "string",
+					"default": "",
+					"description": "Specifies the address of a Prusti server to use for verification. If not set, the extension will start up and manage its own server."
+				},
+				"prusti-assistant.extraPrustiEnv": {
+					"type": "object",
+					"default": {
+						"RUST_BACKTRACE": "true",
+						"PRUSTI_LOG": "info"
+					},
+					"additionalProperties": {
+						"type": "string"
+					},
+					"description": "Specifies additional environment variables to be passed to all Prusti runs. Remember to restart the Prusti Server after modifying this setting."
+				},
+				"prusti-assistant.extraPrustiRustcArgs": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [
+						"--edition=2018"
+					],
+					"description": "Specifies additional arguments to be passed to Prusti-Rustc. Used when verifying a Rust file that is not part of a crate."
+				},
+				"prusti-assistant.extraCargoPrustiArgs": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [],
+					"description": "Specifies additional arguments to be passed to Cargo-Prusti. Used when verifying a crate."
+				},
+				"prusti-assistant.extraPrustiServerArgs": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [],
+					"description": "Specifies additional arguments to be passed to the Prusti Server. Remember to restart the Prusti Server after modifying this setting."
+				}
+			}
+		}
+	},
+	"scripts": {
+		"webpack-production": "webpack --mode production",
+		"webpack-development": "webpack --mode development",
+		"tsc": "tsc",
+		"vscode:prepublish": "npm-run-all --sequential clean webpack-production",
+		"compile": "npm-run-all --sequential clean webpack-development",
+		"lint": "eslint -c .eslintrc --ext .ts ./src",
+		"test-compile": "npm-run-all --sequential clean tsc",
+		"pretest": "npm run test-compile",
+		"test": "node ./out/test/runTest.js",
+		"report-coverage": "nyc report --reporter=html",
+		"clean": "rimraf out",
+		"package": "vsce package --no-dependencies"
+	},
+	"devDependencies": {
+		"@types/chai": "^4.3.3",
+		"@types/fs-extra": "^9.0.13",
+		"@types/glob": "^7.2.0",
+		"@types/mocha": "^9.1.1",
+		"@types/node": "^14.18.29",
+		"@types/tmp": "^0.2.3",
+		"@types/vscode": "^1.43.0",
+		"@typescript-eslint/eslint-plugin": "^4.33.0",
+		"@typescript-eslint/parser": "^4.33.0",
+		"@vscode/test-electron": "^1.6.2",
+		"chai": "^4.3.6",
+		"eslint": "^7.32.0",
+		"eslint-plugin-import": "^2.26.0",
+		"eslint-plugin-jsdoc": "^36.1.1",
+		"eslint-plugin-prefer-arrow": "^1.2.3",
+		"eslint-plugin-react": "^7.31.8",
+		"glob": "^7.2.3",
+		"mocha": "^9.2.2",
+		"npm-run-all": "^4.1.5",
+		"nyc": "^15.1.0",
+		"rimraf": "^3.0.2",
+		"ts-loader": "^9.4.0",
+		"typescript": "^4.8.3",
+		"vsce": "^2.11.0",
+		"webpack": "^5.74.0",
+		"webpack-cli": "^4.10.0"
+	},
+	"dependencies": {
+		"@viperproject/locate-java-home": "git+https://github.com/viperproject/locate-java-home.git",
+		"fs-extra": "^10.1.0",
+		"locate-java-home": "git+https://github.com/viperproject/locate-java-home.git",
+		"tmp": "^0.2.1",
+		"tree-kill": "^1.2.2",
+		"vs-verification-toolbox": "git+https://github.com/viperproject/vs-verification-toolbox.git"
+	},
+	"__metadata": {
+		"id": "03644baf-8510-4e01-9bc8-ef0269607dba",
+		"publisherDisplayName": "Chair of Programming Methodology - ETH Zurich",
+		"publisherId": "40c87fab-912c-4304-b2ee-b6c71e280a3c",
+		"isPreReleaseVersion": false
+	}
 }
