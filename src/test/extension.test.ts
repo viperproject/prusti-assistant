@@ -36,7 +36,7 @@ function openFile(filePath: string): Promise<vscode.TextDocument> {
  * @param name The name of the filter.
  * @returns True if the filter is fully satisfied, otherwise false.
  */
-function evaluateFilter(filter: {}, name: string): Boolean {
+function evaluateFilter(filter: Record<string, string>, name: string): boolean {
     for (const [key, value] of Object.entries(filter)) {
         let actualValue: string
         if (key == "os") {
