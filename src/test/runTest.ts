@@ -35,7 +35,9 @@ async function main() {
             // closing an old one.
             await new Promise(resolve => setTimeout(resolve, 5000));
         }
-        console.info(`Begin testing scenario '${scenario}'...`);
+        console.info("")
+        console.info(`========== Testing scenario '${scenario}' ==========`);
+        console.info("")
         const tmpWorkspace = tmp.dirSync({ unsafeCleanup: true });
         try {
             // Prepare the workspace with the settings
