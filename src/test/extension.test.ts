@@ -96,7 +96,7 @@ describe("Extension", () => {
         await extension.deactivate();
     })
 
-    it("can update Prusti", async () => {
+    it(`scenario ${SCENARIO} can update Prusti`, async () => {
         // tests are run serially, so nothing will run & break while we're updating
         await openFile(path.join(workspacePath(), "programs", "assert_true.rs"));
         await vscode.commands.executeCommand("prusti-assistant.update");
@@ -109,7 +109,7 @@ describe("Extension", () => {
     console.log(`Creating tests for ${programs.length} programs: ${programs}`);
     assert.ok(programs.length >= 3, `There are not enough programs to test (${programs.length})`);
     programs.forEach(program => {
-        it(`reports expected diagnostics on ${program}`, async () => {
+        it(`scenario ${SCENARIO} reports expected diagnostics on ${program}`, async () => {
             const programPath = path.join(workspacePath(), program);
             const document = await openFile(programPath);
             await vscode.commands.executeCommand("prusti-assistant.verify");
