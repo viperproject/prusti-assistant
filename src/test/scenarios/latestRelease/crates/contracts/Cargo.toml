@@ -4,4 +4,4 @@ version = "0.1.0"
 edition = "2018"
 
 [dependencies]
-prusti-contracts = { git = "https://github.com/viperproject/prusti-dev.git", ref = "4dfd34d" }
+prusti-contracts = { git = "https://github.com/viperproject/prusti-dev.git", ref = "fea18a14279" }
