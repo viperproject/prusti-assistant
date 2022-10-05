@@ -70,6 +70,13 @@ This extension automatically provides inline diagnostics for Prusti errors.
 
 Basic code-completion snippets are provided for Prusti annotations.
 
+## Verification cache
+
+By default, Prusti transparently caches verification requests.
+
+* When running Prusti in a crate the cache is stored on disk in the `target/verify` folder. To clear the cache: close vscode, delete that folder, then reopen vscode.
+* When running Prusti on standalone Rust programs the cache is not persisted on disk. To clear the cache, it's enough to restart the Prusti server with the command explained above.
+
 ## Troubleshooting
 
 If Prusti fails to run, you can inspect Prusti's log from VS Code (View -> Output -> Prusti Assistant) and see if one of the following solutions applies to you.
