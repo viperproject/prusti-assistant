@@ -2,12 +2,13 @@ import * as vvt from "vs-verification-toolbox";
 import * as path from "path";
 import * as vscode from "vscode";
 import * as process from "process";
+import * as fs from "fs-extra";
 import * as config from "../config";
 
-export function prustiTools(
+export async function prustiTools(
     platform: vvt.Platform,
     context: vscode.ExtensionContext
-): vvt.Dependency<config.BuildChannel> {
+): Promise<vvt.Dependency<config.BuildChannel>> {
     const id = identifier(platform);
     const channel = config.BuildChannel;
 
@@ -31,6 +32,15 @@ export function prustiTools(
             authorization_token,
         );
     }
+
+    if (config.buildChannel() == config.BuildChannel.Local
+          && !await fs.pathExists(config.localPrustiPath())) {
+        throw new Error(
+            "In the settings the Prusti channel is local, but the specified local path "
+            + `'${config.localPrustiPath()}' does not exist.`
+        );
+    }
+
     return new vvt.Dependency(
         path.join(context.globalStoragePath, "prustiTools"),
         [channel.LatestRelease, new vvt.GitHubZipExtractor(getReleaseUrl, "prusti", authorization_token)],
