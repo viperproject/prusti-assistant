@@ -15,10 +15,10 @@ For advanced use cases, consider switching to the [command-line version of Prust
 
 In order to use this extension, please install the following components:
 
-* Java JDK version 11 or later, 64 bit. We recommend [OpenJDK 15.0.1](https://jdk.java.net/15/).
+* Java JDK version 11 or later, 64 bit. For example, [OpenJDK](https://jdk.java.net/).
 * [Rustup version 1.23.0 or later](https://rustup.rs/). On Windows, this in turn requires the [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/).
 
-If anything fails, check the "Troubleshooting" section below.
+If anything fails, check the "Troubleshooting" section below. Note that macOS running on M1 is currently not supported by this extension.
 
 ## First Usage
 
@@ -87,5 +87,6 @@ If Prusti fails to run, you can inspect Prusti's log from VS Code (View -> Outpu
 | `error: the 'cargo' binary, normally provided by the 'cargo' component, is not applicable to the 'nightly-2021-09-20-x86_64-unknown-linux-gnu' toolchain` <br/> or <br/> `error[E0463]: can't find crate for std` <br/> or <br/> `error[E0463]: can't find crate for core` | The Rust toolchain installed by Rustup is probably corrupted (see issue [rustup/#2417](https://github.com/rust-lang/rustup/issues/2417)). [Uninstall](https://stackoverflow.com/questions/42322879/how-to-remove-rust-compiler-toolchains-with-rustup) the nightly toolchain mentioned in the error (or all installed nightly toolchains). Then, rerun Prusti. |
 | `error: no override and no default toolchain set` | Rustup has probably been installed without the `default` toolchain. [Install it](https://stackoverflow.com/a/46864309/2491528), then rerun Prusti. |
 | `libssl.so.1.1: cannot open shared object file: No such file or directory` on Ubuntu 22.04 | Ubuntu 22.04 deprecated `libssl1.1` and moved to `libssl3`. Consider [this solution](https://stackoverflow.com/a/72366805/2491528) as a temporary workaround to install `libssl1.1`, or compile Prusti from source code to make it use `libssl3`. |
+| On macOS running on an M1 chip, the extension doesn't work and the log contains messages such as `incompatible architecture (have (arm64), need (x86_64))`. | We currently don't release precompiled arm64 binaries for macOS. Until we do so, the only option is to [compile Prusti from source code](https://github.com/viperproject/prusti-dev). |
 
-Thanks to @Pointerbender and @michaelpaper for their help in reporting, debugging and solving many of these issues!
+Thanks to @Pointerbender, @michaelpaper, @fcoury, @Gadiguibou, @djc for their help in reporting, debugging and solving many of these issues!
