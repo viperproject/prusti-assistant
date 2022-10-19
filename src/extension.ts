@@ -65,9 +65,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     if (config.checkForUpdates()) {
         util.log("Checking for updates...");
         if (await checks.isOutdated(prusti!)) {
-            util.log("Prusti is outdated.");
+            util.log("The Prusti version is outdated.");
             util.userInfoPopup(
-                "The Prusti verifier is outdated.",
+                "Your version of Prusti is outdated.",
                 "Download Update",
                 () => {
                     vscode.commands.executeCommand(updateCommand)
