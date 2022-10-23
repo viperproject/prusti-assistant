@@ -18,7 +18,7 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
 
         // TODO: Stop prusti-rustc and cargo-prusti
 
-        const deps = prustiTools(tools.currentPlatform!, context);
+        const deps = await prustiTools(tools.currentPlatform!, context);
         const { result, didReportProgress } = await tools.withProgressInWindow(
             `${shouldUpdate ? "Updating" : "Installing"} Prusti`,
             listener => deps.install(config.buildChannel(), shouldUpdate, listener)
@@ -49,7 +49,7 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
             prusti.rustToolchainFile(),
         );
     } catch (err) {
-        util.userError(`Error installing Prusti: ${err}`, false, verificationStatus);
+        util.userError(`Error installing Prusti: ${err}`, true, verificationStatus);
         throw err;
     } finally {
         await server.restart(context, verificationStatus);
