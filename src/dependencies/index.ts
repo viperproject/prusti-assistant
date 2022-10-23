@@ -70,19 +70,3 @@ export async function prustiVersion(): Promise<string> {
     return version;
 }
 
-export async function spanInfo(): Promise<string> {
-    const active_editor = vscode.window.activeTextEditor;
-    if (!active_editor) {
-        return "no info currently";
-    }
-    const doc = active_editor.document;
-    const selection = active_editor.selection;
-    const offset = doc.offsetAt(selection.anchor);
-    
-    // todo: find the end of this token.
-
-    
-    await util.spawn(prusti!.prustiRustc, ["--spaninfo", offset.toString(), doc.fileName]);
-    // need to get info
-    return doc.fileName +":"+ offset.toString();
-}

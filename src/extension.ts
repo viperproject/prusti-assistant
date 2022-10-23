@@ -3,7 +3,7 @@ import * as config from "./config";
 import * as util from "./util";
 import * as diagnostics from "./diagnostics";
 import * as checks from "./checks";
-import { prusti, installDependencies, prustiVersion, spanInfo } from "./dependencies";
+import { prusti, installDependencies, prustiVersion } from "./dependencies";
 import * as server from "./server";
 import * as state from "./state";
 
@@ -90,11 +90,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         })
     );
 
-    context.subscriptions.push(
-        vscode.commands.registerCommand(spanInfoCommand, async () => {
-            util.userInfo(await spanInfo());
-        })
-    );
 
     // Verify on click
     const verifyProgramButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 12);
@@ -193,6 +188,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             );
         }
     }
+    
+    context.subscriptions.push(
+        vscode.commands.registerCommand(spanInfoCommand, async () => {
+            util.userInfo(await verificationManager.invoke_spaninfo(
+                prusti!,
+                server.address || "",
+                vscode.window.activeTextEditor!.document.uri.fsPath
+            ));
+        })
+    );
 
     // Verify on command
     context.subscriptions.push(

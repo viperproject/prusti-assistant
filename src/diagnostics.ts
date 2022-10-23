@@ -4,6 +4,8 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as vvt from "vs-verification-toolbox";
 import * as dependencies from "./dependencies";
+import { spanInfo } from "./spaninfo";
+import { outputFile } from "fs-extra";
 
 // ========================================================
 // JSON Schemas
@@ -583,6 +585,11 @@ export class DiagnosticsManager {
     public killAll(): void {
         util.log(`Killing ${this.procDestructors.size} processes.`);
         this.procDestructors.forEach((kill) => kill());
+    }
+    
+    public async invoke_spaninfo(prusti: dependencies.PrustiLocation, serverAddress: string, targetPath: string): Promise<string> {
+        let output = await spanInfo(prusti, serverAddress, this.procDestructors);
+        return output;
     }
 
     public async verify(prusti: dependencies.PrustiLocation, serverAddress: string, targetPath: string, target: VerificationTarget): Promise<void> {
