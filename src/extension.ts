@@ -3,16 +3,20 @@ import * as config from "./config";
 import * as util from "./util";
 import * as diagnostics from "./diagnostics";
 import * as checks from "./checks";
-import { prusti, installDependencies, prustiVersion } from "./dependencies";
+import { prusti, installDependencies, prustiVersion, spanInfo } from "./dependencies";
 import * as server from "./server";
 import * as state from "./state";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
+    util.userInfoPopup("Trying to activate prusti assistant...", "no action to be taken", ()=>{});
     util.log("Activate Prusti Assistant");
     const showVersionCommand = "prusti-assistant.show-version";
     const verifyProgramCommand = "prusti-assistant.verify";
     const killAllCommand = "prusti-assistant.killAll";
     const updateCommand = "prusti-assistant.update";
+    
+    // new command for prototype:
+    const spanInfoCommand = "prusti-assistant.span-info";
 
     // Verification status
     const verificationStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
@@ -83,6 +87,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     context.subscriptions.push(
         vscode.commands.registerCommand(showVersionCommand, async () => {
             util.userInfo(await prustiVersion());
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand(spanInfoCommand, async () => {
+            util.userInfo(await spanInfo());
         })
     );
 

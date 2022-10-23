@@ -18,7 +18,7 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
 
         // TODO: Stop prusti-rustc and cargo-prusti
 
-        const deps = await prustiTools(tools.currentPlatform!, context);
+        const deps = prustiTools(tools.currentPlatform!, context);
         const { result, didReportProgress } = await tools.withProgressInWindow(
             `${shouldUpdate ? "Updating" : "Installing"} Prusti`,
             listener => deps.install(config.buildChannel(), shouldUpdate, listener)
@@ -49,10 +49,7 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
             prusti.rustToolchainFile(),
         );
     } catch (err) {
-        util.userError(
-            `Error installing Prusti. Please restart the IDE to retry. Details: ${err}`,
-            true, verificationStatus
-        );
+        util.userError(`Error installing Prusti: ${err}`, false, verificationStatus);
         throw err;
     } finally {
         await server.restart(context, verificationStatus);
@@ -71,4 +68,21 @@ export async function prustiVersion(): Promise<string> {
         version = "Prusti version: " + version;
     }
     return version;
+}
+
+export async function spanInfo(): Promise<string> {
+    const active_editor = vscode.window.activeTextEditor;
+    if (!active_editor) {
+        return "no info currently";
+    }
+    const doc = active_editor.document;
+    const selection = active_editor.selection;
+    const offset = doc.offsetAt(selection.anchor);
+    
+    // todo: find the end of this token.
+
+    
+    await util.spawn(prusti!.prustiRustc, ["--spaninfo", offset.toString(), doc.fileName]);
+    // need to get info
+    return doc.fileName +":"+ offset.toString();
 }
