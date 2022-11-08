@@ -588,7 +588,7 @@ export class DiagnosticsManager {
     }
     
     public async invoke_spaninfo(prusti: dependencies.PrustiLocation, serverAddress: string, targetPath: string): Promise<string> {
-        let output = await spanInfo(prusti, serverAddress, this.procDestructors);
+        const output = await spanInfo(prusti, serverAddress, this.procDestructors);
         return output;
     }
 

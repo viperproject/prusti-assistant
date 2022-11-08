@@ -25,7 +25,7 @@ export async function spanInfo(prusti: PrustiLocation, serverAddress: string, de
     const programPath = doc.fileName;
     
     const prustiRustcArgs = [
-        "-Pspaninfo=" + offset,
+        "-Pshow_ide_info=true",
         "--crate-type=lib",
         "--error-format=json",
         programPath
@@ -54,6 +54,9 @@ export async function spanInfo(prusti: PrustiLocation, serverAddress: string, de
         },
         destructors
     )
+    
+    // todo: parse the output
+    // let obj = JSON.parse(output.stdout);
     return output.stdout;
     
     // await util.spawn(prusti!.prustiRustc, ["--Pspaninfo", offset.toString(), doc.fileName]);
