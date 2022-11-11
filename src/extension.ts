@@ -216,7 +216,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Verify on save
     context.subscriptions.push(
         vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {
-            if (document.languageId === "rust" && config.verifyOnSave()) {
+            const is_prusti_toml = document.fileName.endsWith("Prusti.toml");
+            if ((is_prusti_toml || document.languageId === "rust") && config.verifyOnSave()) {
                 await verify(document);
             }
         })

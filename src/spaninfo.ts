@@ -54,7 +54,7 @@ export async function spanInfo(prusti: PrustiLocation, serverAddress: string, de
         },
         destructors
     )
-    
+    //
     // todo: parse the output
     // let obj = JSON.parse(output.stdout);
     return output.stdout;

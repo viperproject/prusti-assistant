@@ -6,6 +6,7 @@ import * as vvt from "vs-verification-toolbox";
 import * as dependencies from "./dependencies";
 import { spanInfo } from "./spaninfo";
 import { outputFile } from "fs-extra";
+import { utils } from "mocha";
 
 // ========================================================
 // JSON Schemas
@@ -54,6 +55,17 @@ interface Span {
 
 interface Expansion {
     span: Span;
+}
+
+
+// Additional Schemas for Custom information for IDE:
+interface IdeInfo {
+    procedure_defs: []
+}
+
+interface ProcDef {
+    name: string,
+    span: Span,
 }
 
 // ========================================================
@@ -115,6 +127,7 @@ function parseCargoOutput(output: string): CargoMessage[] {
         if (diag.message !== undefined) {
             messages.push(diag);
         }
+
     }
     return messages;
 }
@@ -133,6 +146,22 @@ function parseRustcOutput(output: string): Message[] {
         }
     }
     return messages;
+}
+
+function parseIdeInfo(output: string): IdeInfo | null {
+    let result: IdeInfo;
+    for (const line of output.split("\n")) {
+        if (line[0] !== "{") {
+            continue;
+        }
+
+        // Parse the message into a diagnostic.
+        result = JSON.parse(line) as IdeInfo;
+        if (result.procedure_defs !== undefined) {
+            return result;
+        }
+    }
+    return null;
 }
 
 function getCallSiteSpan(span: Span): Span {
@@ -354,10 +383,12 @@ async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation, rootPa
     const cargoPrustiArgs = ["--message-format=json"].concat(
         config.extraCargoPrustiArgs()
     );
+    util.log("passed args:" + cargoPrustiArgs.toString());
     const cargoPrustiEnv = {
         ...process.env,  // Needed to run Rustup
         ...{
             PRUSTI_SERVER_ADDRESS: serverAddress,
+            PRUSTI_SHOW_IDE_INFO: "true",
             PRUSTI_QUIET: "true",
             JAVA_HOME: (await config.javaHome())!.path,
         },
@@ -396,6 +427,13 @@ async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation, rootPa
             parseCargoMessage(messages, rootPath)
         );
     }
+    const ide_info: IdeInfo | null = parseIdeInfo(output.stdout);
+    if (ide_info !== null) {
+        util.log("IDE info was not null!");
+    } else {
+        util.log("No IDE info");
+    }
+        
     return [diagnostics, status, output.duration];
 }
 
@@ -417,6 +455,7 @@ async function queryProgramDiagnostics(prusti: dependencies.PrustiLocation, prog
         ...process.env,  // Needed to run Rustup
         ...{
             PRUSTI_SERVER_ADDRESS: serverAddress,
+            PRUSTI_SHOW_IDE_INFO: "true",
             PRUSTI_QUIET: "true",
             JAVA_HOME: (await config.javaHome())!.path,
         },
@@ -450,10 +489,14 @@ async function queryProgramDiagnostics(prusti: dependencies.PrustiLocation, prog
         status = VerificationStatus.Crash;
     }
     const diagnostics: Diagnostic[] = [];
+    let ide_info = parseIdeInfo(output.stdout);
     for (const messages of parseRustcOutput(output.stderr)) {
         diagnostics.push(
             parseRustcMessage(messages, programPath)
         );
+    }
+    if (ide_info?.procedure_defs !== undefined) {
+        util.log("Parsing IDE Info must have been somewhat successful");
     }
     return [diagnostics, status, output.duration];
 }
