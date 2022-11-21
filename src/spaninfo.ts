@@ -3,6 +3,8 @@ import * as config from "./config";
 import * as vscode from "vscode";
 import * as path from "path";
 import * as dependencies from "./dependencies";
+import {IdeInfo} from "./diagnostics";
+
 
 export * from "./dependencies/PrustiLocation";
 import * as tools from "vs-verification-toolbox";
@@ -10,56 +12,54 @@ import * as server from "./server";
 import * as rustup from "./dependencies/rustup";
 import { PrustiLocation } from "./dependencies/PrustiLocation";
 import { prustiTools } from "./dependencies/prustiTools";
+import { DiagnosticsManager } from "./diagnostics";
 
 
-
-export async function spanInfo(prusti: PrustiLocation, serverAddress: string, destructors: Set<util.KillFunction>): Promise<string> {
-    const active_editor = vscode.window.activeTextEditor;
-    if (!active_editor) {
-        return "no info currently";
-    }
-    console.log("reached function spaninfo");
-    const doc = active_editor.document;
-    const selection = active_editor.selection;
-    const offset = doc.offsetAt(selection.anchor);
-    const programPath = doc.fileName;
+export function handle_ide_info(ide_info: IdeInfo | null) : void {
+    util.log("hello from handle_ide_info");    
     
-    const prustiRustcArgs = [
-        "-Pshow_ide_info=true",
-        "--crate-type=lib",
-        "--error-format=json",
-        programPath
-    ].concat(
-        config.extraPrustiRustcArgs()
-    );
-    const prustiRustcEnv = {
-        ...process.env,  // Needed to run Rustup
-        ...{
-            PRUSTI_SERVER_ADDRESS: serverAddress,
-            PRUSTI_QUIET: "true",
-            JAVA_HOME: (await config.javaHome())!.path,
-        },
-        ...config.extraPrustiEnv(),
-    }
-    // todo: find the end of this token. Or should this be done in rust?
-    // flowistry apparently does this in rust
-    const output = await util.spawn(
-        prusti.prustiRustc,
-        prustiRustcArgs,
-        {
-            options: {
-                cwd: path.dirname(programPath),
-                env: prustiRustcEnv,
+    vscode.languages.registerCodeLensProvider( 'rust', {
+        provideCodeLenses(document: vscode.TextDocument, token: vscode.CancellationToken): vscode.CodeLens[] {
+            const codeLenses: vscode.CodeLens[] = [];
+            for (const fc of ide_info!.procedure_defs) {
+                if (fc.filename === document.fileName) {
+                    const codeLens = new vscode.CodeLens(fc.range);
+                    codeLens.command = {
+                        title: "▶ verify",
+                        command: "prusti.verify",
+                        // TODO: invoke selective verification here
+                        //arguments: [document, fc.range]
+                    };
+                    codeLenses.push(codeLens);
+                } else {
+                    util.log("not applicable: " + fc.filename + " vs " + document.fileName);
+                }
             }
-        },
-        destructors
-    )
-    //
-    // todo: parse the output
-    // let obj = JSON.parse(output.stdout);
-    return output.stdout;
-    
-    // await util.spawn(prusti!.prustiRustc, ["--Pspaninfo", offset.toString(), doc.fileName]);
-    // need to get info
-    // return doc.fileName +":"+ offset.toString();
+            return codeLenses;
+        }
+    });        
+
+    vscode.languages.registerCodeActionsProvider( 'rust', {
+        provideCodeActions(document: vscode.TextDocument, range: vscode.Range, context: vscode.CodeActionContext, token: vscode.CancellationToken): vscode.CodeAction[] {
+            util.log("Code Action range:" + range.start.line + ":" + range.start.character + " - " + range.end.line + ":" + range.end.character);
+            const codeActions: vscode.CodeAction[] = [];
+            for (const fc of ide_info!.function_calls) {
+                util.log("against range of " + fc.name + " at");
+                util.log("Code Action range:" + fc.range.start.line + ":" + fc.range.start.character + " - " + fc.range.end.line + ":" + fc.range.end.character);
+                if (fc.filename === document.fileName && fc.range.contains(range)) {
+                    util.log("Yes this one matches")
+                    const codeAction = new vscode.CodeAction("create external specification", vscode.CodeActionKind.QuickFix);
+                    // codeAction.command = {
+                    //     title: "Verify",
+                    //     command: "prusti.verify",
+                    //     arguments: [document, range]
+                    // };
+                    codeActions.push(codeAction);
+                }
+            }
+            return codeActions;
+        }
+    });
+
 }
+

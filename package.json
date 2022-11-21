@@ -57,11 +57,6 @@
                 "command": "prusti-assistant.restart-server",
                 "title": "restart Prusti server",
                 "category": "Prusti"
-            },
-            {
-                "command": "prusti-assistant.span-info",
-                "title": "process span of a token to get information about it",
-                "category": "Prusti"
             }
         ],
         "configuration": {

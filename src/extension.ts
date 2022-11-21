@@ -8,15 +8,13 @@ import * as server from "./server";
 import * as state from "./state";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-    util.userInfoPopup("Trying to activate prusti assistant...", "no action to be taken", ()=>{});
+    util.userInfoPopup("Trying to activate prusti assistant...", "no action to be taken", () => {});
     util.log("Activate Prusti Assistant");
     const showVersionCommand = "prusti-assistant.show-version";
     const verifyProgramCommand = "prusti-assistant.verify";
     const killAllCommand = "prusti-assistant.killAll";
     const updateCommand = "prusti-assistant.update";
     
-    // new command for prototype:
-    const spanInfoCommand = "prusti-assistant.span-info";
 
     // Verification status
     const verificationStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
@@ -188,16 +186,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             );
         }
     }
-    
-    context.subscriptions.push(
-        vscode.commands.registerCommand(spanInfoCommand, async () => {
-            util.userInfo(await verificationManager.invoke_spaninfo(
-                prusti!,
-                server.address || "",
-                vscode.window.activeTextEditor!.document.uri.fsPath
-            ));
-        })
-    );
 
     // Verify on command
     context.subscriptions.push(

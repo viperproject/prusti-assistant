@@ -4,7 +4,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as vvt from "vs-verification-toolbox";
 import * as dependencies from "./dependencies";
-import { spanInfo } from "./spaninfo";
+import { handle_ide_info } from "./spaninfo";
 import { outputFile } from "fs-extra";
 import { utils } from "mocha";
 
@@ -59,14 +59,28 @@ interface Expansion {
 
 
 // Additional Schemas for Custom information for IDE:
-interface IdeInfo {
-    procedure_defs: []
+export interface IdeInfoRust {
+    procedure_defs: ProcDefRust[]
+    function_calls: ProcDefRust[]
 }
 
-interface ProcDef {
+interface ProcDefRust {
     name: string,
     span: Span,
 }
+
+// In this schema we adjusted spans and 
+// also adjusted filepaths for crates
+export interface IdeInfo {
+    procedure_defs: ProcDef[],
+    function_calls: ProcDef[],
+}
+interface ProcDef {
+    name: string,
+    filename: string,
+    range: vscode.Range,
+}
+
 
 // ========================================================
 // Diagnostic Parsing
@@ -107,9 +121,13 @@ function parseMultiSpanRange(multiSpan: Span[]): vscode.Range {
 }
 
 function parseSpanRange(span: Span): vscode.Range {
+    let col_start = span.column_start - 1;
+    if (span.column_start == 0) {
+        col_start = 0;
+    }
     return new vscode.Range(
         span.line_start - 1,
-        span.column_start - 1,
+        col_start,
         span.line_end - 1,
         span.column_end - 1,
     );
@@ -148,17 +166,42 @@ function parseRustcOutput(output: string): Message[] {
     return messages;
 }
 
-function parseIdeInfo(output: string): IdeInfo | null {
-    let result: IdeInfo;
+function transformIdeInfo(info: IdeInfoRust, root: string): IdeInfo {
+    util.log("Transforming IDE info, is this one failing?");
+    const result: IdeInfo = {
+        procedure_defs: [],
+        function_calls: [],
+    };
+    for (const proc of info.procedure_defs) {
+        result.procedure_defs.push({
+            name: proc.name,
+            filename: root + proc.span.file_name,
+            range: parseSpanRange(proc.span),
+        });
+    }
+    for (const proc of info.function_calls) {
+        result.function_calls.push({
+            name: proc.name,
+            filename: root + proc.span.file_name,
+            range: parseSpanRange(proc.span),
+        });
+    }
+    util.log("Transformed IDE info");
+    return result;
+}
+
+function parseIdeInfo(output: string, root: string): IdeInfo | null {
+    let result: IdeInfoRust;
     for (const line of output.split("\n")) {
         if (line[0] !== "{") {
             continue;
         }
 
         // Parse the message into a diagnostic.
-        result = JSON.parse(line) as IdeInfo;
+        result = JSON.parse(line) as IdeInfoRust;
         if (result.procedure_defs !== undefined) {
-            return result;
+            util.log("Parsed raw IDE info. Found " + result.procedure_defs.length + " procedure defs and " + result.function_calls.length + " function calls.");
+            return transformIdeInfo(result, root);
         }
     }
     return null;
@@ -377,7 +420,12 @@ enum VerificationStatus {
  * @param rootPath The root path of a rust project.
  * @returns An array of diagnostics for the given rust project.
  */
-async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation, rootPath: string, serverAddress: string, destructors: Set<util.KillFunction>): Promise<[Diagnostic[], VerificationStatus, util.Duration]> {
+async function queryCrateDiagnostics(
+    prusti: dependencies.PrustiLocation, 
+    rootPath: string, 
+    serverAddress: string, 
+    destructors: Set<util.KillFunction>
+): Promise<[Diagnostic[], VerificationStatus, util.Duration, IdeInfo|null ]> {
     // FIXME: Workaround for warning generation for libs.
     await removeDiagnosticMetadata(rootPath);
     const cargoPrustiArgs = ["--message-format=json"].concat(
@@ -427,14 +475,14 @@ async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation, rootPa
             parseCargoMessage(messages, rootPath)
         );
     }
-    const ide_info: IdeInfo | null = parseIdeInfo(output.stdout);
+    const ide_info: IdeInfo | null = parseIdeInfo(output.stdout, rootPath +"/" );
     if (ide_info !== null) {
         util.log("IDE info was not null!");
     } else {
         util.log("No IDE info");
     }
         
-    return [diagnostics, status, output.duration];
+    return [diagnostics, status, output.duration, ide_info];
 }
 
 /**
@@ -443,7 +491,12 @@ async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation, rootPa
  * @param programPath The root path of a rust program.
  * @returns An array of diagnostics for the given rust project.
  */
-async function queryProgramDiagnostics(prusti: dependencies.PrustiLocation, programPath: string, serverAddress: string, destructors: Set<util.KillFunction>): Promise<[Diagnostic[], VerificationStatus, util.Duration]> {
+async function queryProgramDiagnostics(
+    prusti: dependencies.PrustiLocation, 
+    programPath: string, 
+    serverAddress: string, 
+    destructors: Set<util.KillFunction>
+): Promise<[Diagnostic[], VerificationStatus, util.Duration, IdeInfo | null]> {
     const prustiRustcArgs = [
         "--crate-type=lib",
         "--error-format=json",
@@ -489,7 +542,9 @@ async function queryProgramDiagnostics(prusti: dependencies.PrustiLocation, prog
         status = VerificationStatus.Crash;
     }
     const diagnostics: Diagnostic[] = [];
-    let ide_info = parseIdeInfo(output.stdout);
+
+    // paths are already absolute
+    const ide_info = parseIdeInfo(output.stdout, ""); 
     for (const messages of parseRustcOutput(output.stderr)) {
         diagnostics.push(
             parseRustcMessage(messages, programPath)
@@ -498,7 +553,7 @@ async function queryProgramDiagnostics(prusti: dependencies.PrustiLocation, prog
     if (ide_info?.procedure_defs !== undefined) {
         util.log("Parsing IDE Info must have been somewhat successful");
     }
-    return [diagnostics, status, output.duration];
+    return [diagnostics, status, output.duration, ide_info];
 }
 
 // ========================================================
@@ -630,10 +685,6 @@ export class DiagnosticsManager {
         this.procDestructors.forEach((kill) => kill());
     }
     
-    public async invoke_spaninfo(prusti: dependencies.PrustiLocation, serverAddress: string, targetPath: string): Promise<string> {
-        const output = await spanInfo(prusti, serverAddress, this.procDestructors);
-        return output;
-    }
 
     public async verify(prusti: dependencies.PrustiLocation, serverAddress: string, targetPath: string, target: VerificationTarget): Promise<void> {
         // Prepare verification
@@ -654,12 +705,16 @@ export class DiagnosticsManager {
             "See the log (View -> Output -> Prusti Assistant) for more details.";
         let crashed = false;
         try {
-            let diagnostics: Diagnostic[], status: VerificationStatus, duration: util.Duration;
+            let diagnostics: Diagnostic[], status: VerificationStatus, duration: util.Duration, ide_info: IdeInfo | null;
+            util.log("starting verification");
             if (target === VerificationTarget.Crate) {
-                [diagnostics, status, duration] = await queryCrateDiagnostics(prusti, targetPath, serverAddress, this.procDestructors);
+                [diagnostics, status, duration, ide_info] = await queryCrateDiagnostics(prusti, targetPath, serverAddress, this.procDestructors);
             } else {
-                [diagnostics, status, duration] = await queryProgramDiagnostics(prusti, targetPath, serverAddress, this.procDestructors);
+                [diagnostics, status, duration, ide_info] = await queryProgramDiagnostics(prusti, targetPath, serverAddress, this.procDestructors);
             }
+            
+            util.log("starting to process ide_info");
+            handle_ide_info(ide_info);
 
             verificationDiagnostics.addAll(diagnostics);
             durationSecMsg = (duration[0] + duration[1] / 1e9).toFixed(1);
