@@ -91,4 +91,4 @@ If Prusti fails to run, you can inspect Prusti's log from VS Code (View -> Outpu
 
 Thanks to @Pointerbender, @michaelpaper, @fcoury, @Gadiguibou, @djc for their help in reporting, debugging and solving many of these issues!
 
-In case you experience difficulties or encounter bugs while using Prusti Assistant, please [open an issue](https://github.com/viperproject/prusti-assistant/issues) or contact us in the [Zulip chat](https://prusti.zulipchat.com/).
+In case you still experience difficulties or encounter bugs while using Prusti Assistant, please [open an issue](https://github.com/viperproject/prusti-assistant/issues) or contact us in the [Zulip chat](https://prusti.zulipchat.com/).
