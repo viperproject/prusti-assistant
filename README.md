@@ -47,7 +47,7 @@ If anything fails, check the "Troubleshooting" section below.
 
 This extension provides the following commands:
 
-* `Prusti: verify the current crate or file` to verify a Rust program;
+* `Prusti: verify the current crate or file` to verify a Rust program. Clicking the "Verify with Prusti" button in the status bar runst this command.
 * `Prusti: update verifier` to update Prusti.
 * `Prusti: show version` to show the version of Prusti.
 * `Prusti: restart Prusti server` to restart the Prusti server used by this extension.
