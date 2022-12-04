@@ -4,9 +4,6 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as vvt from "vs-verification-toolbox";
 import * as dependencies from "./dependencies";
-import { handle_ide_info } from "./spaninfo";
-import { outputFile } from "fs-extra";
-import { utils } from "mocha";
 
 // ========================================================
 // JSON Schemas
@@ -200,7 +197,12 @@ function parseIdeInfo(output: string, root: string): IdeInfo | null {
         // Parse the message into a diagnostic.
         result = JSON.parse(line) as IdeInfoRust;
         if (result.procedure_defs !== undefined) {
-            util.log("Parsed raw IDE info. Found " + result.procedure_defs.length + " procedure defs and " + result.function_calls.length + " function calls.");
+            // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
+            util.log("Parsed raw IDE info. Found " 
+                + result.procedure_defs.length
+                + " procedure defs and " 
+                + result.function_calls.length
+                + " function calls.");
             return transformIdeInfo(result, root);
         }
     }
@@ -424,8 +426,10 @@ async function queryCrateDiagnostics(
     prusti: dependencies.PrustiLocation, 
     rootPath: string, 
     serverAddress: string, 
-    destructors: Set<util.KillFunction>
-): Promise<[Diagnostic[], VerificationStatus, util.Duration, IdeInfo|null ]> {
+    destructors: Set<util.KillFunction>,
+    noVerify: boolean,
+    selective_verify: string | undefined,
+): Promise<[Diagnostic[], VerificationStatus, util.Duration ]> {
     // FIXME: Workaround for warning generation for libs.
     await removeDiagnosticMetadata(rootPath);
     const cargoPrustiArgs = ["--message-format=json"].concat(
@@ -437,6 +441,8 @@ async function queryCrateDiagnostics(
         ...{
             PRUSTI_SERVER_ADDRESS: serverAddress,
             PRUSTI_SHOW_IDE_INFO: "true",
+            PRUSTI_NO_VERIFY: noVerify ? "true" : "false",
+            PRUSTI_SELECTIVE_VERIFY: selective_verify,
             PRUSTI_QUIET: "true",
             JAVA_HOME: (await config.javaHome())!.path,
         },
@@ -475,14 +481,15 @@ async function queryCrateDiagnostics(
             parseCargoMessage(messages, rootPath)
         );
     }
-    const ide_info: IdeInfo | null = parseIdeInfo(output.stdout, rootPath +"/" );
-    if (ide_info !== null) {
+    util.log("Parsing IDE Info")
+    global.ide_info = parseIdeInfo(output.stdout, rootPath +"/" );
+    if (global.ide_info !== null) {
         util.log("IDE info was not null!");
     } else {
         util.log("No IDE info");
     }
         
-    return [diagnostics, status, output.duration, ide_info];
+    return [diagnostics, status, output.duration ];
 }
 
 /**
@@ -495,8 +502,10 @@ async function queryProgramDiagnostics(
     prusti: dependencies.PrustiLocation, 
     programPath: string, 
     serverAddress: string, 
-    destructors: Set<util.KillFunction>
-): Promise<[Diagnostic[], VerificationStatus, util.Duration, IdeInfo | null]> {
+    destructors: Set<util.KillFunction>,
+    noVerify: boolean,
+    selective_verify: string | undefined,
+): Promise<[Diagnostic[], VerificationStatus, util.Duration]> {
     const prustiRustcArgs = [
         "--crate-type=lib",
         "--error-format=json",
@@ -509,6 +518,8 @@ async function queryProgramDiagnostics(
         ...{
             PRUSTI_SERVER_ADDRESS: serverAddress,
             PRUSTI_SHOW_IDE_INFO: "true",
+            PRUSTI_NO_VERIFY: noVerify ? "true" : "false",
+            PRUSTI_SELECTIVE_VERIFY: selective_verify,
             PRUSTI_QUIET: "true",
             JAVA_HOME: (await config.javaHome())!.path,
         },
@@ -544,16 +555,16 @@ async function queryProgramDiagnostics(
     const diagnostics: Diagnostic[] = [];
 
     // paths are already absolute
-    const ide_info = parseIdeInfo(output.stdout, ""); 
+    global.ide_info = parseIdeInfo(output.stdout, ""); 
     for (const messages of parseRustcOutput(output.stderr)) {
         diagnostics.push(
             parseRustcMessage(messages, programPath)
         );
     }
-    if (ide_info?.procedure_defs !== undefined) {
+    if (global.ide_info?.procedure_defs !== undefined) {
         util.log("Parsing IDE Info must have been somewhat successful");
     }
-    return [diagnostics, status, output.duration, ide_info];
+    return [diagnostics, status, output.duration ];
 }
 
 // ========================================================
@@ -686,7 +697,7 @@ export class DiagnosticsManager {
     }
     
 
-    public async verify(prusti: dependencies.PrustiLocation, serverAddress: string, targetPath: string, target: VerificationTarget): Promise<void> {
+    public async verify(prusti: dependencies.PrustiLocation, serverAddress: string, targetPath: string, target: VerificationTarget, noVerify: boolean, selective_verify: string | undefined): Promise<void> {
         // Prepare verification
         this.runCount += 1;
         const currentRun = this.runCount;
@@ -705,16 +716,14 @@ export class DiagnosticsManager {
             "See the log (View -> Output -> Prusti Assistant) for more details.";
         let crashed = false;
         try {
-            let diagnostics: Diagnostic[], status: VerificationStatus, duration: util.Duration, ide_info: IdeInfo | null;
+            let diagnostics: Diagnostic[], status: VerificationStatus, duration: util.Duration;
             util.log("starting verification");
             if (target === VerificationTarget.Crate) {
-                [diagnostics, status, duration, ide_info] = await queryCrateDiagnostics(prusti, targetPath, serverAddress, this.procDestructors);
+                [diagnostics, status, duration ] = await queryCrateDiagnostics(prusti, targetPath, serverAddress, this.procDestructors, noVerify, selective_verify);
             } else {
-                [diagnostics, status, duration, ide_info] = await queryProgramDiagnostics(prusti, targetPath, serverAddress, this.procDestructors);
+                [diagnostics, status, duration ] = await queryProgramDiagnostics(prusti, targetPath, serverAddress, this.procDestructors, noVerify, selective_verify);
             }
             
-            util.log("starting to process ide_info");
-            handle_ide_info(ide_info);
 
             verificationDiagnostics.addAll(diagnostics);
             durationSecMsg = (duration[0] + duration[1] / 1e9).toFixed(1);

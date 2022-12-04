@@ -54,6 +54,24 @@
                 "category": "Prusti"
             },
             {
+                "command": "prusti-assistant.verify-selective",
+                "title": "verify the specified method",
+                "category": "Prusti",
+                "arguments": [
+                    {
+                        "name": "method",
+                        "description": "The method to verify",
+                        "type": "string",
+                        "default": "" 
+                    }
+                ]
+            },
+            {
+                "command": "prusti-assistant.getinfo",
+                "title": "get IDE Info for current crate or file",
+                "category": "Prusti"
+            },
+            {
                 "command": "prusti-assistant.restart-server",
                 "title": "restart Prusti server",
                 "category": "Prusti"
