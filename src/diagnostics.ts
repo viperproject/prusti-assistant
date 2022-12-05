@@ -4,6 +4,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as vvt from "vs-verification-toolbox";
 import * as dependencies from "./dependencies";
+import { add_ideinfo_crate, add_ideinfo_program} from "./ideInfo"; 
 
 // ========================================================
 // JSON Schemas
@@ -164,7 +165,6 @@ function parseRustcOutput(output: string): Message[] {
 }
 
 function transformIdeInfo(info: IdeInfoRust, root: string): IdeInfo {
-    util.log("Transforming IDE info, is this one failing?");
     const result: IdeInfo = {
         procedure_defs: [],
         function_calls: [],
@@ -183,7 +183,6 @@ function transformIdeInfo(info: IdeInfoRust, root: string): IdeInfo {
             range: parseSpanRange(proc.span),
         });
     }
-    util.log("Transformed IDE info");
     return result;
 }
 
@@ -441,7 +440,7 @@ async function queryCrateDiagnostics(
         ...{
             PRUSTI_SERVER_ADDRESS: serverAddress,
             PRUSTI_SHOW_IDE_INFO: "true",
-            PRUSTI_NO_VERIFY: noVerify ? "true" : "false",
+            PRUSTI_SKIP_VERIFICATION: noVerify ? "true" : "false",
             PRUSTI_SELECTIVE_VERIFY: selective_verify,
             PRUSTI_QUIET: "true",
             JAVA_HOME: (await config.javaHome())!.path,
@@ -482,13 +481,12 @@ async function queryCrateDiagnostics(
         );
     }
     util.log("Parsing IDE Info")
-    global.ide_info = parseIdeInfo(output.stdout, rootPath +"/" );
-    if (global.ide_info !== null) {
-        util.log("IDE info was not null!");
-    } else {
-        util.log("No IDE info");
-    }
-        
+    const ide_info = parseIdeInfo(output.stdout, rootPath +"/" );
+    add_ideinfo_crate(rootPath, ide_info);
+    
+    // update the current window to display codelenses
+    await(vscode.commands.executeCommand('workbench.files.action.refreshFilesExplorer'));
+
     return [diagnostics, status, output.duration ];
 }
 
@@ -518,7 +516,7 @@ async function queryProgramDiagnostics(
         ...{
             PRUSTI_SERVER_ADDRESS: serverAddress,
             PRUSTI_SHOW_IDE_INFO: "true",
-            PRUSTI_NO_VERIFY: noVerify ? "true" : "false",
+            PRUSTI_SKIP_VERIFICATION: noVerify ? "true" : "false",
             PRUSTI_SELECTIVE_VERIFY: selective_verify,
             PRUSTI_QUIET: "true",
             JAVA_HOME: (await config.javaHome())!.path,
@@ -555,14 +553,17 @@ async function queryProgramDiagnostics(
     const diagnostics: Diagnostic[] = [];
 
     // paths are already absolute
-    global.ide_info = parseIdeInfo(output.stdout, ""); 
+    const ide_info = parseIdeInfo(output.stdout, "");
+    add_ideinfo_program(programPath, ide_info);
+    
+    // Trigger an update of the current document
+    // so codelenses are displayed
+    await(vscode.commands.executeCommand('workbench.files.action.refreshFilesExplorer'));
+
     for (const messages of parseRustcOutput(output.stderr)) {
         diagnostics.push(
             parseRustcMessage(messages, programPath)
         );
-    }
-    if (global.ide_info?.procedure_defs !== undefined) {
-        util.log("Parsing IDE Info must have been somewhat successful");
     }
     return [diagnostics, status, output.duration ];
 }
