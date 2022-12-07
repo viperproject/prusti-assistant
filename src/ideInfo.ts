@@ -1,8 +1,6 @@
 import * as util from "./util";
 import * as vscode from "vscode";
 import { IdeInfo } from "./diagnostics";
-import { info } from "console";
-
 
 export * from "./dependencies/PrustiLocation";
 
@@ -20,7 +18,7 @@ export class IdeInfoCollection {
     }
 }
 
-export function add_ideinfo_program(program: string, ide_info: IdeInfo | null) : void {
+export function add_ideinfo_program(program: string, ide_info: IdeInfo | null): void {
     if (ide_info === null) {
         return;
     }
@@ -31,7 +29,7 @@ export function add_ideinfo_program(program: string, ide_info: IdeInfo | null) :
     force_codelens_update();
 }
 
-export function add_ideinfo_crate(crate: string, ide_info: IdeInfo | null) : void {
+export function add_ideinfo_crate(crate: string, ide_info: IdeInfo | null): void {
     if (ide_info === null) {
         return;
     }
@@ -42,7 +40,7 @@ export function add_ideinfo_crate(crate: string, ide_info: IdeInfo | null) : voi
     force_codelens_update();
 }
 
-function collectInfos() : IdeInfo[] {
+function collectInfos(): IdeInfo[] {
     if (global.ide_info_coll === null) {
         return [];
     }
@@ -56,11 +54,11 @@ function collectInfos() : IdeInfo[] {
     return infos;
 }
 
-export function setup_ide_info_handlers() : void {
-    util.log("hello from handle_ide_info"); 
+export function setup_ide_info_handlers(): void {
+    util.log("hello from handle_ide_info");
     global.ide_info_coll = new IdeInfoCollection();
-    
-    vscode.languages.registerCodeLensProvider( 'rust', {
+
+    vscode.languages.registerCodeLensProvider('rust', {
         provideCodeLenses(document: vscode.TextDocument, _token: vscode.CancellationToken): vscode.CodeLens[] {
             const info_set = collectInfos();
             const codeLenses: vscode.CodeLens[] = [];
@@ -69,7 +67,7 @@ export function setup_ide_info_handlers() : void {
                     if (fc.filename === document.fileName) {
                         const codeLens = new vscode.CodeLens(fc.range);
                         codeLens.command = {
-                            title: "▶ verify " + fc.name,
+                            title: "✓ verify " + fc.name,
                             command: "prusti-assistant.verify-selective",
                             // TODO: invoke selective verification here
                             arguments: [fc.name]
@@ -82,27 +80,36 @@ export function setup_ide_info_handlers() : void {
             });
             return codeLenses;
         }
-    });        
+    });
 
-    vscode.languages.registerCodeActionsProvider( 'rust', {
-        provideCodeActions(document: vscode.TextDocument, range: vscode.Range, context: vscode.CodeActionContext, token: vscode.CancellationToken): vscode.CodeAction[] {
+    vscode.languages.registerCodeActionsProvider('rust', {
+        provideCodeActions(
+            document: vscode.TextDocument,
+            range: vscode.Range,
+            context: vscode.CodeActionContext,
+            token: vscode.CancellationToken
+        ): vscode.CodeAction[] {
             const info_set = collectInfos();
             // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
-            util.log("Code Action range:" + range.start.line + ":" + range.start.character + " - " + range.end.line + ":" + range.end.character);
+            util.log("Code Action range:" + range.start.line + ":" +
+                range.start.character + " - " + range.end.line + ":" +
+                range.end.character);
             const codeActions: vscode.CodeAction[] = [];
-            
+
             info_set.forEach(info => {
                 for (const fc of info.function_calls) {
                     util.log("against range of " + fc.name + " at");
                     // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
-                    util.log("Code Action range:" + fc.range.start.line + ":" + fc.range.start.character + " - " + fc.range.end.line + ":" + fc.range.end.character);
-                    if (fc.filename === document.fileName && fc.range.contains(range)) {
+                    util.log("Code Action range:" + fc.range.start.line +
+                        ":" + fc.range.start.character + " - " + fc.range.end.line +
+                        ":" + fc.range.end.character);
+                    if (fc.filename === document.fileName && fc.range.contains(range)) 
+                    {
                         util.log("Yes this one matches")
                         const codeAction = new vscode.CodeAction(
                             "create external specification " + fc.name,
                             vscode.CodeActionKind.QuickFix
                         );
-                        
                         // codeAction.command = {
                         //     title: "Verify",
                         //     command: "prusti.verify",
@@ -118,12 +125,12 @@ export function setup_ide_info_handlers() : void {
 
 }
 
-export function force_codelens_update() : void {
-    const cancel = vscode.languages.registerCodeLensProvider( 'rust', {
+export function force_codelens_update(): void {
+    const cancel = vscode.languages.registerCodeLensProvider('rust', {
         provideCodeLenses(document: vscode.TextDocument, _token: vscode.CancellationToken): vscode.CodeLens[] {
             const codeLenses: vscode.CodeLens[] = [];
             return codeLenses;
         }
-    }); 
+    });
     cancel.dispose();
 }
