@@ -4,7 +4,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as vvt from "vs-verification-toolbox";
 import * as dependencies from "./dependencies";
-import { add_ideinfo_crate, add_ideinfo_program} from "./ideInfo"; 
+import { add_ideinfo_crate, add_ideinfo_program } from "./ideInfo"; 
 
 // ========================================================
 // JSON Schemas
@@ -73,6 +73,7 @@ export interface IdeInfo {
     procedure_defs: ProcDef[],
     function_calls: ProcDef[],
 }
+
 interface ProcDef {
     name: string,
     filename: string,

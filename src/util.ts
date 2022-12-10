@@ -61,18 +61,22 @@ export function userErrorPopup(message: string, actionLabel: string, action: () 
         .then(undefined, err => log(`Error: ${err}`));
 }
 
-export function userInfoPopup(message: string, actionLabel: string, action: () => void, statusBar?: vscode.StatusBarItem): void {
+export function userInfoPopup(message: string, actionLabel?: string, action?: () => void, statusBar?: vscode.StatusBarItem): void {
     log(message);
     if (statusBar) {
         statusBar.text = message;
     }
-    vscode.window.showInformationMessage(message, actionLabel)
-        .then(selection => {
-            if (selection === actionLabel) {
-                action();
-            }
-        })
-        .then(undefined, err => log(`Error: ${err}`));
+    if (action != undefined && actionLabel != undefined) {
+        vscode.window.showInformationMessage(message, actionLabel)
+            .then(selection => {
+                if (selection === actionLabel) {
+                    action();
+                }
+            })
+            .then(undefined, err => log(`Error: ${err}`));
+    } else {
+        void vscode.window.showInformationMessage(message);
+    }
 }
 
 const logChannel = vscode.window.createOutputChannel("Prusti Assistant");

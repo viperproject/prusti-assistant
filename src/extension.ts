@@ -9,7 +9,6 @@ import * as state from "./state";
 import { setup_ide_info_handlers } from "./ideInfo";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-    util.userInfoPopup("Trying to activate prusti assistant...", "no action to be taken", () => {});
     util.log("Activate Prusti Assistant");
     const showVersionCommand = "prusti-assistant.show-version";
     const verifyProgramCommand = "prusti-assistant.verify";

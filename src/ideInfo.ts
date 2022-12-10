@@ -90,7 +90,6 @@ export function setup_ide_info_handlers(): void {
             token: vscode.CancellationToken
         ): vscode.CodeAction[] {
             const info_set = collectInfos();
-            // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
             util.log("Code Action range:" + range.start.line + ":" +
                 range.start.character + " - " + range.end.line + ":" +
                 range.end.character);
@@ -127,10 +126,10 @@ export function setup_ide_info_handlers(): void {
 
 export function force_codelens_update(): void {
     const cancel = vscode.languages.registerCodeLensProvider('rust', {
-        provideCodeLenses(document: vscode.TextDocument, _token: vscode.CancellationToken): vscode.CodeLens[] {
+        provideCodeLenses(_document: vscode.TextDocument, _token: vscode.CancellationToken): vscode.CodeLens[] {
             const codeLenses: vscode.CodeLens[] = [];
             return codeLenses;
         }
     });
-    cancel.dispose();
+        cancel.dispose();
 }
