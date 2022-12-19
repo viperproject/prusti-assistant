@@ -73,10 +73,9 @@ export function setup_ide_info_handlers(): void {
                             arguments: [fc.name]
                         };
                         codeLenses.push(codeLens);
-                    } else {
-                        util.log("not applicable: " + fc.filename + " vs " + document.fileName);
                     }
                 }
+
             });
             return codeLenses;
         }
@@ -90,21 +89,12 @@ export function setup_ide_info_handlers(): void {
             token: vscode.CancellationToken
         ): vscode.CodeAction[] {
             const info_set = collectInfos();
-            util.log("Code Action range:" + range.start.line + ":" +
-                range.start.character + " - " + range.end.line + ":" +
-                range.end.character);
             const codeActions: vscode.CodeAction[] = [];
 
             info_set.forEach(info => {
                 for (const fc of info.function_calls) {
-                    util.log("against range of " + fc.name + " at");
-                    // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
-                    util.log("Code Action range:" + fc.range.start.line +
-                        ":" + fc.range.start.character + " - " + fc.range.end.line +
-                        ":" + fc.range.end.character);
                     if (fc.filename === document.fileName && fc.range.contains(range)) 
                     {
-                        util.log("Yes this one matches")
                         const codeAction = new vscode.CodeAction(
                             "create external specification " + fc.name,
                             vscode.CodeActionKind.QuickFix

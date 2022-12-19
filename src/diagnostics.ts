@@ -184,6 +184,7 @@ function transformIdeInfo(info: IdeInfoRust, root: string): IdeInfo {
             range: parseSpanRange(proc.span),
         });
     }
+    util.log("Transformed IDE Info to be useable by Vscode");
     return result;
 }
 
@@ -413,7 +414,8 @@ async function removeDiagnosticMetadata(rootPath: string) {
 enum VerificationStatus {
     Crash,
     Verified,
-    Errors
+    Errors,
+    SkippedVerification,
 }
 
 /**
@@ -427,11 +429,13 @@ async function queryCrateDiagnostics(
     rootPath: string, 
     serverAddress: string, 
     destructors: Set<util.KillFunction>,
-    noVerify: boolean,
+    skipVerify: boolean,
     selective_verify: string | undefined,
 ): Promise<[Diagnostic[], VerificationStatus, util.Duration ]> {
     // FIXME: Workaround for warning generation for libs.
-    await removeDiagnosticMetadata(rootPath);
+    if (!skipVerify) {
+        await removeDiagnosticMetadata(rootPath);
+    }
     const cargoPrustiArgs = ["--message-format=json"].concat(
         config.extraCargoPrustiArgs()
     );
@@ -441,7 +445,7 @@ async function queryCrateDiagnostics(
         ...{
             PRUSTI_SERVER_ADDRESS: serverAddress,
             PRUSTI_SHOW_IDE_INFO: "true",
-            PRUSTI_SKIP_VERIFICATION: noVerify ? "true" : "false",
+            PRUSTI_SKIP_VERIFICATION: skipVerify ? "true" : "false",
             PRUSTI_SELECTIVE_VERIFY: selective_verify,
             PRUSTI_QUIET: "true",
             JAVA_HOME: (await config.javaHome())!.path,
@@ -460,34 +464,39 @@ async function queryCrateDiagnostics(
         destructors,
     );
     let status = VerificationStatus.Crash;
-    if (output.code === 0) {
-        status = VerificationStatus.Verified;
-    }
-    if (output.code === 1) {
-        status = VerificationStatus.Errors;
-    }
-    if (output.code === 101) {
-        status = VerificationStatus.Errors;
-    }
-    if (/error: internal compiler error/.exec(output.stderr) !== null) {
-        status = VerificationStatus.Crash;
-    }
-    if (/^thread '.*' panicked at/.exec(output.stderr) !== null) {
-        status = VerificationStatus.Crash;
-    }
     const diagnostics: Diagnostic[] = [];
-    for (const messages of parseCargoOutput(output.stdout)) {
-        diagnostics.push(
-            parseCargoMessage(messages, rootPath)
-        );
+    
+    if(!skipVerify) {
+        if (output.code === 0) {
+            status = VerificationStatus.Verified;
+        }
+        if (output.code === 1) {
+            status = VerificationStatus.Errors;
+        }
+        if (output.code === 101) {
+            status = VerificationStatus.Errors;
+        }
+        if (/error: internal compiler error/.exec(output.stderr) !== null) {
+            status = VerificationStatus.Crash;
+        }
+        if (/^thread '.*' panicked at/.exec(output.stderr) !== null) {
+            status = VerificationStatus.Crash;
+        }
+        for (const messages of parseCargoOutput(output.stdout)) {
+            diagnostics.push(
+                parseCargoMessage(messages, rootPath)
+            );
+        }
     }
     util.log("Parsing IDE Info")
     const ide_info = parseIdeInfo(output.stdout, rootPath +"/" );
+    if (skipVerify)  {
+        status = VerificationStatus.SkippedVerification
+        // if we can't parse this field we still report a crash..
+    }
     add_ideinfo_crate(rootPath, ide_info);
     
-    // update the current window to display codelenses
-    await(vscode.commands.executeCommand('workbench.files.action.refreshFilesExplorer'));
-
+    util.log("queryCrateDiagnostics returns");
     return [diagnostics, status, output.duration ];
 }
 
@@ -502,7 +511,7 @@ async function queryProgramDiagnostics(
     programPath: string, 
     serverAddress: string, 
     destructors: Set<util.KillFunction>,
-    noVerify: boolean,
+    skipVerify: boolean,
     selective_verify: string | undefined,
 ): Promise<[Diagnostic[], VerificationStatus, util.Duration]> {
     const prustiRustcArgs = [
@@ -517,7 +526,7 @@ async function queryProgramDiagnostics(
         ...{
             PRUSTI_SERVER_ADDRESS: serverAddress,
             PRUSTI_SHOW_IDE_INFO: "true",
-            PRUSTI_SKIP_VERIFICATION: noVerify ? "true" : "false",
+            PRUSTI_SKIP_VERIFICATION: skipVerify ? "true" : "false",
             PRUSTI_SELECTIVE_VERIFY: selective_verify,
             PRUSTI_QUIET: "true",
             JAVA_HOME: (await config.javaHome())!.path,
@@ -536,36 +545,40 @@ async function queryProgramDiagnostics(
         destructors
     );
     let status = VerificationStatus.Crash;
-    if (output.code === 0) {
-        status = VerificationStatus.Verified;
-    }
-    if (output.code === 1) {
-        status = VerificationStatus.Errors;
-    }
-    if (output.code === 101) {
-        status = VerificationStatus.Crash;
-    }
-    if (/error: internal compiler error/.exec(output.stderr) !== null) {
-        status = VerificationStatus.Crash;
-    }
-    if (/^thread '.*' panicked at/.exec(output.stderr) !== null) {
-        status = VerificationStatus.Crash;
-    }
     const diagnostics: Diagnostic[] = [];
+    if (!skipVerify) {
+        if (output.code === 0) {
+            status = VerificationStatus.Verified;
+        }
+        if (output.code === 1) {
+            status = VerificationStatus.Errors;
+        }
+        if (output.code === 101) {
+            status = VerificationStatus.Crash;
+        }
+        if (/error: internal compiler error/.exec(output.stderr) !== null) {
+            status = VerificationStatus.Crash;
+        }
+        if (/^thread '.*' panicked at/.exec(output.stderr) !== null) {
+            status = VerificationStatus.Crash;
+        }
+
+        for (const messages of parseRustcOutput(output.stderr)) {
+            diagnostics.push(
+                parseRustcMessage(messages, programPath)
+            );
+        }
+    }
 
     // paths are already absolute
     const ide_info = parseIdeInfo(output.stdout, "");
+    if (skipVerify) {
+        status = VerificationStatus.SkippedVerification
+        // if we can't parse this field we still report a crash..
+    }
     add_ideinfo_program(programPath, ide_info);
     
-    // Trigger an update of the current document
-    // so codelenses are displayed
-    await(vscode.commands.executeCommand('workbench.files.action.refreshFilesExplorer'));
-
-    for (const messages of parseRustcOutput(output.stderr)) {
-        diagnostics.push(
-            parseRustcMessage(messages, programPath)
-        );
-    }
+    util.log("queryProgramDiagnostics returns");
     return [diagnostics, status, output.duration ];
 }
 
@@ -699,7 +712,7 @@ export class DiagnosticsManager {
     }
     
 
-    public async verify(prusti: dependencies.PrustiLocation, serverAddress: string, targetPath: string, target: VerificationTarget, noVerify: boolean, selective_verify: string | undefined): Promise<void> {
+    public async verify(prusti: dependencies.PrustiLocation, serverAddress: string, targetPath: string, target: VerificationTarget, skip_verification: boolean, selective_verify: string | undefined): Promise<void> {
         // Prepare verification
         this.runCount += 1;
         const currentRun = this.runCount;
@@ -709,7 +722,14 @@ export class DiagnosticsManager {
 
         // Run verification
         const escapedFileName = path.basename(targetPath).replace("$", "\\$");
-        this.verificationStatus.text = `$(sync~spin) Verifying ${target} '${escapedFileName}'...`;
+        const prevStatus = this.verificationStatus.text;
+
+        if (!skip_verification) {
+            this.verificationStatus.text = `$(sync~spin) Verifying ${target} '${escapedFileName}'...`;
+        } else {
+
+            this.verificationStatus.text =  `$(sync~spin) Analyzing ${target} '${escapedFileName}'...`;
+        }
 
         const verificationDiagnostics = new VerificationDiagnostics();
         let durationSecMsg: string | null = null;
@@ -721,14 +741,28 @@ export class DiagnosticsManager {
             let diagnostics: Diagnostic[], status: VerificationStatus, duration: util.Duration;
             util.log("starting verification");
             if (target === VerificationTarget.Crate) {
-                [diagnostics, status, duration ] = await queryCrateDiagnostics(prusti, targetPath, serverAddress, this.procDestructors, noVerify, selective_verify);
+                [diagnostics, status, duration ] = await queryCrateDiagnostics(
+                    prusti, 
+                    targetPath, 
+                    serverAddress, 
+                    this.procDestructors, 
+                    skip_verification, 
+                    selective_verify
+                );
             } else {
-                [diagnostics, status, duration ] = await queryProgramDiagnostics(prusti, targetPath, serverAddress, this.procDestructors, noVerify, selective_verify);
+                [diagnostics, status, duration ] = await queryProgramDiagnostics(
+                    prusti, 
+                    targetPath, 
+                    serverAddress, 
+                    this.procDestructors, 
+                    skip_verification, 
+                    selective_verify
+                );
             }
             
 
-            verificationDiagnostics.addAll(diagnostics);
             durationSecMsg = (duration[0] + duration[1] / 1e9).toFixed(1);
+            verificationDiagnostics.addAll(diagnostics);
             if (status === VerificationStatus.Crash) {
                 crashed = true;
                 util.log("Prusti encountered an unexpected error.");
@@ -750,25 +784,29 @@ export class DiagnosticsManager {
         } else {
             // Render diagnostics
             this.killAllButton.hide();
-            verificationDiagnostics.renderIn(this.target);
-            if (crashed) {
-                this.verificationStatus.text = `$(error) Verification of ${target} '${escapedFileName}' failed with an unexpected error`;
-                this.verificationStatus.command = "workbench.action.output.toggleOutput";
-            } else if (verificationDiagnostics.hasErrors()) {
-                const counts = verificationDiagnostics.countsBySeverity();
-                const errors = counts.get(vscode.DiagnosticSeverity.Error);
-                const noun = errors === 1 ? "error" : "errors";
-                this.verificationStatus.text = `$(error) Verification of ${target} '${escapedFileName}' failed with ${errors} ${noun} (${durationSecMsg} s)`;
-                this.verificationStatus.command = "workbench.action.problems.focus";
-            } else if (verificationDiagnostics.hasWarnings()) {
-                const counts = verificationDiagnostics.countsBySeverity();
-                const warnings = counts.get(vscode.DiagnosticSeverity.Warning);
-                const noun = warnings === 1 ? "warning" : "warnings";
-                this.verificationStatus.text = `$(warning) Verification of ${target} '${escapedFileName}' succeeded with ${warnings} ${noun} (${durationSecMsg} s)`;
-                this.verificationStatus.command = "workbench.action.problems.focus";
+            if (!skip_verification) {
+                verificationDiagnostics.renderIn(this.target);
+                if (crashed) {
+                    this.verificationStatus.text = `$(error) Verification of ${target} '${escapedFileName}' failed with an unexpected error`;
+                    this.verificationStatus.command = "workbench.action.output.toggleOutput";
+                } else if (verificationDiagnostics.hasErrors()) {
+                    const counts = verificationDiagnostics.countsBySeverity();
+                    const errors = counts.get(vscode.DiagnosticSeverity.Error);
+                    const noun = errors === 1 ? "error" : "errors";
+                    this.verificationStatus.text = `$(error) Verification of ${target} '${escapedFileName}' failed with ${errors} ${noun} (${durationSecMsg} s)`;
+                    this.verificationStatus.command = "workbench.action.problems.focus";
+                } else if (verificationDiagnostics.hasWarnings()) {
+                    const counts = verificationDiagnostics.countsBySeverity();
+                    const warnings = counts.get(vscode.DiagnosticSeverity.Warning);
+                    const noun = warnings === 1 ? "warning" : "warnings";
+                    this.verificationStatus.text = `$(warning) Verification of ${target} '${escapedFileName}' succeeded with ${warnings} ${noun} (${durationSecMsg} s)`;
+                    this.verificationStatus.command = "workbench.action.problems.focus";
+                } else {
+                    this.verificationStatus.text = `$(check) Verification of ${target} '${escapedFileName}' succeeded (${durationSecMsg} s)`;
+                    this.verificationStatus.command = undefined;
+                }
             } else {
-                this.verificationStatus.text = `$(check) Verification of ${target} '${escapedFileName}' succeeded (${durationSecMsg} s)`;
-                this.verificationStatus.command = undefined;
+                this.verificationStatus.text = prevStatus;
             }
         }
     }
