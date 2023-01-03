@@ -101,6 +101,38 @@ function parseSpanRange(span: Span): vscode.Range {
     );
 }
 
+function parseCargoOutput(output: string): CargoMessage[] {
+    const messages: CargoMessage[] = [];
+    for (const line of output.split("\n")) {
+        if (line[0] !== "{") {
+            continue;
+        }
+
+        // Parse the message into a diagnostic.
+        const diag = JSON.parse(line) as CargoMessage;
+        if (diag.message !== undefined) {
+            messages.push(diag);
+        }
+    }
+    return messages;
+}
+
+function parseRustcOutput(output: string): Message[] {
+    const messages: Message[] = [];
+    for (const line of output.split("\n")) {
+        if (line[0] !== "{") {
+            continue;
+        }
+
+        // Parse the message into a diagnostic.
+        const diag = JSON.parse(line) as Message;
+        if (diag.message !== undefined) {
+            messages.push(diag);
+        }
+    }
+    return messages;
+}
+
 function getCallSiteSpan(span: Span): Span {
     while (span.expansion !== null) {
         span = span.expansion.span;
@@ -110,15 +142,13 @@ function getCallSiteSpan(span: Span): Span {
 
 /**
  * Parses a message into a diagnostic.
- *
+ * 
  * @param msg The message to parse.
  * @param rootPath The root path of the rust project the message was generated
  * for.
  */
 function parseCargoMessage(msgDiag: CargoMessage, rootPath: string, defaultRange?: vscode.Range): Diagnostic {
     const msg = msgDiag.message;
-    console.log("PARSE CARGO MESSAGE");
-    console.log(msg);
     const level = parseMessageLevel(msg.level);
 
     // Read primary message
@@ -205,14 +235,12 @@ function parseCargoMessage(msgDiag: CargoMessage, rootPath: string, defaultRange
 
 /**
  * Parses a message into diagnostics.
- *
+ * 
  * @param msg The message to parse.
  * @param rootPath The root path of the rust project the message was generated
  * for.
  */
 function parseRustcMessage(msg: Message, mainFilePath: string, defaultRange?: vscode.Range): Diagnostic {
-    console.log("PARSE RUSTC MESSAGE");
-    console.log(msg);
     const level = parseMessageLevel(msg.level);
 
     // Read primary message
@@ -294,7 +322,7 @@ function parseRustcMessage(msg: Message, mainFilePath: string, defaultRange?: vs
 /**
  * Removes rust's metadata in the specified project folder. This is a work
  * around for `cargo check` not reissuing warning information for libs.
- *
+ * 
  * @param rootPath The root path of a rust project.
  */
 async function removeDiagnosticMetadata(rootPath: string) {
@@ -314,17 +342,11 @@ enum VerificationStatus {
 
 /**
  * Queries for the diagnostics of a rust project using cargo-prusti.
- *
+ * 
  * @param rootPath The root path of a rust project.
  * @returns An array of diagnostics for the given rust project.
  */
-async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation,
-                                     rootPath: string,
-                                     serverAddress: string,
-                                     destructors: Set<util.KillFunction>,
-                                     verificationDiagnostics: VerificationDiagnostics,
-                                     target: vscode.DiagnosticCollection,
-                                     inlayHintsProvider: InlayHintsProvider): Promise<[VerificationStatus, util.Duration]> {
+async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation, rootPath: string, serverAddress: string, destructors: Set<util.KillFunction>): Promise<[Diagnostic[], VerificationStatus, util.Duration]> {
     // FIXME: Workaround for warning generation for libs.
     await removeDiagnosticMetadata(rootPath);
     const cargoPrustiArgs = ["--message-format=json"].concat(
@@ -339,7 +361,6 @@ async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation,
         },
         ...config.extraPrustiEnv(),
     };
-    var buffer = "";
     const output = await util.spawn(
         prusti.cargoPrusti,
         cargoPrustiArgs,
@@ -347,41 +368,7 @@ async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation,
             options: {
                 cwd: rootPath,
                 env: cargoPrustiEnv,
-            },
-            onStdout: data => {
-                buffer = buffer.concat(data);
-                const ind = buffer.lastIndexOf("\n");
-                const parsable = buffer.substring(0, ind);
-                buffer = buffer.substring(ind+1);
-                for (const line of parsable.split("\n")) {
-                    if (line[0] !== "{") {
-                        continue;
-                    }
-
-                    // Parse the message into a diagnostic.
-                    const diag = JSON.parse(line) as CargoMessage;
-                    const qim_str = "quantifier_instantiations_message";
-                    if (diag.message.message.startsWith(qim_str)) {
-                        util.log("QUANTIFIERINSTANTIATIONSMESSAGE: ".concat(diag.message.message));
-                        if (diag.message.spans.length !== 1) {
-                            util.log("ERROR: multiple spans for a quantifier.");
-                        }
-                        const span = diag.message.spans[0];
-                        const position = parseSpanRange(span).start;
-                        const fileName = span.file_name;
-                        const parsed_m = JSON.parse(diag.message.message.substring(qim_str.length));
-                        const q_name = parsed_m["q_name"];
-                        const instantiations = parsed_m["instantiations"];
-
-                        // we get a message with the accumulated quantifier
-                        inlayHintsProvider.update(fileName, q_name, instantiations, position);
-                    }
-                    else if (diag.message !== undefined) {
-                        const msg = parseCargoMessage(diag, rootPath);
-                        verificationDiagnostics.add_and_render(msg, target);
-                    }
-                }
-            },
+            }
         },
         destructors,
     );
@@ -401,22 +388,22 @@ async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation,
     if (/^thread '.*' panicked at/.exec(output.stderr) !== null) {
         status = VerificationStatus.Crash;
     }
-    return [status, output.duration];
+    const diagnostics: Diagnostic[] = [];
+    for (const messages of parseCargoOutput(output.stdout)) {
+        diagnostics.push(
+            parseCargoMessage(messages, rootPath)
+        );
+    }
+    return [diagnostics, status, output.duration];
 }
 
 /**
  * Queries for the diagnostics of a rust program using prusti-rustc.
- *
+ * 
  * @param programPath The root path of a rust program.
  * @returns An array of diagnostics for the given rust project.
  */
-async function queryProgramDiagnostics(prusti: dependencies.PrustiLocation,
-                                       programPath: string,
-                                       serverAddress: string,
-                                       destructors: Set<util.KillFunction>,
-                                       verificationDiagnostics: VerificationDiagnostics,
-                                       target: vscode.DiagnosticCollection,
-                                       inlayHintsProvider: InlayHintsProvider): Promise<[VerificationStatus, util.Duration]> {
+async function queryProgramDiagnostics(prusti: dependencies.PrustiLocation, programPath: string, serverAddress: string, destructors: Set<util.KillFunction>): Promise<[Diagnostic[], VerificationStatus, util.Duration]> {
     const prustiRustcArgs = [
         "--crate-type=lib",
         "--error-format=json",
@@ -433,7 +420,6 @@ async function queryProgramDiagnostics(prusti: dependencies.PrustiLocation,
         },
         ...config.extraPrustiEnv(),
     };
-    var buffer = "";
     const output = await util.spawn(
         prusti.prustiRustc,
         prustiRustcArgs,
@@ -441,41 +427,7 @@ async function queryProgramDiagnostics(prusti: dependencies.PrustiLocation,
             options: {
                 cwd: path.dirname(programPath),
                 env: prustiRustcEnv,
-            },
-            onStderr: data => {
-                buffer = buffer.concat(data);
-                const ind = buffer.lastIndexOf("\n");
-                const parsable = buffer.substring(0, ind);
-                buffer = buffer.substring(ind+1);
-                for (const line of parsable.split("\n")) {
-                    if (line[0] !== "{") {
-                        continue;
-                    }
-
-                    // Parse the message into a diagnostic.
-                    const diag = JSON.parse(line) as Message;
-                    const qim_str = "quantifier_instantiations_message";
-                    if (diag.message.startsWith(qim_str)) {
-                        util.log("QUANTIFIERINSTANTIATIONSMESSAGE: ".concat(diag.message));
-                        if (diag.spans.length !== 1) {
-                            util.log("ERROR: multiple spans for a Quantifier.");
-                        }
-                        const span = diag.spans[0];
-                        const position = parseSpanRange(span).start;
-                        const fileName = span.file_name;
-                        const parsed_m = JSON.parse(diag.message.substring(qim_str.length));
-                        const q_name = parsed_m["q_name"];
-                        const instantiations = parsed_m["instantiations"];
-
-                        // we get a message with the accumulated quantifier
-                        inlayHintsProvider.update(fileName, q_name, instantiations, position);
-                    }
-                    else if (diag.message !== undefined) {
-                        const msg = parseRustcMessage(diag, programPath);
-                        verificationDiagnostics.add_and_render(msg, target);
-                    }
-                }
-            },
+            }
         },
         destructors
     );
@@ -495,7 +447,13 @@ async function queryProgramDiagnostics(prusti: dependencies.PrustiLocation,
     if (/^thread '.*' panicked at/.exec(output.stderr) !== null) {
         status = VerificationStatus.Crash;
     }
-    return [status, output.duration];
+    const diagnostics: Diagnostic[] = [];
+    for (const messages of parseRustcOutput(output.stderr)) {
+        diagnostics.push(
+            parseRustcMessage(messages, programPath)
+        );
+    }
+    return [diagnostics, status, output.duration];
 }
 
 // ========================================================
@@ -567,17 +525,6 @@ export class VerificationDiagnostics {
         }
     }
 
-    public add_and_render(diagnostic: Diagnostic, target: vscode.DiagnosticCollection): void {
-        if (this.reportDiagnostic(diagnostic)) {
-            this.add(diagnostic);
-            const filePath = diagnostic.file_path;
-            const fileDiagnostics = this.diagnostics.get(filePath);
-            const uri = vscode.Uri.file(filePath);
-            //util.log(`Rendering new diagnostics at ${uri}`);
-            target.set(uri, fileDiagnostics);
-        }
-    }
-
     public renderIn(target: vscode.DiagnosticCollection): void {
         target.clear();
         for (const [filePath, fileDiagnostics] of this.diagnostics.entries()) {
@@ -611,68 +558,17 @@ export enum VerificationTarget {
     Crate = "crate"
 }
 
-class InlayHintsProvider {
-    // TODO: event that the hints have changed
-    private provider: vscode.InlayHintsProvider;
-    // map from fileName to map from q_name to (Position, n_instantiations)
-    private imap: Map<string, Map<string, [vscode.Position, string]>>;
-    // we cache the inlayHints for each file until we get a change
-    private cache_map: Map<string, vscode.InlayHint[]>
-    public constructor() {
-        this.imap = new Map<string, Map<string, [vscode.Position, string]>>();
-        this.cache_map = new Map<string, vscode.InlayHint[]>();
-        const provide: (document: vscode.TextDocument, range: vscode.Range, token: vscode.CancellationToken) => vscode.InlayHint[] =
-          (document: vscode.TextDocument, range: vscode.Range, token: vscode.CancellationToken) => {
-            // we just ignore the range, vscode ignores hints outside of the requested range
-            if (!this.cache_map.has(document.fileName)) {
-                // create the cache map
-                if (!this.imap.has(document.fileName)) {
-                    this.cache_map.set(document.fileName, []);
-                    return [];
-                }
-                const q_map = this.imap.get(document.fileName)!;
-                // TODO: better label (not just a number)
-                // TODO: handle the aux etc
-                const hints = Array.from(q_map.entries()).map(entry => new vscode.InlayHint(entry[1][0], entry[1][1]));
-                this.cache_map.set(document.fileName, hints);
-            }
-            return this.cache_map.get(document.fileName)!;
-        };
-        this.provider = {
-            provideInlayHints(document: vscode.TextDocument, range: vscode.Range, token: vscode.CancellationToken) {
-                return provide(document, range, token);
-            },
-            resolveInlayHint(hint: vscode.InlayHint, token: vscode.CancellationToken): vscode.InlayHint {
-                return hint;
-            }
-        };
-        vscode.languages.registerInlayHintsProvider('rust', this.provider);
-    }
-
-    public update(fileName: string, q_name: string, instantiations: number, position: vscode.Position): void {
-        util.log(fileName);
-        this.cache_map.delete(fileName);
-        if (!this.imap.has(fileName)) {
-            this.imap.set(fileName, new Map<string, [vscode.Position, string]>());
-        }
-        this.imap.get(fileName)!.set(q_name, [position, instantiations.toString()]);
-    }
-}
-
-
 export class DiagnosticsManager {
     private target: vscode.DiagnosticCollection;
     private procDestructors: Set<util.KillFunction> = new Set();
     private verificationStatus: vscode.StatusBarItem;
     private killAllButton: vscode.StatusBarItem;
     private runCount = 0;
-    private inlayHintsProvider: InlayHintsProvider;
 
     public constructor(target: vscode.DiagnosticCollection, verificationStatus: vscode.StatusBarItem, killAllButton: vscode.StatusBarItem) {
         this.target = target;
         this.verificationStatus = verificationStatus;
         this.killAllButton = killAllButton;
-        this.inlayHintsProvider = new InlayHintsProvider();
     }
 
     public dispose(): void {
@@ -708,14 +604,14 @@ export class DiagnosticsManager {
             "See the log (View -> Output -> Prusti Assistant) for more details.";
         let crashed = false;
         try {
-            let status: VerificationStatus, duration: util.Duration;
+            let diagnostics: Diagnostic[], status: VerificationStatus, duration: util.Duration;
             if (target === VerificationTarget.Crate) {
-                [status, duration] = await queryCrateDiagnostics(prusti, targetPath, serverAddress, this.procDestructors, verificationDiagnostics, this.target, this.inlayHintsProvider);
+                [diagnostics, status, duration] = await queryCrateDiagnostics(prusti, targetPath, serverAddress, this.procDestructors);
             } else {
-                [status, duration] = await queryProgramDiagnostics(prusti, targetPath, serverAddress, this.procDestructors, verificationDiagnostics, this.target, this.inlayHintsProvider);
+                [diagnostics, status, duration] = await queryProgramDiagnostics(prusti, targetPath, serverAddress, this.procDestructors);
             }
 
-            //verificationDiagnostics.addAll(diagnostics);
+            verificationDiagnostics.addAll(diagnostics);
             durationSecMsg = (duration[0] + duration[1] / 1e9).toFixed(1);
             if (status === VerificationStatus.Crash) {
                 crashed = true;
@@ -738,7 +634,7 @@ export class DiagnosticsManager {
         } else {
             // Render diagnostics
             this.killAllButton.hide();
-            //verificationDiagnostics.renderIn(this.target);
+            verificationDiagnostics.renderIn(this.target);
             if (crashed) {
                 this.verificationStatus.text = `$(error) Verification of ${target} '${escapedFileName}' failed with an unexpected error`;
                 this.verificationStatus.command = "workbench.action.output.toggleOutput";
