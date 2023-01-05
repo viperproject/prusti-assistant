@@ -60,6 +60,7 @@ interface Expansion {
 export interface IdeInfoRust {
     procedure_defs: ProcDefRust[]
     function_calls: ProcDefRust[]
+    queried_source: string | null
 }
 
 interface ProcDefRust {
@@ -72,6 +73,7 @@ interface ProcDefRust {
 export interface IdeInfo {
     procedure_defs: ProcDef[],
     function_calls: ProcDef[],
+    queried_source: string | null,
 }
 
 interface ProcDef {
@@ -169,6 +171,7 @@ function transformIdeInfo(info: IdeInfoRust, root: string): IdeInfo {
     const result: IdeInfo = {
         procedure_defs: [],
         function_calls: [],
+        queried_source: info.queried_source,
     };
     for (const proc of info.procedure_defs) {
         result.procedure_defs.push({
@@ -204,6 +207,8 @@ function parseIdeInfo(output: string, root: string): IdeInfo | null {
                 + " procedure defs and " 
                 + result.function_calls.length
                 + " function calls.");
+            util.log("The queried source had value: " 
+                + result.queried_source);
             return transformIdeInfo(result, root);
         }
     }
@@ -446,7 +451,8 @@ async function queryCrateDiagnostics(
             PRUSTI_SERVER_ADDRESS: serverAddress,
             PRUSTI_SHOW_IDE_INFO: "true",
             PRUSTI_SKIP_VERIFICATION: skipVerify ? "true" : "false",
-            PRUSTI_SELECTIVE_VERIFY: selective_verify,
+            PRUSTI_SELECTIVE_VERIFY: skipVerify ? undefined : selective_verify,
+            PRUSTI_QUERY_METHOD_SIGNATURE: skipVerify ? selective_verify : undefined,
             PRUSTI_QUIET: "true",
             JAVA_HOME: (await config.javaHome())!.path,
         },

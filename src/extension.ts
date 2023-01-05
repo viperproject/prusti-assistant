@@ -13,6 +13,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const showVersionCommand = "prusti-assistant.show-version";
     const verifyProgramCommand = "prusti-assistant.verify";
     const verifySelectiveCommand = "prusti-assistant.verify-selective";
+    const queryMethodSignatureCommand = "prusti-assistant.query-method-signature";
     const getInfoCommand = "prusti-assistant.getinfo";
     const killAllCommand = "prusti-assistant.killAll";
     const updateCommand = "prusti-assistant.update";
@@ -216,6 +217,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             if (activeTextEditor !== undefined) {
                 await activeTextEditor.document.save().then(
                     () => verify(activeTextEditor.document, false, name)
+                );
+            }
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand(queryMethodSignatureCommand, async (name: string) => {
+            const activeTextEditor = vscode.window.activeTextEditor;
+            util.log("Verify selective received arg: " + name);
+            if (activeTextEditor !== undefined) {
+                await activeTextEditor.document.save().then(
+                    () => verify(activeTextEditor.document, true, name)
                 );
             }
         })

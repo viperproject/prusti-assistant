@@ -72,6 +72,19 @@
                 "category": "Prusti"
             },
             {
+                "command": "prusti-assistant.query-method-signature",
+                "title": "Query the signature of a method to create external specification",
+                "category": "Prusti",
+                "arguments": [
+                    {
+                        "name": "defpath",
+                        "type": "string",
+                        "default":""
+                    }
+                ]
+
+            },
+            {
                 "command": "prusti-assistant.restart-server",
                 "title": "restart Prusti server",
                 "category": "Prusti"

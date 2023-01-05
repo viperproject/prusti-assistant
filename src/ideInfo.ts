@@ -1,6 +1,7 @@
 import * as util from "./util";
 import * as vscode from "vscode";
 import { IdeInfo } from "./diagnostics";
+import { EventEmitter } from "events";
 
 export * from "./dependencies/PrustiLocation";
 
@@ -22,6 +23,13 @@ export function add_ideinfo_program(program: string, ide_info: IdeInfo | null): 
     if (ide_info === null) {
         return;
     }
+    
+    if (ide_info.queried_source) {
+        let text = ide_info.queried_source;
+        util.log("Trying to put " + text + " into clipboard");
+        vscode.env.clipboard.writeText(ide_info.queried_source);
+        // TODO: give the user some sign that the extern_spec template is now on clipboard
+    }
     if (global.ide_info_coll === null) {
         global.ide_info_coll = new IdeInfoCollection();
     }
@@ -32,6 +40,12 @@ export function add_ideinfo_program(program: string, ide_info: IdeInfo | null): 
 export function add_ideinfo_crate(crate: string, ide_info: IdeInfo | null): void {
     if (ide_info === null) {
         return;
+    }
+    if (ide_info.queried_source) {
+        let text = ide_info.queried_source;
+        util.log("Trying to put " + text + " into clipboard");
+        vscode.env.clipboard.writeText(ide_info.queried_source);
+        // TODO: give the user some sign that the extern_spec template is now on clipboard
     }
     if (global.ide_info_coll === null) {
         global.ide_info_coll = new IdeInfoCollection();
@@ -54,30 +68,46 @@ function collectInfos(): IdeInfo[] {
     return infos;
 }
 
+function delay(n: number) {
+    return new Promise(function(resolve) {
+      setTimeout(resolve, n*1000);
+    });
+}
+
+const codelensPromise = async(
+  document: vscode.TextDocument, 
+  _token: vscode.CancellationToken
+): Promise<vscode.CodeLens[]> => {
+    const info_set = collectInfos();
+    const codeLenses: vscode.CodeLens[] = [];
+    info_set.forEach(info => {
+        for (const fc of info.procedure_defs) {
+            if (fc.filename === document.fileName) {
+                let delta = new vscode.TextEdit(new vscode.Range(new vscode.Position(0,0), new vscode.Position(0,0)), 
+                                               "hello\n");
+                const codeLens = new vscode.CodeLens(fc.range);
+                codeLens.command = {
+                    title: "✓ verify " + fc.name,
+                    command: "prusti-assistant.verify-selective",
+                    // TODO: invoke selective verification here
+                    arguments: [fc.name]
+                };
+                codeLenses.push(codeLens);
+            }
+        }
+
+    });
+    await delay(0);
+    return codeLenses;
+}
+
 export function setup_ide_info_handlers(): void {
     util.log("hello from handle_ide_info");
     global.ide_info_coll = new IdeInfoCollection();
 
     vscode.languages.registerCodeLensProvider('rust', {
-        provideCodeLenses(document: vscode.TextDocument, _token: vscode.CancellationToken): vscode.CodeLens[] {
-            const info_set = collectInfos();
-            const codeLenses: vscode.CodeLens[] = [];
-            info_set.forEach(info => {
-                for (const fc of info.procedure_defs) {
-                    if (fc.filename === document.fileName) {
-                        const codeLens = new vscode.CodeLens(fc.range);
-                        codeLens.command = {
-                            title: "✓ verify " + fc.name,
-                            command: "prusti-assistant.verify-selective",
-                            // TODO: invoke selective verification here
-                            arguments: [fc.name]
-                        };
-                        codeLenses.push(codeLens);
-                    }
-                }
-
-            });
-            return codeLenses;
+        provideCodeLenses(document: vscode.TextDocument, _token: vscode.CancellationToken): Promise<vscode.CodeLens[]> {
+            return codelensPromise(document, _token);
         }
     });
 
@@ -90,7 +120,6 @@ export function setup_ide_info_handlers(): void {
         ): vscode.CodeAction[] {
             const info_set = collectInfos();
             const codeActions: vscode.CodeAction[] = [];
-
             info_set.forEach(info => {
                 for (const fc of info.function_calls) {
                     if (fc.filename === document.fileName && fc.range.contains(range)) 
@@ -99,11 +128,11 @@ export function setup_ide_info_handlers(): void {
                             "create external specification " + fc.name,
                             vscode.CodeActionKind.QuickFix
                         );
-                        // codeAction.command = {
-                        //     title: "Verify",
-                        //     command: "prusti.verify",
-                        //     arguments: [document, range]
-                        // };
+                        codeAction.command = {
+                            title: "Verify",
+                            command: "prusti-assistant.query-method-signature",
+                            arguments: [fc.name]
+                        };
                         codeActions.push(codeAction);
                     }
                 }
