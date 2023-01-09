@@ -5,18 +5,14 @@ import { EventEmitter } from "events";
 
 export * from "./dependencies/PrustiLocation";
 
-declare global {
-    var ide_info_coll: IdeInfoCollection | null;
+interface IdeInfoCollection {
+    crates: Map<string, IdeInfo>,
+    programs: Map<string, IdeInfo>,
 }
 
-export class IdeInfoCollection {
-    crates: Map<string, IdeInfo>;
-    programs: Map<string, IdeInfo>;
-
-    constructor() {
-        this.crates = new Map();
-        this.programs = new Map();
-    }
+export var ide_info_coll: IdeInfoCollection = {
+    crates : new Map(),
+    programs : new Map(),
 }
 
 export function add_ideinfo_program(program: string, ide_info: IdeInfo | null): void {
@@ -30,10 +26,7 @@ export function add_ideinfo_program(program: string, ide_info: IdeInfo | null): 
         vscode.env.clipboard.writeText(ide_info.queried_source);
         // TODO: give the user some sign that the extern_spec template is now on clipboard
     }
-    if (global.ide_info_coll === null) {
-        global.ide_info_coll = new IdeInfoCollection();
-    }
-    global.ide_info_coll.programs.set(program, ide_info);
+    ide_info_coll.programs.set(program, ide_info);
     force_codelens_update();
 }
 
@@ -47,22 +40,16 @@ export function add_ideinfo_crate(crate: string, ide_info: IdeInfo | null): void
         vscode.env.clipboard.writeText(ide_info.queried_source);
         // TODO: give the user some sign that the extern_spec template is now on clipboard
     }
-    if (global.ide_info_coll === null) {
-        global.ide_info_coll = new IdeInfoCollection();
-    }
-    global.ide_info_coll.crates.set(crate, ide_info);
+    ide_info_coll.crates.set(crate, ide_info);
     force_codelens_update();
 }
 
 function collectInfos(): IdeInfo[] {
-    if (global.ide_info_coll === null) {
-        return [];
-    }
     const infos = [];
-    for (const info of global.ide_info_coll.crates.values()) {
+    for (const info of ide_info_coll.crates.values()) {
         infos.push(info);
     }
-    for (const info of global.ide_info_coll.programs.values()) {
+    for (const info of ide_info_coll.programs.values()) {
         infos.push(info);
     }
     return infos;
@@ -103,7 +90,6 @@ const codelensPromise = async(
 
 export function setup_ide_info_handlers(): void {
     util.log("hello from handle_ide_info");
-    global.ide_info_coll = new IdeInfoCollection();
 
     vscode.languages.registerCodeLensProvider('rust', {
         provideCodeLenses(document: vscode.TextDocument, _token: vscode.CancellationToken): Promise<vscode.CodeLens[]> {
