@@ -324,7 +324,7 @@ async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation,
                                      destructors: Set<util.KillFunction>,
                                      verificationDiagnostics: VerificationDiagnostics,
                                      target: vscode.DiagnosticCollection,
-                                     inlayHintsProvider: InlayHintsProvider): Promise<[VerificationStatus, util.Duration]> {
+                                     quantifierInstantiationsProvider: QuantifierInstantiationsProvider): Promise<[VerificationStatus, util.Duration]> {
     // FIXME: Workaround for warning generation for libs.
     await removeDiagnosticMetadata(rootPath);
     const cargoPrustiArgs = ["--message-format=json"].concat(
@@ -362,19 +362,17 @@ async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation,
                     const diag = JSON.parse(line) as CargoMessage;
                     const qim_str = "quantifier_instantiations_message";
                     if (diag.message.message.startsWith(qim_str)) {
-                        util.log("QUANTIFIERINSTANTIATIONSMESSAGE: ".concat(diag.message.message));
                         if (diag.message.spans.length !== 1) {
                             util.log("ERROR: multiple spans for a quantifier.");
                         }
                         const span = diag.message.spans[0];
-                        const position = parseSpanRange(span).start;
+                        const range = parseSpanRange(span);
                         const fileName = span.file_name;
                         const parsed_m = JSON.parse(diag.message.message.substring(qim_str.length));
-                        const q_name = parsed_m["q_name"];
+                        const method = parsed_m["method"];
                         const instantiations = parsed_m["instantiations"];
 
-                        // we get a message with the accumulated quantifier
-                        inlayHintsProvider.update(fileName, q_name, instantiations, position);
+                        quantifierInstantiationsProvider.update(fileName, method, instantiations, range);
                     }
                     else if (diag.message !== undefined) {
                         const msg = parseCargoMessage(diag, rootPath);
@@ -416,7 +414,7 @@ async function queryProgramDiagnostics(prusti: dependencies.PrustiLocation,
                                        destructors: Set<util.KillFunction>,
                                        verificationDiagnostics: VerificationDiagnostics,
                                        target: vscode.DiagnosticCollection,
-                                       inlayHintsProvider: InlayHintsProvider): Promise<[VerificationStatus, util.Duration]> {
+                                       quantifierInstantiationsProvider: QuantifierInstantiationsProvider): Promise<[VerificationStatus, util.Duration]> {
     const prustiRustcArgs = [
         "--crate-type=lib",
         "--error-format=json",
@@ -456,19 +454,17 @@ async function queryProgramDiagnostics(prusti: dependencies.PrustiLocation,
                     const diag = JSON.parse(line) as Message;
                     const qim_str = "quantifier_instantiations_message";
                     if (diag.message.startsWith(qim_str)) {
-                        util.log("QUANTIFIERINSTANTIATIONSMESSAGE: ".concat(diag.message));
                         if (diag.spans.length !== 1) {
                             util.log("ERROR: multiple spans for a Quantifier.");
                         }
                         const span = diag.spans[0];
-                        const position = parseSpanRange(span).start;
+                        const range = parseSpanRange(span);
                         const fileName = span.file_name;
                         const parsed_m = JSON.parse(diag.message.substring(qim_str.length));
-                        const q_name = parsed_m["q_name"];
+                        const method = parsed_m["method"];
                         const instantiations = parsed_m["instantiations"];
 
-                        // we get a message with the accumulated quantifier
-                        inlayHintsProvider.update(fileName, q_name, instantiations, position);
+                        quantifierInstantiationsProvider.update(fileName, method, instantiations, range);
                     }
                     else if (diag.message !== undefined) {
                         const msg = parseRustcMessage(diag, programPath);
@@ -568,6 +564,7 @@ export class VerificationDiagnostics {
     }
 
     public add_and_render(diagnostic: Diagnostic, target: vscode.DiagnosticCollection): void {
+        // TODO: somehow threshhold this
         if (this.reportDiagnostic(diagnostic)) {
             this.add(diagnostic);
             const filePath = diagnostic.file_path;
@@ -611,54 +608,106 @@ export enum VerificationTarget {
     Crate = "crate"
 }
 
-class InlayHintsProvider {
-    // TODO: event that the hints have changed
-    private provider: vscode.InlayHintsProvider;
-    // map from fileName to map from q_name to (Position, n_instantiations)
-    private imap: Map<string, Map<string, [vscode.Position, string]>>;
-    // we cache the inlayHints for each file until we get a change
-    private cache_map: Map<string, vscode.InlayHint[]>
-    public constructor() {
-        this.imap = new Map<string, Map<string, [vscode.Position, string]>>();
-        this.cache_map = new Map<string, vscode.InlayHint[]>();
-        const provide: (document: vscode.TextDocument, range: vscode.Range, token: vscode.CancellationToken) => vscode.InlayHint[] =
-          (document: vscode.TextDocument, range: vscode.Range, token: vscode.CancellationToken) => {
-            // we just ignore the range, vscode ignores hints outside of the requested range
-            if (!this.cache_map.has(document.fileName)) {
-                // create the cache map
-                if (!this.imap.has(document.fileName)) {
-                    this.cache_map.set(document.fileName, []);
-                    return [];
-                }
-                const q_map = this.imap.get(document.fileName)!;
-                // TODO: better label (not just a number)
-                // TODO: handle the aux etc
-                const hints = Array.from(q_map.entries()).map(entry => new vscode.InlayHint(entry[1][0], entry[1][1]));
-                this.cache_map.set(document.fileName, hints);
-            }
-            return this.cache_map.get(document.fileName)!;
-        };
-        this.provider = {
-            provideInlayHints(document: vscode.TextDocument, range: vscode.Range, token: vscode.CancellationToken) {
-                return provide(document, range, token);
-            },
-            resolveInlayHint(hint: vscode.InlayHint, token: vscode.CancellationToken): vscode.InlayHint {
-                return hint;
-            }
-        };
-        vscode.languages.registerInlayHintsProvider('rust', this.provider);
-    }
-
-    public update(fileName: string, q_name: string, instantiations: number, position: vscode.Position): void {
-        util.log(fileName);
-        this.cache_map.delete(fileName);
-        if (!this.imap.has(fileName)) {
-            this.imap.set(fileName, new Map<string, [vscode.Position, string]>());
-        }
-        this.imap.get(fileName)!.set(q_name, [position, instantiations.toString()]);
-    }
+function strToRange(range_str: string): vscode.Range {
+    const arr = JSON.parse(range_str) as vscode.Position[];
+    return new vscode.Range(arr[0], arr[1]);
 }
 
+
+class QuantifierInstantiationsProvider implements vscode.InlayHintsProvider, vscode.HoverProvider {
+    // key1: fileName, key2: stringified range, key3: method, value: n_instantiations
+    // note: we use the stringified range as identifier because Map uses strict equality "===" to
+    // check for key equality, which does not work with newly constructed ranges.
+    private state_map: Map<string, Map<string, Map<string, number>>>;
+    // we cache the inlayHints for each file until we get a change
+    private inlay_cache_map: Map<string, vscode.InlayHint[]>
+    private inlay_register: vscode.Disposable;
+    private changed: boolean = false;
+
+    public constructor() {
+        this.state_map = new Map<string, Map<string, Map<string, number>>>();
+        this.inlay_cache_map = new Map<string, vscode.InlayHint[]>();
+        vscode.languages.registerHoverProvider('rust', this);
+        this.inlay_register = vscode.languages.registerInlayHintsProvider('rust', this);
+        setInterval(() => this.reregisterInlayHintsProvider(), 1000);
+
+    }
+
+    private reregisterInlayHintsProvider(): void {
+        if (this.changed) {
+            this.inlay_register.dispose();
+            this.inlay_register = vscode.languages.registerInlayHintsProvider('rust', this);
+            util.log("Successfully reregistered InlayHintsProvider");
+        }
+    }
+
+    public provideInlayHints(document: vscode.TextDocument, range: vscode.Range, token: vscode.CancellationToken): vscode.InlayHint[] {
+        // we just ignore the range, vscode ignores hints outside of the requested range
+        if (!this.inlay_cache_map.has(document.fileName)) {
+            // create the cache map
+            if (!this.state_map.has(document.fileName)) {
+                this.inlay_cache_map.set(document.fileName, []);
+                return [];
+            }
+            const range_map = this.state_map.get(document.fileName)!;
+            // here we have to sum up the quantifiers pointing to the same range, as this will be
+            // the only information given by the inlay hint.
+            const hints = Array.from(range_map.entries()).map(entry =>
+                                                          new vscode.InlayHint(
+                                                            strToRange(entry[0]).start,
+                                                            "QI: ".concat(Array.from(entry[1].values()).reduce((sum, n) => {return sum + n;}, 0).toString())));
+            this.inlay_cache_map.set(document.fileName, hints);
+        } else {
+            this.changed = false;
+        }
+        const ret = this.inlay_cache_map.get(document.fileName)!;
+        return this.inlay_cache_map.get(document.fileName)!;
+    }
+
+    public resolveInlayHint(hint: vscode.InlayHint, token: vscode.CancellationToken): vscode.InlayHint {
+        return hint;
+    }
+
+    public provideHover(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): vscode.Hover|undefined {
+        const range_map = this.state_map.get(document.fileName);
+        if (range_map === undefined) {
+            return undefined;
+        }
+        const init_range = new vscode.Range(0, 0, 0, 0);
+        // get the innermost range by iterating over all ranges.
+        let matching_range: vscode.Range = Array.from(range_map.keys()).reduce((cur, range_str) => {
+            const range = strToRange(range_str);
+            if (range.contains(position) && (cur.contains(range) || cur.isEqual(init_range))) {
+                return range;
+            } else {
+                return cur;
+            }
+        }, init_range);
+        if (matching_range.isEqual(init_range)) {
+            return undefined;
+        }
+        const range_str = JSON.stringify(matching_range);
+        const method_map_entries = Array.from(range_map.get(range_str)!.entries());
+        const text = method_map_entries.reduce((str, entry) => {return str.concat(`${entry[0]}: ${entry[1]}, `)}, "Quantifier instantiations per method: ").slice(0, -2);
+        return new vscode.Hover(text);
+    }
+
+    public update(fileName: string, method: string, instantiations: number, range: vscode.Range): void {
+        if (!this.state_map.has(fileName)) {
+            const range_map = new Map<string, Map<string, number>>()
+            this.state_map.set(fileName, range_map);
+        }
+        const str_range = JSON.stringify(range);
+        const range_map = this.state_map.get(fileName)!;
+        if (!range_map.has(str_range)) {
+            const method_map = new Map<string, number>()
+            range_map.set(str_range, method_map);
+        }
+        range_map.get(str_range)!.set(method, instantiations);
+        this.inlay_cache_map.delete(fileName);
+        this.changed = true;
+    }
+}
 
 export class DiagnosticsManager {
     private target: vscode.DiagnosticCollection;
@@ -666,13 +715,13 @@ export class DiagnosticsManager {
     private verificationStatus: vscode.StatusBarItem;
     private killAllButton: vscode.StatusBarItem;
     private runCount = 0;
-    private inlayHintsProvider: InlayHintsProvider;
+    private quantifierInstantiationsProvider: QuantifierInstantiationsProvider;
 
     public constructor(target: vscode.DiagnosticCollection, verificationStatus: vscode.StatusBarItem, killAllButton: vscode.StatusBarItem) {
         this.target = target;
         this.verificationStatus = verificationStatus;
         this.killAllButton = killAllButton;
-        this.inlayHintsProvider = new InlayHintsProvider();
+        this.quantifierInstantiationsProvider = new QuantifierInstantiationsProvider();
     }
 
     public dispose(): void {
@@ -710,9 +759,9 @@ export class DiagnosticsManager {
         try {
             let status: VerificationStatus, duration: util.Duration;
             if (target === VerificationTarget.Crate) {
-                [status, duration] = await queryCrateDiagnostics(prusti, targetPath, serverAddress, this.procDestructors, verificationDiagnostics, this.target, this.inlayHintsProvider);
+                [status, duration] = await queryCrateDiagnostics(prusti, targetPath, serverAddress, this.procDestructors, verificationDiagnostics, this.target, this.quantifierInstantiationsProvider);
             } else {
-                [status, duration] = await queryProgramDiagnostics(prusti, targetPath, serverAddress, this.procDestructors, verificationDiagnostics, this.target, this.inlayHintsProvider);
+                [status, duration] = await queryProgramDiagnostics(prusti, targetPath, serverAddress, this.procDestructors, verificationDiagnostics, this.target, this.quantifierInstantiationsProvider);
             }
 
             //verificationDiagnostics.addAll(diagnostics);
