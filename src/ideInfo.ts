@@ -2,7 +2,6 @@ import * as util from "./util";
 import * as vscode from "vscode";
 import { IdeInfo, ProcDef } from "./diagnostics";
 import { EventEmitter } from "events";
-import { stdin } from "process";
 
 export * from "./dependencies/PrustiLocation";
 
@@ -20,7 +19,7 @@ export var ide_info_coll: IdeInfoCollection = {
     fn_calls : new Map(),
 }
 
-export function add_ideinfo(program: string, ide_info: IdeInfo | null): void {
+export function add_ideinfo(ide_info: IdeInfo | null): void {
     // a new invocation of prusti finished and returned some (updated) information
     if (ide_info === null) {
         return;
@@ -45,10 +44,10 @@ export function add_ideinfo(program: string, ide_info: IdeInfo | null): void {
 }
 
 
-const codelensPromise = async (
+async function codelensPromise(
   document: vscode.TextDocument, 
   _token: vscode.CancellationToken
-): Promise<vscode.CodeLens[]> => {
+): Promise<vscode.CodeLens[]> {
     const codeLenses: vscode.CodeLens[] = [];
     let lookup = ide_info_coll.proc_defs.get(document.fileName);
     
@@ -83,7 +82,7 @@ const codelensPromise = async (
 }
 
 export function setup_ide_info_handlers(): void {
-    util.log("hello from handle_ide_info");
+    util.log("setting up CodeLenses and CodeActions");
 
     vscode.languages.registerCodeLensProvider('rust', {
         provideCodeLenses(document: vscode.TextDocument, _token: vscode.CancellationToken): Promise<vscode.CodeLens[]> {

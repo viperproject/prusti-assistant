@@ -19,5 +19,26 @@
             "body_invariant!(${1:true});"
         ],
         "description": "Insert body_invariant!(...);"
+    },
+    "pure": {
+        "prefix": "pure",
+        "body": [
+            "#[pure]"
+        ],
+        "description": "Insert #[pure]"
+    },
+    "trusted": {
+        "prefix": "trusted",
+        "body": [
+            "#[trusted]"
+        ],
+        "description": "Insert #[trusted]"
+    },
+    "externSpec": {
+        "prefix": "extern_spec",
+        "body": [
+            "#[extern_spec(...)]"
+        ],
+        "description": "Insert #[extern_spec()]"
     }
 }

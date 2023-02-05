@@ -523,7 +523,7 @@ async function queryCrateDiagnostics(
     util.log("Parsing IDE Info")
     const ide_info = parseIdeInfo(output.stdout, rootPath + "/");
 
-    add_ideinfo(rootPath, ide_info);
+    add_ideinfo(ide_info);
     
     util.log("queryCrateDiagnostics returns");
     return [diagnostics, status, output.duration ];
@@ -604,7 +604,7 @@ async function queryProgramDiagnostics(
 
     // paths are already absolute
     const ide_info = parseIdeInfo(output.stdout, "");
-    add_ideinfo(programPath, ide_info);
+    add_ideinfo(ide_info);
     
     util.log("queryProgramDiagnostics returns");
     return [diagnostics, status, output.duration ];
