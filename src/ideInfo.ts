@@ -1,90 +1,84 @@
 import * as util from "./util";
 import * as vscode from "vscode";
-import { IdeInfo } from "./diagnostics";
+import { IdeInfo, ProcDef } from "./diagnostics";
 import { EventEmitter } from "events";
+import { stdin } from "process";
 
 export * from "./dependencies/PrustiLocation";
 
 interface IdeInfoCollection {
-    crates: Map<string, IdeInfo>,
-    programs: Map<string, IdeInfo>,
+    // for proc_defs we also have a boolean on whether these values 
+    // were already requested (for codelenses)
+    proc_defs: Map<string, [boolean, ProcDef[]]>,
+    fn_calls: Map<string, ProcDef[]>,
 }
+
+const updateEmitter = new EventEmitter();
 
 export var ide_info_coll: IdeInfoCollection = {
-    crates : new Map(),
-    programs : new Map(),
+    proc_defs: new Map(),
+    fn_calls : new Map(),
 }
 
-export function add_ideinfo_program(program: string, ide_info: IdeInfo | null): void {
+export function add_ideinfo(program: string, ide_info: IdeInfo | null): void {
+    // a new invocation of prusti finished and returned some (updated) information
     if (ide_info === null) {
         return;
     }
-    
+
     if (ide_info.queried_source) {
-        let text = ide_info.queried_source;
-        util.log("Trying to put " + text + " into clipboard");
+        // yet to be formatted:
         vscode.env.clipboard.writeText(ide_info.queried_source);
-        // TODO: give the user some sign that the extern_spec template is now on clipboard
+        util.userInfoPopup("Template for extern spec. is now on your Clipboard.");
     }
-    ide_info_coll.programs.set(program, ide_info);
-    force_codelens_update();
-}
-
-export function add_ideinfo_crate(crate: string, ide_info: IdeInfo | null): void {
-    if (ide_info === null) {
-        return;
-    }
-    if (ide_info.queried_source) {
-        let text = ide_info.queried_source;
-        util.log("Trying to put " + text + " into clipboard");
-        vscode.env.clipboard.writeText(ide_info.queried_source);
-        // TODO: give the user some sign that the extern_spec template is now on clipboard
-    }
-    ide_info_coll.crates.set(crate, ide_info);
-    force_codelens_update();
-}
-
-function collectInfos(): IdeInfo[] {
-    const infos = [];
-    for (const info of ide_info_coll.crates.values()) {
-        infos.push(info);
-    }
-    for (const info of ide_info_coll.programs.values()) {
-        infos.push(info);
-    }
-    return infos;
-}
-
-function delay(n: number) {
-    return new Promise(function(resolve) {
-      setTimeout(resolve, n*1000);
+    ide_info.procedure_defs.forEach((procdef: ProcDef[], filename: string) => {
+        util.log("Processing a procdef with length: " + procdef.length);
+        // the boolean we are inserting stands for whether or not the info
+        // of this file has been read already
+        ide_info_coll.proc_defs.set(filename, [false, procdef]); // replace all the infos for that file
+        updateEmitter.emit('updated' + filename);
     });
+    ide_info.function_calls.forEach((procdef: ProcDef[], filename: string) => {
+        ide_info_coll.fn_calls.set(filename, procdef);
+    })
+    force_codelens_update();
 }
 
-const codelensPromise = async(
+
+const codelensPromise = async (
   document: vscode.TextDocument, 
   _token: vscode.CancellationToken
 ): Promise<vscode.CodeLens[]> => {
-    const info_set = collectInfos();
     const codeLenses: vscode.CodeLens[] = [];
-    info_set.forEach(info => {
-        for (const fc of info.procedure_defs) {
-            if (fc.filename === document.fileName) {
-                let delta = new vscode.TextEdit(new vscode.Range(new vscode.Position(0,0), new vscode.Position(0,0)), 
-                                               "hello\n");
-                const codeLens = new vscode.CodeLens(fc.range);
-                codeLens.command = {
-                    title: "✓ verify " + fc.name,
-                    command: "prusti-assistant.verify-selective",
-                    // TODO: invoke selective verification here
-                    arguments: [fc.name]
-                };
-                codeLenses.push(codeLens);
-            }
-        }
+    let lookup = ide_info_coll.proc_defs.get(document.fileName);
+    
+    if (lookup !== undefined ) {
+        if (lookup[0]) {
+            util.log("Trying to get info for file that has been read before");
+            // it has already been read and we should wait for
+            // an update. Should there be an await?
+            await new Promise(resolve => {
+                updateEmitter.once('updated' + document.fileName, () => resolve );
+            });
+        } // otherwise just proceed since this file's current info has not been
+          // read yet..
+        util.log("Proceeding to build Codelenses");
 
-    });
-    await delay(0);
+        lookup[0] = true;
+
+        let procdefs: ProcDef[] = lookup[1];
+        procdefs.forEach((pc: ProcDef) => {
+            const codeLens = new vscode.CodeLens(pc.range);
+            codeLens.command = { 
+                title: "✓ verify " + pc.name,
+                command: "prusti-assistant.verify-selective",
+                // TODO: invoke selective verification here
+                arguments: [pc.name]
+            };
+            codeLenses.push(codeLens);
+        });
+    }
+    // await delay(0);
     return codeLenses;
 }
 
@@ -104,10 +98,13 @@ export function setup_ide_info_handlers(): void {
             context: vscode.CodeActionContext,
             token: vscode.CancellationToken
         ): vscode.CodeAction[] {
-            const info_set = collectInfos();
             const codeActions: vscode.CodeAction[] = [];
-            info_set.forEach(info => {
-                for (const fc of info.function_calls) {
+            
+            let lookup = ide_info_coll.fn_calls.get(document.fileName);
+            
+            if (lookup !== undefined ) {
+                let procdefs: ProcDef[] = lookup;
+                procdefs.forEach((fc: ProcDef) => {
                     if (fc.filename === document.fileName && fc.range.contains(range)) 
                     {
                         const codeAction = new vscode.CodeAction(
@@ -121,8 +118,8 @@ export function setup_ide_info_handlers(): void {
                         };
                         codeActions.push(codeAction);
                     }
-                }
-            });
+                });
+            }
             return codeActions;
         }
     });
@@ -136,5 +133,6 @@ export function force_codelens_update(): void {
             return codeLenses;
         }
     });
-        cancel.dispose();
+    cancel.dispose();
 }
+

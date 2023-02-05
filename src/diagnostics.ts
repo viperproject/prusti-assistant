@@ -4,7 +4,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as vvt from "vs-verification-toolbox";
 import * as dependencies from "./dependencies";
-import { add_ideinfo_crate, add_ideinfo_program } from "./ideInfo"; 
+import { add_ideinfo } from "./ideInfo"; 
 
 // ========================================================
 // JSON Schemas
@@ -71,12 +71,12 @@ interface ProcDefRust {
 // In this schema we adjusted spans and 
 // also adjusted filepaths for crates
 export interface IdeInfo {
-    procedure_defs: ProcDef[],
-    function_calls: ProcDef[],
+    procedure_defs: Map<string, ProcDef[]>,
+    function_calls: Map<string, ProcDef[]>,
     queried_source: string | null,
 }
 
-interface ProcDef {
+export interface ProcDef {
     name: string,
     filename: string,
     range: vscode.Range,
@@ -144,9 +144,11 @@ function parseCargoOutput(output: string): CargoMessage[] {
         // Parse the message into a diagnostic.
         const diag = JSON.parse(line) as CargoMessage;
         if (diag.message !== undefined) {
-            messages.push(diag);
+            // do this prettier at some point..
+            if (diag.message.message !== "Not actually an error") {
+                messages.push(diag);
+            }
         }
-
     }
     return messages;
 }
@@ -169,23 +171,44 @@ function parseRustcOutput(output: string): Message[] {
 
 function transformIdeInfo(info: IdeInfoRust, root: string): IdeInfo {
     const result: IdeInfo = {
-        procedure_defs: [],
-        function_calls: [],
+        procedure_defs: new Map(),
+        function_calls: new Map(),
         queried_source: info.queried_source,
     };
     for (const proc of info.procedure_defs) {
-        result.procedure_defs.push({
+        let filename = root + proc.span.file_name
+        let entry : ProcDef = {
             name: proc.name,
-            filename: root + proc.span.file_name,
+            filename: filename, 
             range: parseSpanRange(proc.span),
-        });
+        };
+        let lookup = result.procedure_defs.get(filename);
+        if (lookup !== undefined) {
+            lookup.push(entry);
+            util.log("pushed a new entry");
+        } else {
+            result.procedure_defs.set(filename, [entry]);
+        }
+        // {
+        //     name: proc.name,
+        //     filename: root + proc.span.file_name,
+        //     range: parseSpanRange(proc.span),
+        // });
     }
     for (const proc of info.function_calls) {
-        result.function_calls.push({
-            name: proc.name,
-            filename: root + proc.span.file_name,
+        let filename = root + proc.span.file_name;
+        let entry: ProcDef = {
+            name: proc.name, 
+            filename: filename, 
             range: parseSpanRange(proc.span),
-        });
+        };
+        let lookup = result.function_calls.get(filename);
+        if (lookup !== undefined) {
+            lookup.push(entry);
+            util.log("lookup with length: " + lookup.length);
+        } else {
+            result.function_calls.set(filename, [entry]);
+        }
     }
     util.log("Transformed IDE Info to be useable by Vscode");
     return result;
@@ -201,7 +224,6 @@ function parseIdeInfo(output: string, root: string): IdeInfo | null {
         // Parse the message into a diagnostic.
         result = JSON.parse(line) as IdeInfoRust;
         if (result.procedure_defs !== undefined) {
-            // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
             util.log("Parsed raw IDE info. Found " 
                 + result.procedure_defs.length
                 + " procedure defs and " 
@@ -472,35 +494,36 @@ async function queryCrateDiagnostics(
     let status = VerificationStatus.Crash;
     const diagnostics: Diagnostic[] = [];
     
-    if(!skipVerify) {
-        if (output.code === 0) {
+    if (output.code === 0) {
+        if (skipVerify) {
+            status = VerificationStatus.SkippedVerification;
+        } else {
             status = VerificationStatus.Verified;
         }
-        if (output.code === 1) {
-            status = VerificationStatus.Errors;
-        }
-        if (output.code === 101) {
-            status = VerificationStatus.Errors;
-        }
-        if (/error: internal compiler error/.exec(output.stderr) !== null) {
-            status = VerificationStatus.Crash;
-        }
-        if (/^thread '.*' panicked at/.exec(output.stderr) !== null) {
-            status = VerificationStatus.Crash;
-        }
-        for (const messages of parseCargoOutput(output.stdout)) {
-            diagnostics.push(
-                parseCargoMessage(messages, rootPath)
-            );
-        }
     }
+
+    if (output.code === 1) {
+        status = VerificationStatus.Errors;
+    }
+    if (output.code === 101) {
+        status = VerificationStatus.Errors;
+    }
+    if (/error: internal compiler error/.exec(output.stderr) !== null) {
+        status = VerificationStatus.Crash;
+    }
+    if (/^thread '.*' panicked at/.exec(output.stderr) !== null) {
+        status = VerificationStatus.Crash;
+    }
+    for (const messages of parseCargoOutput(output.stdout)) {
+        diagnostics.push(
+            parseCargoMessage(messages, rootPath)
+        );
+    }
+
     util.log("Parsing IDE Info")
-    const ide_info = parseIdeInfo(output.stdout, rootPath +"/" );
-    if (skipVerify)  {
-        status = VerificationStatus.SkippedVerification
-        // if we can't parse this field we still report a crash..
-    }
-    add_ideinfo_crate(rootPath, ide_info);
+    const ide_info = parseIdeInfo(output.stdout, rootPath + "/");
+
+    add_ideinfo(rootPath, ide_info);
     
     util.log("queryCrateDiagnostics returns");
     return [diagnostics, status, output.duration ];
@@ -552,37 +575,36 @@ async function queryProgramDiagnostics(
     );
     let status = VerificationStatus.Crash;
     const diagnostics: Diagnostic[] = [];
-    if (!skipVerify) {
-        if (output.code === 0) {
+    if (output.code === 0) {
+        if (skipVerify) {
+            status = VerificationStatus.SkippedVerification
+            // if we can't parse this field we still report a crash..
+        } else {
             status = VerificationStatus.Verified;
         }
-        if (output.code === 1) {
-            status = VerificationStatus.Errors;
-        }
-        if (output.code === 101) {
-            status = VerificationStatus.Crash;
-        }
-        if (/error: internal compiler error/.exec(output.stderr) !== null) {
-            status = VerificationStatus.Crash;
-        }
-        if (/^thread '.*' panicked at/.exec(output.stderr) !== null) {
-            status = VerificationStatus.Crash;
-        }
+    }
+    if (output.code === 1) {
+        status = VerificationStatus.Errors;
+    }
+    if (output.code === 101) {
+        status = VerificationStatus.Crash;
+    }
+    if (/error: internal compiler error/.exec(output.stderr) !== null) {
+        status = VerificationStatus.Crash;
+    }
+    if (/^thread '.*' panicked at/.exec(output.stderr) !== null) {
+        status = VerificationStatus.Crash;
+    }
 
-        for (const messages of parseRustcOutput(output.stderr)) {
-            diagnostics.push(
-                parseRustcMessage(messages, programPath)
-            );
-        }
+    for (const messages of parseRustcOutput(output.stderr)) {
+        diagnostics.push(
+            parseRustcMessage(messages, programPath)
+        );
     }
 
     // paths are already absolute
     const ide_info = parseIdeInfo(output.stdout, "");
-    if (skipVerify) {
-        status = VerificationStatus.SkippedVerification
-        // if we can't parse this field we still report a crash..
-    }
-    add_ideinfo_program(programPath, ide_info);
+    add_ideinfo(programPath, ide_info);
     
     util.log("queryProgramDiagnostics returns");
     return [diagnostics, status, output.duration ];
@@ -777,7 +799,9 @@ export class DiagnosticsManager {
             if (status === VerificationStatus.Errors && !verificationDiagnostics.hasErrors()) {
                 crashed = true;
                 util.log("The verification failed, but there are no errors to report.");
-                util.userError(crashErrorMsg);
+                // util.userError(crashErrorMsg);
+                // put this back in once we dont have to create a fake error
+                // to avoid caching of the result for no-verify flag..
             }
         } catch (err) {
             util.log(`Error while running Prusti: ${err}`);
@@ -790,28 +814,27 @@ export class DiagnosticsManager {
         } else {
             // Render diagnostics
             this.killAllButton.hide();
-            if (!skip_verification) {
-                verificationDiagnostics.renderIn(this.target);
-                if (crashed) {
-                    this.verificationStatus.text = `$(error) Verification of ${target} '${escapedFileName}' failed with an unexpected error`;
-                    this.verificationStatus.command = "workbench.action.output.toggleOutput";
-                } else if (verificationDiagnostics.hasErrors()) {
-                    const counts = verificationDiagnostics.countsBySeverity();
-                    const errors = counts.get(vscode.DiagnosticSeverity.Error);
-                    const noun = errors === 1 ? "error" : "errors";
-                    this.verificationStatus.text = `$(error) Verification of ${target} '${escapedFileName}' failed with ${errors} ${noun} (${durationSecMsg} s)`;
-                    this.verificationStatus.command = "workbench.action.problems.focus";
-                } else if (verificationDiagnostics.hasWarnings()) {
-                    const counts = verificationDiagnostics.countsBySeverity();
-                    const warnings = counts.get(vscode.DiagnosticSeverity.Warning);
-                    const noun = warnings === 1 ? "warning" : "warnings";
-                    this.verificationStatus.text = `$(warning) Verification of ${target} '${escapedFileName}' succeeded with ${warnings} ${noun} (${durationSecMsg} s)`;
-                    this.verificationStatus.command = "workbench.action.problems.focus";
-                } else {
-                    this.verificationStatus.text = `$(check) Verification of ${target} '${escapedFileName}' succeeded (${durationSecMsg} s)`;
-                    this.verificationStatus.command = undefined;
-                }
+            verificationDiagnostics.renderIn(this.target);
+            if (crashed) {
+                this.verificationStatus.text = `$(error) Verification of ${target} '${escapedFileName}' failed with an unexpected error`;
+                this.verificationStatus.command = "workbench.action.output.toggleOutput";
+            } else if (verificationDiagnostics.hasErrors()) {
+                const counts = verificationDiagnostics.countsBySeverity();
+                const errors = counts.get(vscode.DiagnosticSeverity.Error);
+                const noun = errors === 1 ? "error" : "errors";
+                this.verificationStatus.text = `$(error) Verification of ${target} '${escapedFileName}' failed with ${errors} ${noun} (${durationSecMsg} s)`;
+                this.verificationStatus.command = "workbench.action.problems.focus";
+            } else if (verificationDiagnostics.hasWarnings()) {
+                const counts = verificationDiagnostics.countsBySeverity();
+                const warnings = counts.get(vscode.DiagnosticSeverity.Warning);
+                const noun = warnings === 1 ? "warning" : "warnings";
+                this.verificationStatus.text = `$(warning) Verification of ${target} '${escapedFileName}' succeeded with ${warnings} ${noun} (${durationSecMsg} s)`;
+                this.verificationStatus.command = "workbench.action.problems.focus";
             } else {
+                this.verificationStatus.text = `$(check) Verification of ${target} '${escapedFileName}' succeeded (${durationSecMsg} s)`;
+                this.verificationStatus.command = undefined;
+            }
+            if (skip_verification) {
                 this.verificationStatus.text = prevStatus;
             }
         }
