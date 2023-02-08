@@ -4,7 +4,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as vvt from "vs-verification-toolbox";
 import * as dependencies from "./dependencies";
-import { add_ideinfo } from "./ideInfo"; 
+import { add_ideinfo } from "./compilerInfo"; 
 
 // ========================================================
 // JSON Schemas

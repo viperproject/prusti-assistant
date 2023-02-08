@@ -37,8 +37,8 @@
     "externSpec": {
         "prefix": "extern_spec",
         "body": [
-            "#[extern_spec(...)]"
+            "#[extern_spec($1)]"
         ],
-        "description": "Insert #[extern_spec()]"
+        "description": "Insert #[extern_spec(...)]"
     }
 }

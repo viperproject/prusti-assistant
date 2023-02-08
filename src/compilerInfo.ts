@@ -2,10 +2,11 @@ import * as util from "./util";
 import * as vscode from "vscode";
 import { IdeInfo, ProcDef } from "./diagnostics";
 import { EventEmitter } from "events";
+import {notVerifiedDecorationType, failedVerificationDecorationType, successfulVerificationDecorationType} from "./toolbox/decorations";
 
-export * from "./dependencies/PrustiLocation";
 
-interface IdeInfoCollection {
+// Information from the compiler that can be obtained without invoking verification
+interface CompilerInfoCollection {
     // for proc_defs we also have a boolean on whether these values 
     // were already requested (for codelenses)
     proc_defs: Map<string, [boolean, ProcDef[]]>,
@@ -14,7 +15,7 @@ interface IdeInfoCollection {
 
 const updateEmitter = new EventEmitter();
 
-export var ide_info_coll: IdeInfoCollection = {
+export var ide_info_coll: CompilerInfoCollection = {
     proc_defs: new Map(),
     fn_calls : new Map(),
 }
@@ -41,6 +42,30 @@ export function add_ideinfo(ide_info: IdeInfo | null): void {
         ide_info_coll.fn_calls.set(filename, procdef);
     })
     force_codelens_update();
+    
+
+    // while we are at it, let's try displaying checkmarks in gutter
+    let active_editor = vscode.window.activeTextEditor;
+    let filename = active_editor?.document.fileName;
+    if ( filename !== undefined ) {
+        let ranges = collect_ranges(filename);
+        active_editor?.setDecorations(successfulVerificationDecorationType(), ranges);
+        util.log("Trying to set decorations!");
+    }
+
+
+
+    // if (active_editor) {
+    //     ide_info.procedure_defs.forEach((procdef: ProcDef[], filename: string) => {
+    //         procdef.forEach((pd: ProcDef) => {
+    //             if ( pd.filename == filename ) {
+    //                 active_editor?.setDecorations(verifiedDecorationType, [pd.range])
+    //                 util.log("Setting a decoration for Range: " + pd.range);
+    //             }
+    //         })
+    //     })
+    // }
+
 }
 
 
@@ -125,7 +150,7 @@ export function setup_ide_info_handlers(): void {
 
 }
 
-export function force_codelens_update(): void {
+function force_codelens_update(): void {
     const cancel = vscode.languages.registerCodeLensProvider('rust', {
         provideCodeLenses(_document: vscode.TextDocument, _token: vscode.CancellationToken): vscode.CodeLens[] {
             const codeLenses: vscode.CodeLens[] = [];
@@ -135,3 +160,19 @@ export function force_codelens_update(): void {
     cancel.dispose();
 }
 
+function collect_ranges(filename: string): vscode.Range[] {
+    let res: vscode.Range[] = []
+    ide_info_coll.proc_defs.forEach(([_, proc_defs]: [boolean, ProcDef[]], file: string) => {
+        if (filename == file) {
+            proc_defs.forEach((pd) => {
+                res.push(first_symbol_range(pd.range));
+            })
+        }
+    })
+    return res;
+}
+
+function first_symbol_range(range: vscode.Range): vscode.Range {
+    let position = new vscode.Position(range.start.line, range.start.character);
+    return new vscode.Range(position, position)
+}

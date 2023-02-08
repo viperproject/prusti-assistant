@@ -6,7 +6,7 @@ import * as checks from "./checks";
 import { prusti, installDependencies, prustiVersion } from "./dependencies";
 import * as server from "./server";
 import * as state from "./state";
-import { setup_ide_info_handlers } from "./ideInfo";
+import { setup_ide_info_handlers } from "./compilerInfo";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     util.log("Activate Prusti Assistant");
