@@ -49,10 +49,7 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
             prusti.rustToolchainFile(),
         );
     } catch (err) {
-        util.userError(
-            `Error installing Prusti. Please restart the IDE to retry. Details: ${err}`,
-            true, verificationStatus
-        );
+        util.userError(`Error installing Prusti: ${err}`, true, verificationStatus);
         throw err;
     } finally {
         await server.restart(context, verificationStatus);
@@ -72,3 +69,4 @@ export async function prustiVersion(): Promise<string> {
     }
     return version;
 }
+

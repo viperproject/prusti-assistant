@@ -4,6 +4,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as vvt from "vs-verification-toolbox";
 import * as dependencies from "./dependencies";
+import { add_ideinfo } from "./compilerInfo";
 
 // ========================================================
 // JSON Schemas
@@ -54,6 +55,34 @@ interface Expansion {
     span: Span;
 }
 
+
+// Additional Schemas for Custom information for IDE:
+export interface IdeInfoRust {
+    procedure_defs: ProcDefRust[]
+    function_calls: ProcDefRust[]
+    queried_source: string | null
+}
+
+interface ProcDefRust {
+    name: string,
+    span: Span,
+}
+
+// In this schema we adjusted spans and
+// also adjusted filepaths for crates
+export interface IdeInfo {
+    procedure_defs: Map<string, ProcDef[]>,
+    function_calls: Map<string, ProcDef[]>,
+    queried_source: string | null,
+}
+
+export interface ProcDef {
+    name: string,
+    filename: string,
+    range: vscode.Range,
+}
+
+
 // ========================================================
 // Diagnostic Parsing
 // ========================================================
@@ -93,12 +122,119 @@ function parseMultiSpanRange(multiSpan: Span[]): vscode.Range {
 }
 
 function parseSpanRange(span: Span): vscode.Range {
+    let col_start = span.column_start - 1;
+    if (span.column_start == 0) {
+        col_start = 0;
+    }
     return new vscode.Range(
         span.line_start - 1,
-        span.column_start - 1,
+        col_start,
         span.line_end - 1,
         span.column_end - 1,
     );
+}
+
+function parseCargoOutput(output: string): CargoMessage[] {
+    const messages: CargoMessage[] = [];
+    for (const line of output.split("\n")) {
+        if (line[0] !== "{") {
+            continue;
+        }
+
+        // Parse the message into a diagnostic.
+        const diag = JSON.parse(line) as CargoMessage;
+        if (diag.message !== undefined) {
+            // do this prettier at some point..
+            if (diag.message.message !== "Not actually an error") {
+                messages.push(diag);
+            }
+        }
+    }
+    return messages;
+}
+
+function parseRustcOutput(output: string): Message[] {
+    const messages: Message[] = [];
+    for (const line of output.split("\n")) {
+        if (line[0] !== "{") {
+            continue;
+        }
+
+        // Parse the message into a diagnostic.
+        const diag = JSON.parse(line) as Message;
+        if (diag.message !== undefined) {
+            messages.push(diag);
+        }
+    }
+    return messages;
+}
+
+function transformIdeInfo(info: IdeInfoRust, root: string): IdeInfo {
+    const result: IdeInfo = {
+        procedure_defs: new Map(),
+        function_calls: new Map(),
+        queried_source: info.queried_source,
+    };
+    for (const proc of info.procedure_defs) {
+        let filename = root + proc.span.file_name
+        let entry : ProcDef = {
+            name: proc.name,
+            filename: filename, 
+            range: parseSpanRange(proc.span),
+        };
+        let lookup = result.procedure_defs.get(filename);
+        if (lookup !== undefined) {
+            lookup.push(entry);
+            util.log("pushed a new entry");
+        } else {
+            result.procedure_defs.set(filename, [entry]);
+        }
+        // {
+        //     name: proc.name,
+        //     filename: root + proc.span.file_name,
+        //     range: parseSpanRange(proc.span),
+        // });
+    }
+    for (const proc of info.function_calls) {
+        let filename = root + proc.span.file_name;
+        let entry: ProcDef = {
+            name: proc.name,
+            filename: filename,
+            range: parseSpanRange(proc.span),
+        };
+        let lookup = result.function_calls.get(filename);
+        if (lookup !== undefined) {
+            lookup.push(entry);
+            util.log("lookup with length: " + lookup.length);
+        } else {
+            result.function_calls.set(filename, [entry]);
+        }
+    }
+    util.log("Transformed IDE Info to be useable by Vscode");
+    return result;
+}
+
+function parseIdeInfo(output: string, root: string): IdeInfo | null {
+    let result: IdeInfoRust;
+    for (const line of output.split("\n")) {
+        if (line[0] !== "{") {
+            continue;
+        }
+
+        // Parse the message into a diagnostic.
+        result = JSON.parse(line) as IdeInfoRust;
+        if (result.procedure_defs !== undefined) {
+            util.log("Parsed raw IDE info. Found "
+                + result.procedure_defs.length
+                + " procedure defs and "
+                + result.function_calls.length
+                + " function calls.");
+            util.log("The queried source had value: "
+                + result.queried_source);
+            return transformIdeInfo(result, root);
+        }
+    }
+    return null;
 }
 
 function getCallSiteSpan(span: Span): Span {
@@ -309,7 +445,8 @@ async function removeDiagnosticMetadata(rootPath: string) {
 enum VerificationStatus {
     Crash,
     Verified,
-    Errors
+    Errors,
+    SkippedVerification,
 }
 
 /**
@@ -318,22 +455,33 @@ enum VerificationStatus {
  * @param rootPath The root path of a rust project.
  * @returns An array of diagnostics for the given rust project.
  */
-async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation,
-                                     rootPath: string,
-                                     serverAddress: string,
-                                     destructors: Set<util.KillFunction>,
-                                     verificationDiagnostics: VerificationDiagnostics,
-                                     target: vscode.DiagnosticCollection,
-                                     quantifierInstantiationsProvider: QuantifierInstantiationsProvider): Promise<[VerificationStatus, util.Duration]> {
+async function queryCrateDiagnostics(
+    prusti: dependencies.PrustiLocation,
+    rootPath: string,
+    serverAddress: string,
+    destructors: Set<util.KillFunction>,
+    skipVerify: boolean,
+    selectiveVerify: string | undefined,
+    verificationDiagnostics: VerificationDiagnostics,
+    target: vscode.DiagnosticCollection,
+    quantifierInstantiationsProvider: QuantifierInstantiationsProvider,
+): Promise<[VerificationStatus, util.Duration ]> {
     // FIXME: Workaround for warning generation for libs.
-    await removeDiagnosticMetadata(rootPath);
+    if (!skipVerify) {
+        await removeDiagnosticMetadata(rootPath);
+    }
     const cargoPrustiArgs = ["--message-format=json"].concat(
         config.extraCargoPrustiArgs()
     );
+    util.log("passed args:" + cargoPrustiArgs.toString());
     const cargoPrustiEnv = {
         ...process.env,  // Needed to run Rustup
         ...{
             PRUSTI_SERVER_ADDRESS: serverAddress,
+            PRUSTI_SHOW_IDE_INFO: "true",
+            PRUSTI_SKIP_VERIFICATION: skipVerify ? "true" : "false",
+            PRUSTI_SELECTIVE_VERIFY: skipVerify ? undefined : selectiveVerify,
+            PRUSTI_QUERY_METHOD_SIGNATURE: skipVerify ? selectiveVerify : undefined,
             PRUSTI_QUIET: "true",
             JAVA_HOME: (await config.javaHome())!.path,
         },
@@ -361,6 +509,7 @@ async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation,
                     // Parse the message into a diagnostic.
                     const diag = JSON.parse(line) as CargoMessage;
                     const qim_str = "quantifier_instantiations_message";
+                    // FIXME: undefined checking + cedrics case?
                     if (diag.message.message.startsWith(qim_str)) {
                         if (diag.message.spans.length !== 1) {
                             util.log("ERROR: multiple spans for a quantifier.");
@@ -373,8 +522,7 @@ async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation,
                         const instantiations = parsed_m["instantiations"];
 
                         quantifierInstantiationsProvider.update(fileName, method, instantiations, range);
-                    }
-                    else if (diag.message !== undefined) {
+                    } else if (diag.message !== undefined) {
                         const msg = parseCargoMessage(diag, rootPath);
                         verificationDiagnostics.add_and_render(msg, target);
                     }
@@ -384,9 +532,16 @@ async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation,
         destructors,
     );
     let status = VerificationStatus.Crash;
+    const diagnostics: Diagnostic[] = [];
+
     if (output.code === 0) {
-        status = VerificationStatus.Verified;
+        if (skipVerify) {
+            status = VerificationStatus.SkippedVerification;
+        } else {
+            status = VerificationStatus.Verified;
+        }
     }
+
     if (output.code === 1) {
         status = VerificationStatus.Errors;
     }
@@ -399,6 +554,12 @@ async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation,
     if (/^thread '.*' panicked at/.exec(output.stderr) !== null) {
         status = VerificationStatus.Crash;
     }
+
+    util.log("Parsing IDE Info")
+    const ide_info = parseIdeInfo(output.stdout, rootPath + "/");
+
+    add_ideinfo(ide_info);
+
     return [status, output.duration];
 }
 
@@ -408,13 +569,17 @@ async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation,
  * @param programPath The root path of a rust program.
  * @returns An array of diagnostics for the given rust project.
  */
-async function queryProgramDiagnostics(prusti: dependencies.PrustiLocation,
-                                       programPath: string,
-                                       serverAddress: string,
-                                       destructors: Set<util.KillFunction>,
-                                       verificationDiagnostics: VerificationDiagnostics,
-                                       target: vscode.DiagnosticCollection,
-                                       quantifierInstantiationsProvider: QuantifierInstantiationsProvider): Promise<[VerificationStatus, util.Duration]> {
+async function queryProgramDiagnostics(
+    prusti: dependencies.PrustiLocation,
+    programPath: string,
+    serverAddress: string,
+    destructors: Set<util.KillFunction>,
+    skipVerify: boolean,
+    selectiveVerify: string | undefined,
+    verificationDiagnostics: VerificationDiagnostics,
+    target: vscode.DiagnosticCollection,
+    quantifierInstantiationsProvider: QuantifierInstantiationsProvider,
+): Promise<[VerificationStatus, util.Duration]> {
     const prustiRustcArgs = [
         "--crate-type=lib",
         "--error-format=json",
@@ -426,6 +591,9 @@ async function queryProgramDiagnostics(prusti: dependencies.PrustiLocation,
         ...process.env,  // Needed to run Rustup
         ...{
             PRUSTI_SERVER_ADDRESS: serverAddress,
+            PRUSTI_SHOW_IDE_INFO: "true",
+            PRUSTI_SKIP_VERIFICATION: skipVerify ? "true" : "false",
+            PRUSTI_SELECTIVE_VERIFY: selectiveVerify,
             PRUSTI_QUIET: "true",
             JAVA_HOME: (await config.javaHome())!.path,
         },
@@ -453,6 +621,7 @@ async function queryProgramDiagnostics(prusti: dependencies.PrustiLocation,
                     // Parse the message into a diagnostic.
                     const diag = JSON.parse(line) as Message;
                     const qim_str = "quantifier_instantiations_message";
+                    // FIXME: consider undefined + cedrics case?
                     if (diag.message.startsWith(qim_str)) {
                         if (diag.spans.length !== 1) {
                             util.log("ERROR: multiple spans for a Quantifier.");
@@ -476,8 +645,14 @@ async function queryProgramDiagnostics(prusti: dependencies.PrustiLocation,
         destructors
     );
     let status = VerificationStatus.Crash;
+    const diagnostics: Diagnostic[] = [];
     if (output.code === 0) {
-        status = VerificationStatus.Verified;
+        if (skipVerify) {
+            status = VerificationStatus.SkippedVerification
+            // if we can't parse this field we still report a crash..
+        } else {
+            status = VerificationStatus.Verified;
+        }
     }
     if (output.code === 1) {
         status = VerificationStatus.Errors;
@@ -491,6 +666,11 @@ async function queryProgramDiagnostics(prusti: dependencies.PrustiLocation,
     if (/^thread '.*' panicked at/.exec(output.stderr) !== null) {
         status = VerificationStatus.Crash;
     }
+
+    // paths are already absolute
+    const ide_info = parseIdeInfo(output.stdout, "");
+    add_ideinfo(ide_info);
+
     return [status, output.duration];
 }
 
@@ -738,7 +918,8 @@ export class DiagnosticsManager {
         this.procDestructors.forEach((kill) => kill());
     }
 
-    public async verify(prusti: dependencies.PrustiLocation, serverAddress: string, targetPath: string, target: VerificationTarget): Promise<void> {
+
+    public async verify(prusti: dependencies.PrustiLocation, serverAddress: string, targetPath: string, target: VerificationTarget, skip_verification: boolean, selective_verify: string | undefined): Promise<void> {
         // Prepare verification
         this.runCount += 1;
         const currentRun = this.runCount;
@@ -748,7 +929,13 @@ export class DiagnosticsManager {
 
         // Run verification
         const escapedFileName = path.basename(targetPath).replace("$", "\\$");
-        this.verificationStatus.text = `$(sync~spin) Verifying ${target} '${escapedFileName}'...`;
+        const prevStatus = this.verificationStatus.text;
+
+        if (!skip_verification) {
+            this.verificationStatus.text = `$(sync~spin) Verifying ${target} '${escapedFileName}'...`;
+        } else {
+            this.verificationStatus.text =  `$(sync~spin) Analyzing ${target} '${escapedFileName}'...`;
+        }
 
         const verificationDiagnostics = new VerificationDiagnostics();
         let durationSecMsg: string | null = null;
@@ -758,14 +945,35 @@ export class DiagnosticsManager {
         let crashed = false;
         try {
             let status: VerificationStatus, duration: util.Duration;
+            util.log("starting verification");
             if (target === VerificationTarget.Crate) {
-                [status, duration] = await queryCrateDiagnostics(prusti, targetPath, serverAddress, this.procDestructors, verificationDiagnostics, this.target, this.quantifierInstantiationsProvider);
+                [status, duration] = await queryCrateDiagnostics(
+                    prusti,
+                    targetPath,
+                    serverAddress,
+                    this.procDestructors,
+                    skip_verification,
+                    selective_verify,
+                    verificationDiagnostics,
+                    this.target,
+                    this.quantifierInstantiationsProvider,
+                );
             } else {
-                [status, duration] = await queryProgramDiagnostics(prusti, targetPath, serverAddress, this.procDestructors, verificationDiagnostics, this.target, this.quantifierInstantiationsProvider);
+                [status, duration] = await queryProgramDiagnostics(
+                    prusti,
+                    targetPath,
+                    serverAddress,
+                    this.procDestructors,
+                    skip_verification,
+                    selective_verify,
+                    verificationDiagnostics,
+                    this.target,
+                    this.quantifierInstantiationsProvider,
+                );
             }
 
-            //verificationDiagnostics.addAll(diagnostics);
             durationSecMsg = (duration[0] + duration[1] / 1e9).toFixed(1);
+            //verificationDiagnostics.addAll(diagnostics);
             if (status === VerificationStatus.Crash) {
                 crashed = true;
                 util.log("Prusti encountered an unexpected error.");
@@ -774,7 +982,9 @@ export class DiagnosticsManager {
             if (status === VerificationStatus.Errors && !verificationDiagnostics.hasErrors()) {
                 crashed = true;
                 util.log("The verification failed, but there are no errors to report.");
-                util.userError(crashErrorMsg);
+                // util.userError(crashErrorMsg);
+                // put this back in once we dont have to create a fake error
+                // to avoid caching of the result for no-verify flag..
             }
         } catch (err) {
             util.log(`Error while running Prusti: ${err}`);
@@ -806,6 +1016,9 @@ export class DiagnosticsManager {
             } else {
                 this.verificationStatus.text = `$(check) Verification of ${target} '${escapedFileName}' succeeded (${durationSecMsg} s)`;
                 this.verificationStatus.command = undefined;
+            }
+            if (skip_verification) {
+                this.verificationStatus.text = prevStatus;
             }
         }
     }

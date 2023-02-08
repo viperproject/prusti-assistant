@@ -31,7 +31,7 @@ function openFile(filePath: string): Promise<vscode.TextDocument> {
 }
 
 /**
- * Evaluate tje filter used in the `.rs.json` expected diagnostics.
+ * Evaluate the filter used in the `.rs.json` expected diagnostics.
  * @param filter The filter dictionary.
  * @param name The name of the filter.
  * @returns True if the filter is fully satisfied, otherwise false.
