@@ -9,7 +9,7 @@ export interface InfoCollection {
     procDefs: Map<string, [boolean, ProcDef[]]>,
     fnCalls: Map<string, ProcDef[]>,
     verificationInfo: VerificationInfo,
-    rangeMap: Map<[string, string], vscode.Range>
+    rangeMap: Map<string, vscode.Range>
 }
 
 export var infoCollection: InfoCollection = {

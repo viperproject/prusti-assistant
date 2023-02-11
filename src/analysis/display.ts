@@ -62,10 +62,11 @@ export function displayResults() {
     let failures: vscode.Range[] = [];
     infoCollection.verificationInfo.forEach((res: VerificationResult) => {
         util.log("display result: " + res.fileName + ": "+ res.methodName);
+        util.log("editor filename: " + filename);
         if (res.fileName != filename) {
             return;
         }
-        let range = infoCollection.rangeMap.get([res.fileName, res.methodName]);
+        let range = infoCollection.rangeMap.get(res.fileName + ":" + res.methodName);
         if (range) {
             let range_beginning = first_symbol_range(range);
             if (res.success) {
@@ -73,6 +74,8 @@ export function displayResults() {
             } else {
                 failures.push(range_beginning);
             }
+        } else {
+            util.log("didnt find a range for this file");
         }
     });
     active_editor?.setDecorations(successfulVerificationDecorationType(), successes);

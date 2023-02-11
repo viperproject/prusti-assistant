@@ -43,7 +43,8 @@ export function addCompilerInfo(info: CompilerInfo | null): void {
         infoCollection.procDefs.set(filename, [false, procdefs]); // replace all the infos for that file
         display.updateEmitter.emit('updated' + filename);
         procdefs.forEach((procDef: ProcDef) => {
-            infoCollection.rangeMap.set([procDef.filename, procDef.name], procDef.range);
+            util.log("Setting rangemap: " + procDef.filename + ": " + procDef.name);
+            infoCollection.rangeMap.set(procDef.filename + ":" + procDef.name, procDef.range);
         });
     });
     info.function_calls.forEach((procdef: ProcDef[], filename: string) => {
