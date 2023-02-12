@@ -4,7 +4,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as vvt from "vs-verification-toolbox";
 import * as dependencies from "./dependencies";
-import { add_ideinfo } from "./compilerInfo";
+import { process_output } from "./analysis/processing"
 
 // ========================================================
 // JSON Schemas
@@ -40,7 +40,7 @@ enum Level {
     Empty = "",
 }
 
-interface Span {
+export interface Span {
     column_end: number;
     column_start: number;
     file_name: string;
@@ -56,31 +56,6 @@ interface Expansion {
 }
 
 
-// Additional Schemas for Custom information for IDE:
-export interface IdeInfoRust {
-    procedure_defs: ProcDefRust[]
-    function_calls: ProcDefRust[]
-    queried_source: string | null
-}
-
-interface ProcDefRust {
-    name: string,
-    span: Span,
-}
-
-// In this schema we adjusted spans and
-// also adjusted filepaths for crates
-export interface IdeInfo {
-    procedure_defs: Map<string, ProcDef[]>,
-    function_calls: Map<string, ProcDef[]>,
-    queried_source: string | null,
-}
-
-export interface ProcDef {
-    name: string,
-    filename: string,
-    range: vscode.Range,
-}
 
 
 // ========================================================
@@ -121,7 +96,7 @@ function parseMultiSpanRange(multiSpan: Span[]): vscode.Range {
     return finalRange ?? dummyRange();
 }
 
-function parseSpanRange(span: Span): vscode.Range {
+export function parseSpanRange(span: Span): vscode.Range {
     let col_start = span.column_start - 1;
     if (span.column_start == 0) {
         col_start = 0;
@@ -169,73 +144,6 @@ function parseRustcOutput(output: string): Message[] {
     return messages;
 }
 
-function transformIdeInfo(info: IdeInfoRust, root: string): IdeInfo {
-    const result: IdeInfo = {
-        procedure_defs: new Map(),
-        function_calls: new Map(),
-        queried_source: info.queried_source,
-    };
-    for (const proc of info.procedure_defs) {
-        let filename = root + proc.span.file_name
-        let entry : ProcDef = {
-            name: proc.name,
-            filename: filename, 
-            range: parseSpanRange(proc.span),
-        };
-        let lookup = result.procedure_defs.get(filename);
-        if (lookup !== undefined) {
-            lookup.push(entry);
-            util.log("pushed a new entry");
-        } else {
-            result.procedure_defs.set(filename, [entry]);
-        }
-        // {
-        //     name: proc.name,
-        //     filename: root + proc.span.file_name,
-        //     range: parseSpanRange(proc.span),
-        // });
-    }
-    for (const proc of info.function_calls) {
-        let filename = root + proc.span.file_name;
-        let entry: ProcDef = {
-            name: proc.name,
-            filename: filename,
-            range: parseSpanRange(proc.span),
-        };
-        let lookup = result.function_calls.get(filename);
-        if (lookup !== undefined) {
-            lookup.push(entry);
-            util.log("lookup with length: " + lookup.length);
-        } else {
-            result.function_calls.set(filename, [entry]);
-        }
-    }
-    util.log("Transformed IDE Info to be useable by Vscode");
-    return result;
-}
-
-function parseIdeInfo(output: string, root: string): IdeInfo | null {
-    let result: IdeInfoRust;
-    for (const line of output.split("\n")) {
-        if (line[0] !== "{") {
-            continue;
-        }
-
-        // Parse the message into a diagnostic.
-        result = JSON.parse(line) as IdeInfoRust;
-        if (result.procedure_defs !== undefined) {
-            util.log("Parsed raw IDE info. Found "
-                + result.procedure_defs.length
-                + " procedure defs and "
-                + result.function_calls.length
-                + " function calls.");
-            util.log("The queried source had value: "
-                + result.queried_source);
-            return transformIdeInfo(result, root);
-        }
-    }
-    return null;
-}
 
 function getCallSiteSpan(span: Span): Span {
     while (span.expansion !== null) {
@@ -533,7 +441,6 @@ async function queryCrateDiagnostics(
         destructors,
     );
     let status = VerificationStatus.Crash;
-    const diagnostics: Diagnostic[] = [];
 
     if (output.code === 0) {
         if (skipVerify) {
@@ -562,9 +469,7 @@ async function queryCrateDiagnostics(
     }
 
     util.log("Parsing IDE Info")
-    const ide_info = parseIdeInfo(output.stdout, rootPath + "/");
-
-    add_ideinfo(ide_info);
+    process_output(rootPath + "/", output.stdout, true);
 
     return [status, output.duration];
 }
@@ -679,8 +584,7 @@ async function queryProgramDiagnostics(
     }
 
     // paths are already absolute
-    const ide_info = parseIdeInfo(output.stdout, "");
-    add_ideinfo(ide_info);
+    process_output(programPath, output.stdout, false);
 
     return [status, output.duration];
 }
