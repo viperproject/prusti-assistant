@@ -58,11 +58,14 @@ function transformVerificationResult(rawResults: VerificationResultRaw[], isCrat
 }
 
 export function parseVerificationInfo(output: string, isCrate: boolean, rootPath: string): VerificationInfo {
+    let token = "VerificationInfo ";
+    let len = token.length;
     for (const line of output.split("\n")) {
-        if (line[0] !== "{") {
+        if (!line.startsWith(token)) {
             continue;
         }
-        let rawResult = JSON.parse(line) as VerificationInfoRaw;
+
+        let rawResult = JSON.parse(line.substring(len)) as VerificationInfoRaw;
         if (rawResult.result_list !== undefined) {
             util.log("Parsed verification summary. Found"
                     + rawResult.result_list.length

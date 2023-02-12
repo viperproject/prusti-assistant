@@ -1,6 +1,6 @@
 import { ProcDef } from "./compilerInfo";
 import * as vscode from "vscode";
-import { VerificationInfo } from "./verificationSummary";
+import { VerificationInfo } from "./verificationInfo";
 
 // Information from the compiler that can be obtained without invoking verification
 export interface InfoCollection {

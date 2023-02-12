@@ -3,7 +3,7 @@ import * as ci from "./compilerInfo";
 import * as util from "./../util";
 import { EventEmitter } from "events";
 import { InfoCollection, infoCollection } from "./infoCollection"
-import { VerificationResult } from "./verificationSummary";
+import { VerificationResult } from "./verificationInfo";
 import { notVerifiedDecorationType, failedVerificationDecorationType, successfulVerificationDecorationType } from "./../toolbox/decorations";
 
 

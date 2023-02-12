@@ -72,17 +72,18 @@ function transformCompilerInfo(info: CompilerInfoRaw, root: string): CompilerInf
     return result;
 }
 
-export function parseIdeInfo(output: string, root: string): CompilerInfo | null {
+export function parseCompilerInfo(output: string, root: string): CompilerInfo | null {
     let result: CompilerInfoRaw;
-    util.log(" root: " + root);
-    util.log("ouptut: " + output);
+    let token = "CompilerInfo ";
+    let len = token.length;
     for (const line of output.split("\n")) {
-        if (line[0] !== "{") {
+        // to avoid unnecessary parsing of other json objects:
+        if (!line.startsWith("CompilerInfo")) {
             continue;
         }
 
         // Parse the message into a diagnostic.
-        result = JSON.parse(line) as CompilerInfoRaw;
+        result = JSON.parse(line.substring(len)) as CompilerInfoRaw;
         if (result.procedure_defs !== undefined) {
             util.log("Parsed raw IDE info. Found "
                 + result.procedure_defs.length

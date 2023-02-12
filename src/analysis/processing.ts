@@ -1,7 +1,7 @@
 import * as util from "./../util";
 import * as vscode from "vscode";
-import { ProcDef, CompilerInfo, parseIdeInfo } from "./compilerInfo"
-import { parseVerificationInfo } from "./verificationSummary"
+import { ProcDef, CompilerInfo, parseCompilerInfo } from "./compilerInfo"
+import { parseVerificationInfo } from "./verificationInfo"
 import * as display from "./display";
 import { infoCollection } from "./infoCollection";
 
@@ -12,9 +12,9 @@ export function process_output(rootPath: string, output: string, isCrate: boolea
 
     let compilerInfo = null;
     if (isCrate) {
-        compilerInfo = parseIdeInfo(output, rootPath);
+        compilerInfo = parseCompilerInfo(output, rootPath);
     } else {
-        compilerInfo = parseIdeInfo(output, "");
+        compilerInfo = parseCompilerInfo(output, "");
     }
     addCompilerInfo(compilerInfo);
 
