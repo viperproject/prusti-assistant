@@ -58,8 +58,7 @@ export function setup_handlers(): void {
 export function displayResults() {
     let active_editor = vscode.window.activeTextEditor;
     let filename = active_editor?.document.fileName;
-    let successes: vscode.Range[] = [];
-    let failures: vscode.Range[] = [];
+    util.log("Found nr of verification results: " + infoCollection.verificationInfo.length)
     infoCollection.verificationInfo.forEach((res: VerificationResult) => {
         util.log("display result: " + res.fileName + ": "+ res.methodName);
         util.log("editor filename: " + filename);
@@ -68,18 +67,38 @@ export function displayResults() {
         }
         let range = infoCollection.rangeMap.get(res.fileName + ":" + res.methodName);
         if (range) {
-            let range_beginning = first_symbol_range(range);
+            let range_line = full_line_range(range);
             if (res.success) {
-                successes.push(range_beginning);
+                active_editor?.setDecorations(successfulVerificationDecorationType(res.time_ms, res.cached), [range_line]);
             } else {
-                failures.push(range_beginning);
+                active_editor?.setDecorations(failedVerificationDecorationType(res.time_ms, res.cached), [range_line]);
             }
         } else {
             util.log("didnt find a range for this file");
         }
     });
-    active_editor?.setDecorations(successfulVerificationDecorationType(), successes);
-    active_editor?.setDecorations(failedVerificationDecorationType(), failures);
+    // display_test();
+}
+
+function display_test() {
+    let pos1 = new vscode.Position(1,1);
+    let pos2 = new vscode.Position(5,0);
+    let ranges = [new vscode.Range(pos1, pos1)];
+
+    let decorationType = vscode.window.createTextEditorDecorationType({});
+
+    let activeEditor = vscode.window.activeTextEditor;
+
+    if (activeEditor) {
+        let decorations = ranges.map(range => {
+            return {
+                range,
+                gutterText: 'Success'
+            };
+        });
+
+        activeEditor.setDecorations(decorationType, decorations);
+    }
 }
 
 async function codelensPromise(
@@ -130,10 +149,15 @@ export function force_codelens_update(): void {
 }
 
 /** 
-    * Given a range that can span multiple tokens or lines this function
-* will return the range of just the first symbol.
+    * Given a range, possibly spanning multiple lines
+* this function will return a range that includes all of 
+* the last line. The purpose of this is that decorators
+* that are displayed "behind" this range, will not 
+* be in the middle of some text
 */
-function first_symbol_range(range: vscode.Range): vscode.Range {
+function full_line_range(range: vscode.Range): vscode.Range {
     let position = new vscode.Position(range.start.line, range.start.character);
-    return new vscode.Range(position, position)
+    let position_test = new vscode.Position(range.start.line, Number.MAX_SAFE_INTEGER);
+
+    return new vscode.Range(position, position_test)
 }
