@@ -7,7 +7,7 @@ import {notVerifiedDecorationType, failedVerificationDecorationType, successfulV
 
 // Information from the compiler that can be obtained without invoking verification
 interface CompilerInfoCollection {
-    // for proc_defs we also have a boolean on whether these values 
+    // for proc_defs we also have a boolean on whether these values
     // were already requested (for codelenses)
     proc_defs: Map<string, [boolean, ProcDef[]]>,
     fn_calls: Map<string, ProcDef[]>,
@@ -42,7 +42,7 @@ export function add_ideinfo(ide_info: IdeInfo | null): void {
         ide_info_coll.fn_calls.set(filename, procdef);
     })
     force_codelens_update();
-    
+
 
     // while we are at it, let's try displaying checkmarks in gutter
     let active_editor = vscode.window.activeTextEditor;
@@ -70,12 +70,12 @@ export function add_ideinfo(ide_info: IdeInfo | null): void {
 
 
 async function codelensPromise(
-  document: vscode.TextDocument, 
+  document: vscode.TextDocument,
   _token: vscode.CancellationToken
 ): Promise<vscode.CodeLens[]> {
     const codeLenses: vscode.CodeLens[] = [];
     let lookup = ide_info_coll.proc_defs.get(document.fileName);
-    
+
     if (lookup !== undefined ) {
         if (lookup[0]) {
             util.log("Trying to get info for file that has been read before");
@@ -93,7 +93,7 @@ async function codelensPromise(
         let procdefs: ProcDef[] = lookup[1];
         procdefs.forEach((pc: ProcDef) => {
             const codeLens = new vscode.CodeLens(pc.range);
-            codeLens.command = { 
+            codeLens.command = {
                 title: "✓ verify " + pc.name,
                 command: "prusti-assistant.verify-selective",
                 // TODO: invoke selective verification here
@@ -123,13 +123,13 @@ export function setup_ide_info_handlers(): void {
             token: vscode.CancellationToken
         ): vscode.CodeAction[] {
             const codeActions: vscode.CodeAction[] = [];
-            
+
             let lookup = ide_info_coll.fn_calls.get(document.fileName);
-            
+
             if (lookup !== undefined ) {
                 let procdefs: ProcDef[] = lookup;
                 procdefs.forEach((fc: ProcDef) => {
-                    if (fc.filename === document.fileName && fc.range.contains(range)) 
+                    if (fc.filename === document.fileName && fc.range.contains(range))
                     {
                         const codeAction = new vscode.CodeAction(
                             "create external specification " + fc.name,
