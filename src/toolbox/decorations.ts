@@ -15,6 +15,9 @@ export function failedVerificationDecorationType(time: number, cached: boolean) 
     });
 }
 
+// For items that were not verified at all we could also display some sort of symbol
+// but it might be even more clear that nothing was done with an item if 
+// we don't display anything.
 export function notVerifiedDecorationType() : vscode.TextEditorDecorationType {
     return vscode.window.createTextEditorDecorationType({
         gutterIconPath: '/home/cedric/prusti/prusti-assistant/resources/icons/help-circle-fat.svg',

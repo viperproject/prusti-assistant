@@ -68,37 +68,18 @@ export function displayResults() {
         let range = infoCollection.rangeMap.get(res.fileName + ":" + res.methodName);
         if (range) {
             let range_line = full_line_range(range);
+            var decoration;
             if (res.success) {
-                active_editor?.setDecorations(successfulVerificationDecorationType(res.time_ms, res.cached), [range_line]);
+                decoration = successfulVerificationDecorationType(res.time_ms, res.cached)
             } else {
-                active_editor?.setDecorations(failedVerificationDecorationType(res.time_ms, res.cached), [range_line]);
+                decoration = failedVerificationDecorationType(res.time_ms, res.cached)
             }
+            active_editor?.setDecorations(decoration, [range_line]);
         } else {
             util.log("didnt find a range for this file");
         }
+    
     });
-    // display_test();
-}
-
-function display_test() {
-    let pos1 = new vscode.Position(1,1);
-    let pos2 = new vscode.Position(5,0);
-    let ranges = [new vscode.Range(pos1, pos1)];
-
-    let decorationType = vscode.window.createTextEditorDecorationType({});
-
-    let activeEditor = vscode.window.activeTextEditor;
-
-    if (activeEditor) {
-        let decorations = ranges.map(range => {
-            return {
-                range,
-                gutterText: 'Success'
-            };
-        });
-
-        activeEditor.setDecorations(decorationType, decorations);
-    }
 }
 
 async function codelensPromise(
@@ -138,6 +119,11 @@ async function codelensPromise(
     return codeLenses;
 }
 
+/**
+ * very primitive way of causing a re-rendering of the Codelenses in the
+ * current file. This was needed because in some cases it took quite a few 
+ * seconds until they were updated.
+ */
 export function force_codelens_update(): void {
     const cancel = vscode.languages.registerCodeLensProvider('rust', {
         provideCodeLenses(_document: vscode.TextDocument, _token: vscode.CancellationToken): vscode.CodeLens[] {
@@ -149,12 +135,10 @@ export function force_codelens_update(): void {
 }
 
 /** 
-    * Given a range, possibly spanning multiple lines
-* this function will return a range that includes all of 
-* the last line. The purpose of this is that decorators
-* that are displayed "behind" this range, will not 
-* be in the middle of some text
-*/
+ * Given a range, possibly spanning multiple lines this function will return a range 
+ * that includes all of the last line. The purpose of this is that decorators
+ * that are displayed "behind" this range, will not be in the middle of some text
+ */
 function full_line_range(range: vscode.Range): vscode.Range {
     let position = new vscode.Position(range.start.line, range.start.character);
     let position_test = new vscode.Position(range.start.line, Number.MAX_SAFE_INTEGER);
