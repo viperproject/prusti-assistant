@@ -1,13 +1,14 @@
 import * as vscode from "vscode";
-import * as ci from "./compilerInfo";
 import * as util from "./../util";
 import { EventEmitter } from "events";
-import { InfoCollection, infoCollection } from "./infoCollection"
-import { VerificationResult } from "./verificationInfo";
-import { notVerifiedDecorationType, failedVerificationDecorationType, successfulVerificationDecorationType } from "./../toolbox/decorations";
+import { infoCollection } from "./infoCollection"
+import { VerificationResult } from "./verificationResult";
+import { failedVerificationDecorationType, successfulVerificationDecorationType } from "./../toolbox/decorations";
+import { FunctionRef } from "./compilerInfo";
 
 
 export const updateEmitter = new EventEmitter();
+
 
 // for CodeLenses and CodeActions we need to set up handlers
 // at the beginning, to display information later
@@ -29,21 +30,26 @@ export function setup_handlers(): void {
         ): vscode.CodeAction[] {
             const codeActions: vscode.CodeAction[] = [];
             
-            let lookup = infoCollection.fnCalls.get(document.fileName);
+            // figure out whether or not this file is part of a crate, or a
+            // standalone file
+            let rootPath = infoCollection.getRootPath(document.uri.fsPath);
+            let lookup = infoCollection.functionCalls.get(rootPath);
+            
+            util.log("CodeActionProvider: rootpath" + rootPath + ", nrofcalls: " + lookup?.length);
             
             if (lookup !== undefined ) {
-                let procdefs: ci.ProcDef[] = lookup;
-                procdefs.forEach((fc: ci.ProcDef) => {
-                    if (fc.filename === document.fileName && fc.range.contains(range)) 
+                let procdefs: FunctionRef[] = lookup;
+                procdefs.forEach((fc: FunctionRef) => {
+                    if (fc.fileName === document.fileName && fc.range.contains(range)) 
                     {
                         const codeAction = new vscode.CodeAction(
-                            "create external specification " + fc.name,
+                            "create external specification " + fc.identifier,
                             vscode.CodeActionKind.QuickFix
                         );
                         codeAction.command = {
                             title: "Verify",
                             command: "prusti-assistant.query-method-signature",
-                            arguments: [fc.name]
+                            arguments: [fc.identifier]
                         };
                         codeActions.push(codeAction);
                     }
@@ -52,34 +58,6 @@ export function setup_handlers(): void {
             return codeActions;
         }
     });
-
-}
-
-export function displayResults() {
-    let active_editor = vscode.window.activeTextEditor;
-    let filename = active_editor?.document.fileName;
-    util.log("Found nr of verification results: " + infoCollection.verificationInfo.length)
-    infoCollection.verificationInfo.forEach((res: VerificationResult) => {
-        util.log("display result: " + res.fileName + ": "+ res.methodName);
-        util.log("editor filename: " + filename);
-        if (res.fileName != filename) {
-            return;
-        }
-        let range = infoCollection.rangeMap.get(res.fileName + ":" + res.methodName);
-        if (range) {
-            let range_line = full_line_range(range);
-            var decoration;
-            if (res.success) {
-                decoration = successfulVerificationDecorationType(res.time_ms, res.cached)
-            } else {
-                decoration = failedVerificationDecorationType(res.time_ms, res.cached)
-            }
-            active_editor?.setDecorations(decoration, [range_line]);
-        } else {
-            util.log("didnt find a range for this file");
-        }
-    
-    });
 }
 
 async function codelensPromise(
@@ -87,10 +65,13 @@ async function codelensPromise(
   _token: vscode.CancellationToken
 ): Promise<vscode.CodeLens[]> {
     const codeLenses: vscode.CodeLens[] = [];
-    let lookup = infoCollection.procDefs.get(document.fileName);
+    let rootPath = infoCollection.getRootPath(document.uri.fsPath);
+    let procDefs = infoCollection.procedureDefs.get(rootPath);
+    let fileState = infoCollection.fileStateMap.get(document.uri.fsPath);
     
-    if (lookup !== undefined ) {
-        if (lookup[0]) {
+    
+    if (fileState !== undefined ) {
+        if (fileState) {
             util.log("Trying to get info for file that has been read before");
             // it has already been read and we should wait for
             // an update. Should there be an await?
@@ -101,22 +82,65 @@ async function codelensPromise(
           // read yet..
         util.log("Proceeding to build Codelenses");
 
-        lookup[0] = true;
+        infoCollection.fileStateMap.set(document.uri.fsPath, true);
 
-        let procdefs: ci.ProcDef[] = lookup[1];
-        procdefs.forEach((pc: ci.ProcDef) => {
-            const codeLens = new vscode.CodeLens(pc.range);
-            codeLens.command = { 
-                title: "✓ verify " + pc.name,
-                command: "prusti-assistant.verify-selective",
-                // TODO: invoke selective verification here
-                arguments: [pc.name]
-            };
-            codeLenses.push(codeLens);
+        procDefs?.forEach((pd: FunctionRef) => {
+            if (pd.fileName === document.uri.fsPath) {
+                const codeLens = new vscode.CodeLens(pd.range);
+                codeLens.command = { 
+                    title: "✓ Verify " + pd.identifier,
+                    command: "prusti-assistant.verify-selective",
+                    // TODO: invoke selective verification here
+                    arguments: [pd.identifier]
+                };
+                codeLenses.push(codeLens);
+            }
         });
     }
     // await delay(0);
     return codeLenses;
+}
+
+export function displayResults() {
+    let activeEditor = vscode.window.activeTextEditor;
+    let editorFilePath = activeEditor?.document.uri.fsPath;
+    if (editorFilePath !== undefined) {
+        let rootPath = infoCollection.getRootPath(editorFilePath);
+        let decorators: vscode.TextEditorDecorationType[] = [];
+        clearPreviousDecorators(editorFilePath);
+        let resultList = infoCollection.verificationInfo.get(rootPath);
+        resultList?.forEach((res: VerificationResult) => {
+            let location = infoCollection.getLocation(rootPath, res.methodName);
+            if (location) {
+                let [range, resFilePath] = location;
+                if (resFilePath === editorFilePath) {
+                    util.log("display result: " + res.methodName);
+                    let range_line = full_line_range(range);
+                    var decoration;
+                    if (res.success) {
+                        decoration = successfulVerificationDecorationType(res.time_ms, res.cached)
+                    } else {
+                        decoration = failedVerificationDecorationType(res.time_ms, res.cached)
+                    }
+                    activeEditor?.setDecorations(decoration, [range_line]);
+                    decorators.push(decoration);
+                }
+            } else {
+                util.log(`Couldn't find location for method ${res.methodName} in ${rootPath}`);
+            }
+        });
+        infoCollection.decorations.set(editorFilePath, decorators);
+    }
+}
+
+function clearPreviousDecorators(filePath: string) {
+    let prev = infoCollection.decorations.get(filePath);
+    if (prev !== undefined) {
+        prev.forEach((dec: vscode.TextEditorDecorationType) => {
+            vscode.window.activeTextEditor?.setDecorations(dec, []);
+        });
+    } 
+
 }
 
 /**

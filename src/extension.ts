@@ -6,7 +6,8 @@ import * as checks from "./checks";
 import { prusti, installDependencies, prustiVersion } from "./dependencies";
 import * as server from "./server";
 import * as state from "./state";
-import { setup_handlers } from "./analysis/display";
+import { setup_handlers, displayResults } from "./analysis/display";
+import { infoCollection } from "./analysis/infoCollection"
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     util.log("Activate Prusti Assistant");
@@ -158,8 +159,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Define verification function
     async function verify(document: vscode.TextDocument, skip_verify: boolean, selective_verify: string | undefined) {
         util.log(`Run verification on ${document.uri.fsPath}...`);
-        const projects = await util.findProjects();
-        const cratePath = projects.getParent(document.uri.fsPath);
+        infoCollection.projects = await util.findProjects();
+        const cratePath = infoCollection.projects.getParent(document.uri.fsPath);
 
         if (server.address === undefined) {
             // Just warn, as Prusti can run even without a server.
@@ -272,6 +273,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             }
         })
     );
+    context.subscriptions.push(
+        vscode.window.onDidChangeActiveTextEditor(async (editor: vscode.TextEditor | undefined ) => {
+            if (editor && editor.document) {
+                if (editor.document.languageId === "rust") {
+                    displayResults();
+                }
+            }
+        })
+    )
 
     // Verify on activation, if verifyOnOpen is set, otherwise still call prusti
     // but just collect IDE info.

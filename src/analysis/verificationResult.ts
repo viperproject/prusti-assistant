@@ -15,13 +15,11 @@ interface VerificationResultRaw {
 
 export interface VerificationResult {
     methodName: string,
-    fileName: string,
     success: boolean,
     time_ms: number,
     cached: boolean,
 }
 
-export type VerificationInfo = VerificationResult[] 
 
 // currently the value given for itemName is "filename_methodpath"
 // should this be done in rust?
@@ -29,11 +27,12 @@ function splitName(name: string) : [string, string] {
     // position of the underscore
     let position = name.search(".rs_") + 3; 
     let filename = name.substring(0, position);
+    util.log("verification info with filename: " + filename);
     let methodPath = name.substring(position+1);
     return [filename, methodPath]
 }
 
-function transformVerificationResult(rawResults: VerificationResultRaw[], isCrate: boolean, rootPath: string) : VerificationInfo {
+function transformVerificationResult(rawResults: VerificationResultRaw[], isCrate: boolean, rootPath: string) : VerificationResult[] {
     let dirPath: string; 
     if (isCrate) {
         dirPath = rootPath;
@@ -41,12 +40,12 @@ function transformVerificationResult(rawResults: VerificationResultRaw[], isCrat
         dirPath = path.dirname(rootPath) + "/";
     }
 
-    let results: VerificationInfo = [];
+    let results: VerificationResult[] = [];
     rawResults.forEach((rawRes) => {
-        let [fileName, methodPath] = splitName(rawRes.item_name);
+        let [_fileName, methodPath] = splitName(rawRes.item_name);
+        // we realized this fileName is not useful, for crates it's always main.rs
         let res = {
             methodName: methodPath,
-            fileName: dirPath + fileName,
             success: rawRes.success,
             time_ms: rawRes.time_ms,
             cached: rawRes.cached,
@@ -57,7 +56,7 @@ function transformVerificationResult(rawResults: VerificationResultRaw[], isCrat
     return results;
 }
 
-export function parseVerificationInfo(output: string, isCrate: boolean, rootPath: string): VerificationInfo {
+export function parseVerificationResult(output: string, isCrate: boolean, rootPath: string): VerificationResult[] {
     let token = "VerificationInfo ";
     let len = token.length;
     for (const line of output.split("\n")) {
