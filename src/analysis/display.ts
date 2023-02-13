@@ -13,7 +13,6 @@ export const updateEmitter = new EventEmitter();
 // for CodeLenses and CodeActions we need to set up handlers
 // at the beginning, to display information later
 export function setup_handlers(): void {
-    util.log("setting up CodeLenses and CodeActions");
 
     vscode.languages.registerCodeLensProvider('rust', {
         provideCodeLenses(document: vscode.TextDocument, _token: vscode.CancellationToken): Promise<vscode.CodeLens[]> {
@@ -35,7 +34,6 @@ export function setup_handlers(): void {
             let rootPath = infoCollection.getRootPath(document.uri.fsPath);
             let lookup = infoCollection.functionCalls.get(rootPath);
             
-            util.log("CodeActionProvider: rootpath" + rootPath + ", nrofcalls: " + lookup?.length);
             
             if (lookup !== undefined ) {
                 let procdefs: FunctionRef[] = lookup;
@@ -72,7 +70,6 @@ async function codelensPromise(
     
     if (fileState !== undefined ) {
         if (fileState) {
-            util.log("Trying to get info for file that has been read before");
             // it has already been read and we should wait for
             // an update. Should there be an await?
             await new Promise(resolve => {
@@ -80,7 +77,6 @@ async function codelensPromise(
             });
         } // otherwise just proceed since this file's current info has not been
           // read yet..
-        util.log("Proceeding to build Codelenses");
 
         infoCollection.fileStateMap.set(document.uri.fsPath, true);
 
@@ -114,7 +110,6 @@ export function displayResults() {
             if (location) {
                 let [range, resFilePath] = location;
                 if (resFilePath === editorFilePath) {
-                    util.log("display result: " + res.methodName);
                     let range_line = full_line_range(range);
                     var decoration;
                     if (res.success) {

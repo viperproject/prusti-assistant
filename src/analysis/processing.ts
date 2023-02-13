@@ -17,7 +17,6 @@ export function process_output(rootPath: string, output: string, isCrate: boolea
 
     infoCollection.verificationInfo.set(rootPath, parseVerificationResult(output, isCrate, rootPath));
 
-    util.log("\n\n\nrootPath: " + rootPath);
     display.displayResults()
 
 }

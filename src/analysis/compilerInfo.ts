@@ -83,8 +83,6 @@ export function parseCompilerInfo(output: string, root: string, isCrate: boolean
                 + " procedure defs and "
                 + result.function_calls.length
                 + " function calls.");
-            util.log("The queried source had value: "
-                + result.queried_source);
             return transformCompilerInfo(result, root, isCrate);
         }
     }
