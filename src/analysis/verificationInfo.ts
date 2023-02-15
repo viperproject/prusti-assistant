@@ -7,7 +7,7 @@ interface VerificationInfoRaw {
 }
 
 interface VerificationResultRaw {
-    item_name: string, 
+    item_name: string,
     success: boolean,
     time_ms: number,
     cached: boolean,
@@ -21,20 +21,20 @@ export interface VerificationResult {
     cached: boolean,
 }
 
-export type VerificationInfo = VerificationResult[] 
+export type VerificationInfo = VerificationResult[]
 
 // currently the value given for itemName is "filename_methodpath"
 // should this be done in rust?
 function splitName(name: string) : [string, string] {
     // position of the underscore
-    let position = name.search(".rs_") + 3; 
+    let position = name.search(".rs_") + 3;
     let filename = name.substring(0, position);
     let methodPath = name.substring(position+1);
     return [filename, methodPath]
 }
 
 function transformVerificationResult(rawResults: VerificationResultRaw[], isCrate: boolean, rootPath: string) : VerificationInfo {
-    let dirPath: string; 
+    let dirPath: string;
     if (isCrate) {
         dirPath = rootPath;
     } else {
@@ -50,7 +50,6 @@ function transformVerificationResult(rawResults: VerificationResultRaw[], isCrat
             success: rawRes.success,
             time_ms: rawRes.time_ms,
             cached: rawRes.cached,
-            
         };
         results.push(res);
     });

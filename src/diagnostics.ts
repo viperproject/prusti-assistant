@@ -374,6 +374,7 @@ async function queryCrateDiagnostics(
     verificationDiagnostics: VerificationDiagnostics,
     target: vscode.DiagnosticCollection,
     quantifierInstantiationsProvider: QuantifierInstantiationsProvider,
+    quantifierChosenTriggersProvider: QuantifierChosenTriggersProvider,
 ): Promise<[VerificationStatus, util.Duration ]> {
     // FIXME: Workaround for warning generation for libs.
     if (!skipVerify) {
@@ -417,26 +418,39 @@ async function queryCrateDiagnostics(
 
                     // Parse the message into a diagnostic.
                     const diag = JSON.parse(line) as CargoMessage;
-                    const qim_str = "quantifier_instantiations_message";
-                    // FIXME: undefined checking + cedrics case?
-                    if (diag.message.message.startsWith(qim_str)) {
-                        if (diag.message.spans.length !== 1) {
-                            util.log("ERROR: multiple spans for a quantifier.");
-                        }
-                        const span = diag.message.spans[0];
-                        const range = parseSpanRange(span);
-                        const fileName = span.file_name;
-                        const parsed_m = JSON.parse(diag.message.message.substring(qim_str.length));
-                        const method = parsed_m["method"];
-                        const instantiations = parsed_m["instantiations"];
+                    if (diag.message !== undefined && diag.message.message !== undefined) {
+                        const qim_str = "quantifier_instantiations_message";
+                        const qctm_str = "quantifier_chosen_triggers_message";
+                        if (diag.message.message.startsWith(qim_str)) {
+                            if (diag.message.spans.length !== 1) {
+                                util.log("ERROR: multiple spans for a quantifier.");
+                            }
+                            const span = diag.message.spans[0];
+                            const range = parseSpanRange(span);
+                            const fileName = span.file_name;
+                            const parsed_m = JSON.parse(diag.message.message.substring(qim_str.length));
+                            const method = parsed_m["method"];
+                            const instantiations = parsed_m["instantiations"];
 
-                        quantifierInstantiationsProvider.update(fileName, method, instantiations, range);
-                    } else if (diag.message !== undefined) {
-                        const msg = parseCargoMessage(diag, rootPath);
-                        verificationDiagnostics.add_and_render(msg, target);
+                            quantifierInstantiationsProvider.update(fileName, method, instantiations, range);
+                        } else if (diag.message.message.startsWith(qctm_str)) {
+                            if (diag.message.spans.length !== 1) {
+                                util.log("ERROR: multiple spans for a quantifier.");
+                            }
+                            const span = diag.message.spans[0];
+                            const range = parseSpanRange(span);
+                            const fileName = span.file_name;
+                            const parsed_m = JSON.parse(diag.message.message.substring(qctm_str.length));
+                            const viper_quant = parsed_m["viper_quant"];
+                            const triggers = parsed_m["triggers"];
+                            quantifierChosenTriggersProvider.update(fileName, viper_quant, triggers, range);
+                        } else {
+                            const msg = parseCargoMessage(diag, rootPath);
+                            verificationDiagnostics.add_and_render(msg, target);
+                        }
                     }
                 }
-            },
+            }
         },
         destructors,
     );
@@ -490,6 +504,7 @@ async function queryProgramDiagnostics(
     verificationDiagnostics: VerificationDiagnostics,
     target: vscode.DiagnosticCollection,
     quantifierInstantiationsProvider: QuantifierInstantiationsProvider,
+    quantifierChosenTriggersProvider: QuantifierChosenTriggersProvider,
 ): Promise<[VerificationStatus, util.Duration]> {
     const prustiRustcArgs = [
         "--crate-type=lib",
@@ -531,29 +546,41 @@ async function queryProgramDiagnostics(
 
                     // Parse the message into a diagnostic.
                     const diag = JSON.parse(line) as Message;
-                    const qim_str = "quantifier_instantiations_message";
-                    // FIXME: consider undefined + cedrics case?
-                    if (diag.message.startsWith(qim_str)) {
-                        if (diag.spans.length !== 1) {
-                            util.log("ERROR: multiple spans for a Quantifier.");
-                        }
-                        const span = diag.spans[0];
-                        const range = parseSpanRange(span);
-                        const fileName = span.file_name;
-                        const parsed_m = JSON.parse(diag.message.substring(qim_str.length));
-                        const method = parsed_m["method"];
-                        const instantiations = parsed_m["instantiations"];
+                    if (diag.message !== undefined) {
+                        const qim_str = "quantifier_instantiations_message";
+                        const qctm_str = "quantifier_chosen_triggers_message";
+                        if (diag.message.startsWith(qim_str)) {
+                            if (diag.spans.length !== 1) {
+                                util.log("ERROR: multiple spans for a quantifier.");
+                            }
+                            const span = diag.spans[0];
+                            const range = parseSpanRange(span);
+                            const fileName = span.file_name;
+                            const parsed_m = JSON.parse(diag.message.substring(qim_str.length));
+                            const method = parsed_m["method"];
+                            const instantiations = parsed_m["instantiations"];
 
-                        quantifierInstantiationsProvider.update(fileName, method, instantiations, range);
-                    }
-                    else if (diag.message !== undefined) {
-                        const msg = parseRustcMessage(diag, programPath);
-                        verificationDiagnostics.add_and_render(msg, target);
+                            quantifierInstantiationsProvider.update(fileName, method, instantiations, range);
+                        } else if (diag.message.startsWith(qctm_str)) {
+                            if (diag.spans.length !== 1) {
+                                util.log("ERROR: multiple spans for a quantifier.");
+                            }
+                            const span = diag.spans[0];
+                            const range = parseSpanRange(span);
+                            const fileName = span.file_name;
+                            const parsed_m = JSON.parse(diag.message.substring(qctm_str.length));
+                            const viper_quant = parsed_m["viper_quant"];
+                            const triggers = parsed_m["triggers"];
+                            quantifierChosenTriggersProvider.update(fileName, viper_quant, triggers, range);
+                        } else {
+                            const msg = parseRustcMessage(diag, programPath);
+                            verificationDiagnostics.add_and_render(msg, target);
+                        }
                     }
                 }
-            },
+            }
         },
-        destructors
+        destructors,
     );
     let status = VerificationStatus.Crash;
     const diagnostics: Diagnostic[] = [];
@@ -720,6 +747,56 @@ function strToRange(range_str: string): vscode.Range {
     return new vscode.Range(arr[0], arr[1]);
 }
 
+class QuantifierChosenTriggersProvider implements vscode.HoverProvider {
+    // key1: fileName, key2: stringified range, value: [quantifier string, triggers string]
+    private state_map: Map<string, Map<string, [string, string]>>;
+    public constructor() {
+        this.state_map = new Map<string, Map<string, [string, string]>>();
+        vscode.languages.registerHoverProvider('rust', this);
+    }
+
+    private getHoverText(document: vscode.TextDocument, position: vscode.Position): string|undefined {
+        const range_map = this.state_map.get(document.fileName);
+        if (range_map === undefined) {
+            return undefined;
+        }
+        const init_range = new vscode.Range(0, 0, 0, 0);
+        // get the innermost range by iterating over all ranges.
+        let matching_range: vscode.Range = Array.from(range_map.keys()).reduce((cur, range_str) => {
+            const range = strToRange(range_str);
+            if (range.contains(position) && (cur.contains(range) || cur.isEqual(init_range))) {
+                return range;
+            } else {
+                return cur;
+            }
+        }, init_range);
+        if (matching_range.isEqual(init_range)) {
+            return undefined;
+        }
+        const range_str = JSON.stringify(matching_range);
+        const [quantifier, triggers] = range_map.get(range_str)!;
+        const text = `Viper quantifier: ${quantifier}\nViper triggers: ${triggers}`
+        return text;
+    }
+
+    public provideHover(document: vscode.TextDocument, position: vscode.Position, _token: vscode.CancellationToken): vscode.Hover|undefined {
+        const text = this.getHoverText(document, position);
+        if (text === undefined) {
+            return undefined;
+        }
+        return new vscode.Hover(text!);
+    }
+
+    public update(fileName: string, quantifier: string, triggers: string, range: vscode.Range): void {
+        if (!this.state_map.has(fileName)) {
+            const range_map = new Map<string, [string, string]>();
+            this.state_map.set(fileName, range_map);
+        }
+        const str_range = JSON.stringify(range);
+        const range_map = this.state_map.get(fileName)!;
+        range_map.set(str_range, [quantifier, triggers]);
+    }
+}
 
 class QuantifierInstantiationsProvider implements vscode.InlayHintsProvider, vscode.HoverProvider {
     // key1: fileName, key2: stringified range, key3: method, value: n_instantiations
@@ -748,7 +825,7 @@ class QuantifierInstantiationsProvider implements vscode.InlayHintsProvider, vsc
         }
     }
 
-    public provideInlayHints(document: vscode.TextDocument, range: vscode.Range, token: vscode.CancellationToken): vscode.InlayHint[] {
+    public provideInlayHints(document: vscode.TextDocument, range: vscode.Range, _token: vscode.CancellationToken): vscode.InlayHint[] {
         // we just ignore the range, vscode ignores hints outside of the requested range
         if (!this.inlay_cache_map.has(document.fileName)) {
             // create the cache map
@@ -775,7 +852,7 @@ class QuantifierInstantiationsProvider implements vscode.InlayHintsProvider, vsc
         return this.inlay_cache_map.get(document.fileName)!;
     }
 
-    public resolveInlayHint(hint: vscode.InlayHint, token: vscode.CancellationToken): vscode.InlayHint {
+    public resolveInlayHint(hint: vscode.InlayHint, _token: vscode.CancellationToken): vscode.InlayHint {
         return hint;
     }
 
@@ -803,7 +880,7 @@ class QuantifierInstantiationsProvider implements vscode.InlayHintsProvider, vsc
         return text;
     }
 
-    public provideHover(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): vscode.Hover|undefined {
+    public provideHover(document: vscode.TextDocument, position: vscode.Position, _token: vscode.CancellationToken): vscode.Hover|undefined {
         const text = this.getHoverText(document, position);
         if (text === undefined) {
             return undefined;
@@ -813,13 +890,13 @@ class QuantifierInstantiationsProvider implements vscode.InlayHintsProvider, vsc
 
     public update(fileName: string, method: string, instantiations: number, range: vscode.Range): void {
         if (!this.state_map.has(fileName)) {
-            const range_map = new Map<string, Map<string, number>>()
+            const range_map = new Map<string, Map<string, number>>();
             this.state_map.set(fileName, range_map);
         }
         const str_range = JSON.stringify(range);
         const range_map = this.state_map.get(fileName)!;
         if (!range_map.has(str_range)) {
-            const method_map = new Map<string, number>()
+            const method_map = new Map<string, number>();
             range_map.set(str_range, method_map);
         }
         range_map.get(str_range)!.set(method, instantiations);
@@ -835,12 +912,14 @@ export class DiagnosticsManager {
     private killAllButton: vscode.StatusBarItem;
     private runCount = 0;
     private quantifierInstantiationsProvider: QuantifierInstantiationsProvider;
+    private quantifierChosenTriggersProvider: QuantifierChosenTriggersProvider;
 
     public constructor(target: vscode.DiagnosticCollection, verificationStatus: vscode.StatusBarItem, killAllButton: vscode.StatusBarItem) {
         this.target = target;
         this.verificationStatus = verificationStatus;
         this.killAllButton = killAllButton;
         this.quantifierInstantiationsProvider = new QuantifierInstantiationsProvider();
+        this.quantifierChosenTriggersProvider = new QuantifierChosenTriggersProvider();
     }
 
     public dispose(): void {
@@ -896,6 +975,7 @@ export class DiagnosticsManager {
                     verificationDiagnostics,
                     this.target,
                     this.quantifierInstantiationsProvider,
+                    this.quantifierChosenTriggersProvider,
                 );
             } else {
                 [status, duration] = await queryProgramDiagnostics(
@@ -908,6 +988,7 @@ export class DiagnosticsManager {
                     verificationDiagnostics,
                     this.target,
                     this.quantifierInstantiationsProvider,
+                    this.quantifierChosenTriggersProvider,
                 );
             }
 

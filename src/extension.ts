@@ -209,7 +209,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             }
         })
     );
-    
+
     context.subscriptions.push(
         vscode.commands.registerCommand(verifySelectiveCommand, async (name: string) => {
             const activeTextEditor = vscode.window.activeTextEditor;
@@ -300,7 +300,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             err => util.log(`Failed to deactivate the extension: ${err}`)
         );
     });
-    
 
     state.notifyExtensionActivation();
 }

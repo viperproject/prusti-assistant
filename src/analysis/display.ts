@@ -28,13 +28,13 @@ export function setup_handlers(): void {
             _token: vscode.CancellationToken
         ): vscode.CodeAction[] {
             const codeActions: vscode.CodeAction[] = [];
-            
+
             let lookup = infoCollection.fnCalls.get(document.fileName);
-            
+
             if (lookup !== undefined ) {
                 let procdefs: ci.ProcDef[] = lookup;
                 procdefs.forEach((fc: ci.ProcDef) => {
-                    if (fc.filename === document.fileName && fc.range.contains(range)) 
+                    if (fc.filename === document.fileName && fc.range.contains(range))
                     {
                         const codeAction = new vscode.CodeAction(
                             "create external specification " + fc.name,
@@ -102,12 +102,12 @@ function display_test() {
 }
 
 async function codelensPromise(
-  document: vscode.TextDocument, 
+  document: vscode.TextDocument,
   _token: vscode.CancellationToken
 ): Promise<vscode.CodeLens[]> {
     const codeLenses: vscode.CodeLens[] = [];
     let lookup = infoCollection.procDefs.get(document.fileName);
-    
+
     if (lookup !== undefined ) {
         if (lookup[0]) {
             util.log("Trying to get info for file that has been read before");
@@ -125,7 +125,7 @@ async function codelensPromise(
         let procdefs: ci.ProcDef[] = lookup[1];
         procdefs.forEach((pc: ci.ProcDef) => {
             const codeLens = new vscode.CodeLens(pc.range);
-            codeLens.command = { 
+            codeLens.command = {
                 title: "✓ verify " + pc.name,
                 command: "prusti-assistant.verify-selective",
                 // TODO: invoke selective verification here
@@ -148,11 +148,11 @@ export function force_codelens_update(): void {
     cancel.dispose();
 }
 
-/** 
+/**
     * Given a range, possibly spanning multiple lines
-* this function will return a range that includes all of 
+* this function will return a range that includes all of
 * the last line. The purpose of this is that decorators
-* that are displayed "behind" this range, will not 
+* that are displayed "behind" this range, will not
 * be in the middle of some text
 */
 function full_line_range(range: vscode.Range): vscode.Range {
