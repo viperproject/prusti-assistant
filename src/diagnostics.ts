@@ -355,6 +355,7 @@ enum VerificationStatus {
     Verified,
     Errors,
     SkippedVerification,
+    Killed,
 }
 
 /**
@@ -460,6 +461,11 @@ async function queryCrateDiagnostics(
     }
     if (/^thread '.*' panicked at/.exec(output.stderr) !== null) {
         status = VerificationStatus.Crash;
+    }
+    // we were (probably?) killed by killAll -> not necessary to show that Prusti encountered an
+    // unexpected error
+    if (output.code === null && output.signal === "SIGKILL") {
+      status = VerificationStatus.Killed;
     }
 
     util.log("Parsing IDE Info")
@@ -571,6 +577,11 @@ async function queryProgramDiagnostics(
     if (/^thread '.*' panicked at/.exec(output.stderr) !== null) {
         status = VerificationStatus.Crash;
     }
+    // we were (probably?) killed by killAll -> not necessary to show that Prusti encountered an
+    // unexpected error
+    if (output.code === null && output.signal === "SIGKILL") {
+      status = VerificationStatus.Killed;
+    }
 
     // paths are already absolute
     process_output(programPath, output.stdout, false);
@@ -611,6 +622,18 @@ export class VerificationDiagnostics {
             });
         });
         return count > 0;
+    }
+
+    public countPrustiErrors(): number {
+        let count = 0;
+        this.diagnostics.forEach((documentDiagnostics: vscode.Diagnostic[]) => {
+            documentDiagnostics.forEach((diagnostic: vscode.Diagnostic) => {
+                if (diagnostic.severity === vscode.DiagnosticSeverity.Error && diagnostic.message.startsWith("[Prusti")) {
+                    count += 1;
+                }
+            });
+        });
+        return count;
     }
 
     public isEmpty(): boolean {
@@ -736,10 +759,14 @@ class QuantifierInstantiationsProvider implements vscode.InlayHintsProvider, vsc
             const range_map = this.state_map.get(document.fileName)!;
             // here we have to sum up the quantifiers pointing to the same range, as this will be
             // the only information given by the inlay hint.
-            const hints = Array.from(range_map.entries()).map(entry =>
-                                                          new vscode.InlayHint(
-                                                            strToRange(entry[0]).start,
-                                                            "QI: ".concat(Array.from(entry[1].values()).reduce((sum, n) => {return sum + n;}, 0).toString())));
+            const hints = Array.from(range_map.entries()).map(entry => {
+                                                            const pos = strToRange(entry[0]).start;
+                                                            const hover_text = this.getHoverText(document, pos);
+                                                            const value = "QI: ".concat(Array.from(entry[1].values()).reduce((sum, n) => {return sum + n;}, 0).toString());
+                                                            const hint = new vscode.InlayHint(pos, value);
+                                                            hint.tooltip = hover_text;
+                                                            return hint;
+                                                          });
             this.inlay_cache_map.set(document.fileName, hints);
         } else {
             this.changed = false;
@@ -752,7 +779,7 @@ class QuantifierInstantiationsProvider implements vscode.InlayHintsProvider, vsc
         return hint;
     }
 
-    public provideHover(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): vscode.Hover|undefined {
+    private getHoverText(document: vscode.TextDocument, position: vscode.Position): string|undefined {
         const range_map = this.state_map.get(document.fileName);
         if (range_map === undefined) {
             return undefined;
@@ -773,7 +800,15 @@ class QuantifierInstantiationsProvider implements vscode.InlayHintsProvider, vsc
         const range_str = JSON.stringify(matching_range);
         const method_map_entries = Array.from(range_map.get(range_str)!.entries());
         const text = method_map_entries.reduce((str, entry) => {return str.concat(`${entry[0]}: ${entry[1]}, `)}, "Quantifier instantiations per method: ").slice(0, -2);
-        return new vscode.Hover(text);
+        return text;
+    }
+
+    public provideHover(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): vscode.Hover|undefined {
+        const text = this.getHoverText(document, position);
+        if (text === undefined) {
+            return undefined;
+        }
+        return new vscode.Hover(text!);
     }
 
     public update(fileName: string, method: string, instantiations: number, range: vscode.Range): void {
@@ -902,14 +937,19 @@ export class DiagnosticsManager {
             // Render diagnostics
             this.killAllButton.hide();
             //verificationDiagnostics.renderIn(this.target);
+            let prustiErrors = verificationDiagnostics.countPrustiErrors();
             if (crashed) {
                 this.verificationStatus.text = `$(error) Verification of ${target} '${escapedFileName}' failed with an unexpected error`;
                 this.verificationStatus.command = "workbench.action.output.toggleOutput";
-            } else if (verificationDiagnostics.hasErrors()) {
+            } else if (verificationDiagnostics.hasErrors() && prustiErrors > 0) {
+                const noun = prustiErrors === 1 ? "error" : "errors";
+                this.verificationStatus.text = `$(error) Verification of ${target} '${escapedFileName}' failed with ${prustiErrors} ${noun} (${durationSecMsg} s)`;
+                this.verificationStatus.command = "workbench.action.problems.focus";
+            } else if (verificationDiagnostics.hasErrors() && prustiErrors == 0) {
                 const counts = verificationDiagnostics.countsBySeverity();
                 const errors = counts.get(vscode.DiagnosticSeverity.Error);
                 const noun = errors === 1 ? "error" : "errors";
-                this.verificationStatus.text = `$(error) Verification of ${target} '${escapedFileName}' failed with ${errors} ${noun} (${durationSecMsg} s)`;
+                this.verificationStatus.text = `$(error) Compilation of ${target} '${escapedFileName}' failed with ${errors} ${noun} (${durationSecMsg} s)`;
                 this.verificationStatus.command = "workbench.action.problems.focus";
             } else if (verificationDiagnostics.hasWarnings()) {
                 const counts = verificationDiagnostics.countsBySeverity();
