@@ -73,7 +73,7 @@ async function codelensPromise(
             // it has already been read and we should wait for
             // an update. Should there be an await?
             await new Promise(resolve => {
-                updateEmitter.once('updated' + document.fileName, () => resolve );
+                updateEmitter.once('updated' + document.uri.fsPath, () => resolve );
             });
         } // otherwise just proceed since this file's current info has not been
           // read yet..

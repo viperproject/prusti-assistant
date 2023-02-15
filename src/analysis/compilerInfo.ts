@@ -45,6 +45,7 @@ function transformCompilerInfo(info: CompilerInfoRaw, root: string, isCrate: boo
     };
     for (const proc of info.procedure_defs) {
         var filename = isCrate ? root + proc.span.file_name: proc.span.file_name;
+        result.distinctFiles.add(filename);
         let entry : FunctionRef = {
             identifier: proc.name,
             fileName: filename, 
