@@ -432,6 +432,15 @@ async function queryCrateDiagnostics(
 
                         quantifierInstantiationsProvider.update(fileName, method, instantiations, range);
                     } else if (diag.message !== undefined) {
+                        // @Jthomme1, I added this case because it got lost since you are
+                        // not using the parseMethods anymore. But this section probably
+                        // still needs some refactoring, the order of this undefined check
+                        // doesnt make a lot of sense
+                        if (diag.message.message === "[Prusti: FakeError]") {
+                            // skip these errors! they just avoid the result being cached
+                            // if it shouldn't (compiler cache, not prusti)
+                            continue;
+                        }
                         const msg = parseCargoMessage(diag, rootPath);
                         verificationDiagnostics.add_and_render(msg, target);
                     }
@@ -547,6 +556,10 @@ async function queryProgramDiagnostics(
                         quantifierInstantiationsProvider.update(fileName, method, instantiations, range);
                     }
                     else if (diag.message !== undefined) {
+                        // @Joseph1 same here as for crates. 
+                        if ( diag.message === "[Prusti: FakeError]" ) {
+                            continue;
+                        }
                         const msg = parseRustcMessage(diag, programPath);
                         verificationDiagnostics.add_and_render(msg, target);
                     }
