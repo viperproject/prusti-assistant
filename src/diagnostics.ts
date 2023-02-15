@@ -421,7 +421,11 @@ async function queryCrateDiagnostics(
                     if (diag.message !== undefined && diag.message.message !== undefined) {
                         const qim_str = "quantifier_instantiations_message";
                         const qctm_str = "quantifier_chosen_triggers_message";
-                        if (diag.message.message.startsWith(qim_str)) {
+                        if (diag.message.message === "[Prusti: FakeError]") {
+                            // skip these errors! they just avoid the result being cached
+                            // if it shouldn't (compiler cache, not prusti)
+                            continue;
+                        } else if (diag.message.message.startsWith(qim_str)) {
                             if (diag.message.spans.length !== 1) {
                                 util.log("ERROR: multiple spans for a quantifier.");
                             }
@@ -549,7 +553,11 @@ async function queryProgramDiagnostics(
                     if (diag.message !== undefined) {
                         const qim_str = "quantifier_instantiations_message";
                         const qctm_str = "quantifier_chosen_triggers_message";
-                        if (diag.message.startsWith(qim_str)) {
+                        if (diag.message === "[Prusti: FakeError]") {
+                            // skip these errors! they just avoid the result being cached
+                            // if it shouldn't (compiler cache, not prusti)
+                            continue;
+                        } else if (diag.message.startsWith(qim_str)) {
                             if (diag.spans.length !== 1) {
                                 util.log("ERROR: multiple spans for a quantifier.");
                             }
