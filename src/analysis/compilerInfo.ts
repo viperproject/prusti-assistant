@@ -72,7 +72,7 @@ export function parseCompilerInfo(output: string, root: string, isCrate: boolean
     let token = "CompilerInfo ";
     for (const line of output.split("\n")) {
         // to avoid unnecessary parsing of other json objects:
-        if (!line.startsWith("CompilerInfo")) {
+        if (!line.startsWith(token)) {
             continue;
         }
 

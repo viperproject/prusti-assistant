@@ -56,6 +56,29 @@ export function setup_handlers(): void {
             return codeActions;
         }
     });
+
+    vscode.languages.registerDefinitionProvider('rust', {
+        provideDefinition(
+            document: vscode.TextDocument, 
+            position: vscode.Position, 
+            _token: vscode.CancellationToken
+        ): vscode.ProviderResult<vscode.Definition | vscode.LocationLink[]> {
+            let rootPath = infoCollection.getRootPath(document.uri.fsPath);
+            let callContracts = infoCollection.callContracts.get(rootPath);
+            if (callContracts === undefined) {
+                return [];
+            }
+            
+            for (const callCont of callContracts) {
+                let sameFile = callCont.callLocation.uri.fsPath === document.uri.fsPath;
+                let containsPos = callCont.callLocation.range.contains(position);
+                if (sameFile && containsPos) {
+                    return callCont.contractLocations;
+                } 
+            }
+            return [];
+        },
+    });
 }
 
 async function codelensPromise(

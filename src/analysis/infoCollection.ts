@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import { FunctionRef } from "./compilerInfo";
 import { VerificationResult } from "./verificationResult";
 import { CompilerInfo} from "./compilerInfo"
+import { CallContracts } from "./encodingInfo";
 import * as display from "./display"
 
 
@@ -17,6 +18,7 @@ export class InfoCollection {
     rangeMap: Map<string, [vscode.Range, string]>; 
     projects: util.ProjectList;
     decorations: Map<string, vscode.TextEditorDecorationType[]>;
+    callContracts: Map<string, CallContracts[]>;
 
     
     constructor() {
@@ -27,6 +29,7 @@ export class InfoCollection {
         this.rangeMap = new Map(); 
         this.projects = new util.ProjectList([]);
         this.decorations = new Map();
+        this.callContracts = new Map();
     }
     
     public addCompilerInfo(info: CompilerInfo): void{
@@ -55,6 +58,12 @@ export class InfoCollection {
 
         display.force_codelens_update();
     }
+
+    public addContracts(callContracts: CallContracts[], root: string): void {
+        // so far encoding info only consists of CallContracts
+        this.callContracts.set(root, callContracts);
+    }
+
 
     /** Either returns the path to the root of the crate containing
     * the file (at filePath), or just filePath itself, if it's 
