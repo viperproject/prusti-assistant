@@ -8,17 +8,17 @@ import * as display from "./display"
 
 // Information from the compiler that can be obtained without invoking verification
 export class InfoCollection {
-    // for proc_defs we also have a boolean on whether these values 
+    // for proc_defs we also have a boolean on whether these values
     // were already requested (for codelenses)
     procedureDefs: Map<string, FunctionRef[]>;
     functionCalls: Map<string, FunctionRef[]>;
     fileStateMap: Map<string, boolean>;
     verificationInfo: Map<string, VerificationResult[]>;
-    rangeMap: Map<string, [vscode.Range, string]>; 
+    rangeMap: Map<string, [vscode.Range, string]>;
     projects: util.ProjectList;
     decorations: Map<string, vscode.TextEditorDecorationType[]>;
 
-    
+
     constructor() {
         this.procedureDefs = new Map();
         this.functionCalls = new Map();
@@ -28,14 +28,14 @@ export class InfoCollection {
         this.projects = new util.ProjectList([]);
         this.decorations = new Map();
     }
-    
+
     public addCompilerInfo(info: CompilerInfo): void{
         if (info.queriedSource) {
             // yet to be formatted:
             vscode.env.clipboard.writeText(info.queriedSource);
             util.userInfoPopup("Template for extern spec. is now on your Clipboard.");
         }
-    
+
         info.distinctFiles.forEach((fileName) => {
             // mark each file's information as "not read yet"
             this.fileStateMap.set(fileName, false);
@@ -57,7 +57,7 @@ export class InfoCollection {
     }
 
     /** Either returns the path to the root of the crate containing
-    * the file (at filePath), or just filePath itself, if it's 
+    * the file (at filePath), or just filePath itself, if it's
     * a standalone file
     */
     public getRootPath(filePath: string): string {

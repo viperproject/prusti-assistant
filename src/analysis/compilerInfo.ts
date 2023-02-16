@@ -14,7 +14,7 @@ interface FunctionRefRaw {
     span: Span,
 }
 
-/** In this schema we replaced rust's spans with vscode's ranges 
+/** In this schema we replaced rust's spans with vscode's ranges
  * and also adjusted filepaths for crates, according to their rootPath
  */
 export interface CompilerInfo {
@@ -25,11 +25,11 @@ export interface CompilerInfo {
     distinctFiles: Set<string>,
 }
 
-/** 
+/**
  * can be both a function call or definition, which should be clear from the
  * data structure it's store in
  */
-export interface FunctionRef { 
+export interface FunctionRef {
     identifier: string, // DefPath
     fileName: string, // complete path to the file containing this method
     range: vscode.Range,
@@ -38,7 +38,7 @@ export interface FunctionRef {
 function transformCompilerInfo(info: CompilerInfoRaw, root: string, isCrate: boolean): CompilerInfo {
     const result: CompilerInfo = {
         rootPath: root,
-        procedureDefs: [], 
+        procedureDefs: [],
         functionCalls: [],
         queriedSource: info.queried_source,
         distinctFiles: new Set(),
@@ -48,7 +48,7 @@ function transformCompilerInfo(info: CompilerInfoRaw, root: string, isCrate: boo
         result.distinctFiles.add(filename);
         let entry : FunctionRef = {
             identifier: proc.name,
-            fileName: filename, 
+            fileName: filename,
             range: parseSpanRange(proc.span),
         };
         result.procedureDefs.push(entry);

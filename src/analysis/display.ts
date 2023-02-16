@@ -83,7 +83,7 @@ async function codelensPromise(
         procDefs?.forEach((pd: FunctionRef) => {
             if (pd.fileName === document.uri.fsPath) {
                 const codeLens = new vscode.CodeLens(pd.range);
-                codeLens.command = { 
+                codeLens.command = {
                     title: "✓ Verify " + pd.identifier,
                     command: "prusti-assistant.verify-selective",
                     // TODO: invoke selective verification here

@@ -109,42 +109,6 @@ export function parseSpanRange(span: Span): vscode.Range {
     );
 }
 
-function parseCargoOutput(output: string): CargoMessage[] {
-    const messages: CargoMessage[] = [];
-    for (const line of output.split("\n")) {
-        if (line[0] !== "{") {
-            continue;
-        }
-
-        // Parse the message into a diagnostic.
-        const diag = JSON.parse(line) as CargoMessage;
-        if (diag.message !== undefined) {
-            // do this prettier at some point..
-            if (diag.message.message !== "Not actually an error") {
-                messages.push(diag);
-            }
-        }
-    }
-    return messages;
-}
-
-function parseRustcOutput(output: string): Message[] {
-    const messages: Message[] = [];
-    for (const line of output.split("\n")) {
-        if (line[0] !== "{") {
-            continue;
-        }
-
-        // Parse the message into a diagnostic.
-        const diag = JSON.parse(line) as Message;
-        if (diag.message !== undefined) {
-            messages.push(diag);
-        }
-    }
-    return messages;
-}
-
-
 function getCallSiteSpan(span: Span): Span {
     while (span.expansion !== null) {
         span = span.expansion.span;
@@ -421,6 +385,7 @@ async function queryCrateDiagnostics(
                     if (diag.message !== undefined && diag.message.message !== undefined) {
                         const qim_str = "quantifier_instantiations_message";
                         const qctm_str = "quantifier_chosen_triggers_message";
+                        const ide_vr_str = "ide_verification_result";
                         if (diag.message.message === "[Prusti: FakeError]") {
                             // skip these errors! they just avoid the result being cached
                             // if it shouldn't (compiler cache, not prusti)
@@ -553,6 +518,8 @@ async function queryProgramDiagnostics(
                     if (diag.message !== undefined) {
                         const qim_str = "quantifier_instantiations_message";
                         const qctm_str = "quantifier_chosen_triggers_message";
+                        const ide_vr_str = "ide_verification_result";
+                        // TODO: add case for CompilerInfo and IdeVerificationResult/VerificationInfo
                         if (diag.message === "[Prusti: FakeError]") {
                             // skip these errors! they just avoid the result being cached
                             // if it shouldn't (compiler cache, not prusti)

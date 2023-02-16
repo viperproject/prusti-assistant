@@ -33,7 +33,7 @@ function splitName(name: string) : [string, string] {
 }
 
 function transformVerificationResult(rawResults: VerificationResultRaw[], isCrate: boolean, rootPath: string) : VerificationResult[] {
-    let dirPath: string; 
+    let dirPath: string;
     if (isCrate) {
         dirPath = rootPath;
     } else {
