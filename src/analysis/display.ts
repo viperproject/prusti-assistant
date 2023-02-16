@@ -5,6 +5,7 @@ import { infoCollection } from "./infoCollection"
 import { VerificationResult } from "./verificationResult";
 import { failedVerificationDecorationType, successfulVerificationDecorationType } from "./../toolbox/decorations";
 import { FunctionRef } from "./compilerInfo";
+import * as config from "../config";
 
 
 export const updateEmitter = new EventEmitter();
@@ -63,6 +64,9 @@ export function setup_handlers(): void {
             position: vscode.Position, 
             _token: vscode.CancellationToken
         ): vscode.ProviderResult<vscode.Definition | vscode.LocationLink[]> {
+            if (config.contractsAsDefinitions()) {
+                return [];
+            }
             let rootPath = infoCollection.getRootPath(document.uri.fsPath);
             let callContracts = infoCollection.callContracts.get(rootPath);
             if (callContracts === undefined) {

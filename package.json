@@ -179,6 +179,11 @@
                     },
                     "default": [],
                     "description": "Specifies additional arguments to be passed to the Prusti Server. Remember to restart the Prusti Server after modifying this setting."
+                },
+                "prusti-assistant.contractsAsDefinitions": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "If enabled you can use 'goto definition' to view contracts of function calls."
                 }
             }
         }
