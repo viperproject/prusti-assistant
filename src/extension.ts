@@ -1,13 +1,12 @@
 import * as vscode from "vscode";
 import * as config from "./config";
 import * as util from "./util";
-import * as diagnostics from "./diagnostics";
 import * as checks from "./checks";
 import { prusti, installDependencies, prustiVersion } from "./dependencies";
 import * as server from "./server";
 import * as state from "./state";
-import { setup_handlers, displayResults } from "./analysis/display";
-import { infoCollection } from "./analysis/infoCollection"
+import * as verification from "./analysis/verification";
+import { projects } from "./projects";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     util.log("Activate Prusti Assistant");
@@ -139,17 +138,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         })
     );
 
-    // Diagnostics manager
-    const verificationDiagnostics = vscode.languages.createDiagnosticCollection("prusti");
-    context.subscriptions.push(verificationDiagnostics);
-    const verificationManager = new diagnostics.DiagnosticsManager(
-        verificationDiagnostics,
+    // Verification manager
+    const verificationManager = new verification.VerificationManager(
         verificationStatus,
         killAllButton
     );
     context.subscriptions.push(verificationManager);
-
-    setup_handlers();
 
     // Kill-all on command
     context.subscriptions.push(
@@ -159,8 +153,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Define verification function
     async function verify(document: vscode.TextDocument, skip_verify: boolean, selective_verify: string | undefined) {
         util.log(`Run verification on ${document.uri.fsPath}...`);
-        infoCollection.projects = await util.findProjects();
-        const cratePath = infoCollection.projects.getParent(document.uri.fsPath);
+        projects.update();
+        const cratePath = projects.getParent(document.uri.fsPath);
 
         if (server.address === undefined) {
             // Just warn, as Prusti can run even without a server.
@@ -181,7 +175,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 prusti!,
                 server.address || "",
                 document.uri.fsPath,
-                diagnostics.VerificationTarget.StandaloneFile,
+                verification.VerificationTarget.StandaloneFile,
                 skip_verify,
                 selective_verify
             );
@@ -190,7 +184,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 prusti!,
                 server.address || "",
                 cratePath.path,
-                diagnostics.VerificationTarget.Crate,
+                verification.VerificationTarget.Crate,
                 skip_verify,
                 selective_verify,
             );
@@ -273,6 +267,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             }
         })
     );
+    /* TODO: fix this
     context.subscriptions.push(
         vscode.window.onDidChangeActiveTextEditor(async (editor: vscode.TextEditor | undefined ) => {
             if (editor && editor.document) {
@@ -282,6 +277,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             }
         })
     )
+    */
 
     // Verify on activation, if verifyOnOpen is set, otherwise still call prusti
     // but just collect IDE info.

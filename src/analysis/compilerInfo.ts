@@ -1,9 +1,9 @@
 import * as util from "./../util";
 import * as vscode from "vscode";
-import { Span, parseSpanRange } from "./../diagnostics";
+import { Span, parseSpanRange } from "./diagnostics";
 
 // Additional Schemas for Custom information for IDE:
-export interface CompilerInfoRaw {
+interface CompilerInfoRaw {
     procedure_defs: FunctionRefRaw[]
     function_calls: FunctionRefRaw[]
     queried_source: string | null
@@ -27,7 +27,7 @@ export interface CompilerInfo {
 
 /**
  * can be both a function call or definition, which should be clear from the
- * data structure it's store in
+ * data structure it's stored in
  */
 export interface FunctionRef {
     identifier: string, // DefPath
@@ -35,7 +35,7 @@ export interface FunctionRef {
     range: vscode.Range,
 }
 
-function transformCompilerInfo(info: CompilerInfoRaw, root: string, isCrate: boolean): CompilerInfo {
+function transformCompilerInfo(info: CompilerInfoRaw, isCrate: boolean, root: string): CompilerInfo {
     const result: CompilerInfo = {
         rootPath: root,
         procedureDefs: [],
@@ -67,29 +67,21 @@ function transformCompilerInfo(info: CompilerInfoRaw, root: string, isCrate: boo
     return result;
 }
 
-export function parseCompilerInfo(output: string, root: string, isCrate: boolean): CompilerInfo | null {
+export function parseCompilerInfo(line: string, isCrate: boolean, root: string): CompilerInfo | undefined {
     let result: CompilerInfoRaw;
     let token = "CompilerInfo ";
-    for (const line of output.split("\n")) {
-        // to avoid unnecessary parsing of other json objects:
-        if (!line.startsWith("CompilerInfo")) {
-            continue;
-        }
-
-        // Parse the message into a diagnostic.
-        result = JSON.parse(line.substring(token.length)) as CompilerInfoRaw;
-        if (result.procedure_defs !== undefined) {
-            util.log("Parsed raw IDE info. Found "
-                + result.procedure_defs.length
-                + " procedure defs and "
-                + result.function_calls.length
-                + " function calls.");
-            return transformCompilerInfo(result, root, isCrate);
-        }
+    if (!line.startsWith(token)) {
+        return undefined;
     }
-    return null;
+    // Parse the message into a diagnostic.
+    result = JSON.parse(line.substring(token.length)) as CompilerInfoRaw;
+    if (result.procedure_defs !== undefined) {
+        util.log("Parsed raw IDE info. Found "
+            + result.procedure_defs.length
+            + " procedure defs and "
+            + result.function_calls.length
+            + " function calls.");
+        return transformCompilerInfo(result, isCrate, root);
+    }
+    return undefined;
 }
-
-
-
-
