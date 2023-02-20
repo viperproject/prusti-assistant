@@ -66,7 +66,7 @@ export function parseVerificationResult(output: string, isCrate: boolean, rootPa
 
         let rawResult = JSON.parse(line.substring(len)) as VerificationInfoRaw;
         if (rawResult.result_list !== undefined) {
-            util.log("Parsed verification summary. Found"
+            util.log("Parsed verification summary. Found "
                     + rawResult.result_list.length
                     + " verification-results.");
             return transformVerificationResult(rawResult.result_list, isCrate, rootPath);

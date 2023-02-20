@@ -68,7 +68,7 @@
             },
             {
                 "command": "prusti-assistant.getinfo",
-                "title": "get IDE Info for current crate or file",
+                "title": "get information for current crate or file without verification",
                 "category": "Prusti"
             },
             {
