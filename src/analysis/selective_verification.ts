@@ -4,14 +4,15 @@ import * as config from "./../config";
 import { VerificationResult, parseVerificationResult } from "./verificationResult";
 import { failedVerificationDecorationType, successfulVerificationDecorationType } from "./../toolbox/decorations";
 import { FunctionRef, parseCompilerInfo, CompilerInfo } from "./compilerInfo";
-import { PrustiLineConsumer } from "./verification"
+import { PrustiMessageConsumer } from "./verification"
 import { CallContracts } from "./encodingInfo"
+import { Message } from "./diagnostics"
 
 function pathKey(rootPath: string, methodIdent: string): string {
     return rootPath + ":" + methodIdent;
 }
 
-export class SelectiveVerificationProvider implements vscode.CodeLensProvider, vscode.CodeActionProvider, PrustiLineConsumer {
+export class SelectiveVerificationProvider implements vscode.CodeLensProvider, vscode.CodeActionProvider, PrustiMessageConsumer {
     private lens_register: vscode.Disposable;
     private actions_register: vscode.Disposable;
     private definitionRegister: vscode.Disposable;
@@ -23,6 +24,7 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
     private verificationInfo: Map<string, VerificationResult[]>;
     private rangeMap: Map<string, [vscode.Range, string]>;
     private callContracts: Map<string, CallContracts[]>;
+    public tokens: string[] = ["EncodingInfo", "CompilerInfo", "IdeVerificationResult"]
 
     public constructor() {
         this.lens_register = vscode.languages.registerCodeLensProvider('rust', this);
@@ -195,23 +197,37 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
         this.force_codelens_update();
     }
 
-    public try_process_stderr(line: string, isCrate: boolean, programPath: string): boolean {
-        let compilerInfo = parseCompilerInfo(line, isCrate, programPath);
-        if (compilerInfo !== undefined) {
-            util.log("SelectiveVerificationProvider consumed as CompilerInfo " + line);
-            this.addCompilerInfo(compilerInfo);
-            return true;
-        }
-        let verificationResult = parseVerificationResult(line, isCrate, programPath);
-        if (verificationResult !== undefined) {
-            if (this.verificationInfo.get(programPath) === undefined) {
-                this.verificationInfo.set(programPath, []);
+    public processMessage(msg: Message, isCrate: boolean, programPath: string): void {
+        const ind = msg.message.indexOf("{");
+        const token = msg.message.substring(0, ind);
+        switch (token) {
+            case "EncodingInfo": {
+                //TODO
+                break;
             }
-            this.verificationInfo.get(programPath)!.push(verificationResult);
-            util.log("SelectiveVerificationProvider consumed as VerificationResult " + line);
-            this.displayVerificationResults();
-            return true;
+            case "CompilerInfo": {
+                let compilerInfo = parseCompilerInfo(msg.message, isCrate, programPath);
+                if (compilerInfo !== undefined) {
+                    util.log("Consumed CompilerInfo");
+                    this.addCompilerInfo(compilerInfo);
+                }
+                break;
+            }
+            case "IdeVerificationResult": {
+                let verificationResult = parseVerificationResult(msg.message, isCrate, programPath);
+                if (verificationResult !== undefined) {
+                    if (this.verificationInfo.get(programPath) === undefined) {
+                        this.verificationInfo.set(programPath, []);
+                    }
+                    this.verificationInfo.get(programPath)!.push(verificationResult);
+                    util.log("Consumed IdeVerificationResult");
+                    this.displayVerificationResults();
+                }
+                break;
+            }
+            default: {
+                util.log("ERROR: should never happen.");
+            }
         }
-        return false;
     }
 }

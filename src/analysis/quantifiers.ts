@@ -1,17 +1,19 @@
 import * as util from "./../util";
 import * as vscode from "vscode";
-import { parseSpanRange } from "./diagnostics"
-import { PrustiLineConsumer } from "./verification"
+import { parseSpanRange, Message } from "./diagnostics"
+import { PrustiMessageConsumer } from "./verification"
 
 function strToRange(range_str: string): vscode.Range {
     const arr = JSON.parse(range_str) as vscode.Position[];
     return new vscode.Range(arr[0], arr[1]);
 }
 
-export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, PrustiLineConsumer {
+export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, PrustiMessageConsumer {
     // key1: fileName, key2: stringified range, value: [quantifier string, triggers string]
     private state_map: Map<string, Map<string, [string, string]>>;
     private hover_register: vscode.Disposable;
+    private token = "QuantifierChosenTriggersMessage";
+    public tokens: string[] = [this.token];
 
     public constructor() {
         this.state_map = new Map<string, Map<string, [string, string]>>();
@@ -64,32 +66,23 @@ export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, P
         this.hover_register.dispose();
     }
 
-    public try_process_stderr(line: string, isCrate: boolean, _programPath: string): boolean {
-        const msg = util.getRustcMessage(line);
-        if (msg === undefined) {
-            return false;
+    public processMessage(msg: Message, isCrate: boolean, _programPath: string): void {
+        if (msg.spans.length !== 1) {
+            util.log("ERROR: multiple spans for a quantifier.");
         }
-        const qctm_str = "quantifier_chosen_triggers_message";
-        if (msg.message.startsWith(qctm_str)) {
-            if (msg.spans.length !== 1) {
-                util.log("ERROR: multiple spans for a quantifier.");
-            }
-            const span = msg.spans[0];
-            const range = parseSpanRange(span);
-            const fileName = span.file_name;
-            const parsed_m = JSON.parse(msg.message.substring(qctm_str.length));
-            const viper_quant = parsed_m["viper_quant"];
-            const triggers = parsed_m["triggers"];
+        const span = msg.spans[0];
+        const range = parseSpanRange(span);
+        const fileName = span.file_name;
+        const parsed_m = JSON.parse(msg.message.substring(this.token.length));
+        const viper_quant = parsed_m["viper_quant"];
+        const triggers = parsed_m["triggers"];
 
-            util.log("QuantifierChosenTriggersProvider consumed " + line);
-            this.update(fileName, viper_quant, triggers, range);
-            return true;
-        }
-        return false;
+        util.log("QuantifierChosenTriggersProvider consumed " + msg);
+        this.update(fileName, viper_quant, triggers, range);
     }
 }
 
-export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvider, vscode.HoverProvider, PrustiLineConsumer {
+export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvider, vscode.HoverProvider, PrustiMessageConsumer {
     // key1: fileName, key2: stringified range, key3: method, value: n_instantiations
     // note: we use the stringified range as identifier because Map uses strict equality "===" to
     // check for key equality, which does not work with newly constructed ranges.
@@ -99,6 +92,8 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
     private inlay_register: vscode.Disposable;
     private hover_register: vscode.Disposable;
     private changed: boolean = false;
+    private token: string = "QuantifierInstantiationsMessage";
+    public tokens: string[] = [this.token];
 
     public constructor() {
         this.state_map = new Map<string, Map<string, Map<string, number>>>();
@@ -106,7 +101,6 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
         this.hover_register = vscode.languages.registerHoverProvider('rust', this);
         this.inlay_register = vscode.languages.registerInlayHintsProvider('rust', this);
         setInterval(() => this.reregisterInlayHintsProvider(), 1000);
-
     }
 
     private reregisterInlayHintsProvider(): void {
@@ -201,28 +195,19 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
         this.hover_register.dispose();
     }
 
-    public try_process_stderr(line: string, isCrate: boolean, _programPath: string): boolean {
+    public processMessage(msg: Message, isCrate: boolean, _programPath: string): void {
         // TODO: check with crates
-        const msg = util.getRustcMessage(line);
-        if (msg === undefined) {
-            return false;
+        if (msg.spans.length !== 1) {
+            util.log("ERROR: multiple spans for a quantifier.");
         }
-        const qim_str = "quantifier_instantiations_message";
-        if (msg.message.startsWith(qim_str)) {
-            if (msg.spans.length !== 1) {
-                util.log("ERROR: multiple spans for a quantifier.");
-            }
-            const span = msg.spans[0];
-            const range = parseSpanRange(span);
-            const fileName = span.file_name;
-            const parsed_m = JSON.parse(msg.message.substring(qim_str.length));
-            const method = parsed_m["method"];
-            const instantiations = parsed_m["instantiations"];
+        const span = msg.spans[0];
+        const range = parseSpanRange(span);
+        const fileName = span.file_name;
+        const parsed_m = JSON.parse(msg.message.substring(this.token.length));
+        const method = parsed_m["method"];
+        const instantiations = parsed_m["instantiations"];
 
-            util.log("QuantifierInstantiationsProvider consumed " + line);
-            this.update(fileName, method, instantiations, range);
-            return true;
-        }
-        return false;
+        util.log("QuantifierInstantiationsProvider consumed " + msg);
+        this.update(fileName, method, instantiations, range);
     }
 }

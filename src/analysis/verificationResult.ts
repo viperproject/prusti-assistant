@@ -40,7 +40,7 @@ function transformVerificationResult(rawRes: VerificationResultRaw, isCrate: boo
 }
 
 export function parseVerificationResult(line: string, isCrate: boolean, rootPath: string): VerificationResult | undefined {
-    const token = "ide_verification_result";
+    const token = "IdeVerificationResult";
     if (!line.startsWith(token)) {
         return undefined;
     }

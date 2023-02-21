@@ -4,12 +4,12 @@ import * as vscode from "vscode";
 import * as path from "path"
 import * as dependencies from "../dependencies";
 import * as vvt from "vs-verification-toolbox";
-import { VerificationDiagnostics } from "./diagnostics";
+import { VerificationDiagnostics, Message } from "./diagnostics";
 import { QuantifierInstantiationsProvider, QuantifierChosenTriggersProvider} from "./quantifiers";
 import { SelectiveVerificationProvider} from "./selective_verification";
 
-export interface PrustiLineConsumer extends vscode.Disposable {
-    try_process_stderr: (line: string, isCrate: boolean, programPath: string) => boolean
+export interface PrustiMessageConsumer extends vscode.Disposable {
+    processMessage(msg: Message, isCrate: boolean, programPath: string): void,
 }
 
 export enum VerificationTarget {
@@ -46,35 +46,29 @@ export class VerificationManager {
     private verificationStatus: vscode.StatusBarItem;
     private killAllButton: vscode.StatusBarItem;
     private runCount = 0;
-    // we also keep this extra reference, because we need it
+
     private verificationDiagnostics: VerificationDiagnostics;
-    // order matters: first one to successfully consume a Message gets it
-    private parts: PrustiLineConsumer[] = [];
+    private qip: QuantifierInstantiationsProvider;
+    private qctp: QuantifierChosenTriggersProvider;
+    private svp: SelectiveVerificationProvider;
 
     public constructor(verificationStatus: vscode.StatusBarItem, killAllButton: vscode.StatusBarItem) {
         this.verificationStatus = verificationStatus;
         this.killAllButton = killAllButton;
 
-        const qip = new QuantifierInstantiationsProvider();
-        this.parts.push(qip);
-
-        const qctp = new QuantifierChosenTriggersProvider();
-        this.parts.push(qctp);
-
-        const svp = new SelectiveVerificationProvider();
-        this.parts.push(svp);
-
+        this.qip = new QuantifierInstantiationsProvider();
+        this.qctp = new QuantifierChosenTriggersProvider();
+        this.svp = new SelectiveVerificationProvider();
         this.verificationDiagnostics = new VerificationDiagnostics();
-        this.parts.push(this.verificationDiagnostics);
-
     }
 
     public dispose(): void {
         util.log("Dispose VerificationManager");
         this.killAll();
-        for (var part of this.parts) {
-            part.dispose();
-        }
+        this.qip.dispose();
+        this.qctp.dispose();
+        this.svp.dispose();
+        this.verificationDiagnostics.dispose();
     }
 
     public inProgress(): number {
@@ -94,11 +88,31 @@ export class VerificationManager {
             const parsable = buffer.substring(0, ind);
             buffer = buffer.substring(ind+1);
             for (const line of parsable.split("\n")) {
-                for (const part of this.parts) {
-                    if (part.try_process_stderr(line, isCrate, programPath)) {
+                const msg = util.getRustcMessage(line);
+                if (msg === undefined) {
+                    continue;
+                }
+                const ind = msg.message.indexOf("{");
+                const token = msg.message.substring(0, ind);
+                let part: PrustiMessageConsumer = this.verificationDiagnostics;
+                switch (token) {
+                    case "IdeVerificationResult":
+                    case "CompilerInfo":
+                    case "EncodingInfo": {
+                        part = this.svp;
                         break;
                     }
+                    case "QuantifierInstantiationsMessage": {
+                        part = this.qip;
+                        break;
+                    }
+                    case "QuantifierChosenTriggersMessage": {
+                        part = this.qctp;
+                        break;
+                    }
+                    default: {}
                 }
+                part.processMessage(msg, isCrate, programPath)
             }
         }
         return on_output;

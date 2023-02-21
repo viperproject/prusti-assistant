@@ -2,7 +2,7 @@ import * as util from "../util";
 import * as config from "../config";
 import * as vscode from "vscode";
 import * as path from "path";
-import { PrustiLineConsumer } from "./verification";
+import { PrustiMessageConsumer } from "./verification";
 
 // ========================================================
 // JSON Schemas
@@ -218,11 +218,12 @@ function parseDiagnostic(msg_raw: CargoMessage|Message, programPath: string, def
 // Diagnostic Management
 // ========================================================
 
-export class VerificationDiagnostics implements PrustiLineConsumer {
+export class VerificationDiagnostics implements PrustiMessageConsumer {
     private diagnostics: Map<string, vscode.Diagnostic[]>;
     private diagnosticCollection: vscode.DiagnosticCollection;
     private last_rendered_time: number = 0;
     private last_diagnostic: Diagnostic|null = null;
+    public tokens = [""];
 
     constructor() {
         this.diagnostics = new Map<string, vscode.Diagnostic[]>();
@@ -362,15 +363,9 @@ export class VerificationDiagnostics implements PrustiLineConsumer {
         }
     }
 
-    public try_process_stderr(line: string, isCrate: boolean, programPath: string): boolean {
-        let prustiMessage = util.getRustcMessage(line);
-        if (prustiMessage !== undefined) {
-            let diag = parseDiagnostic(prustiMessage, programPath);
-            util.log("VerificationDiagnostics consumed " + line);
-            this.add_and_render(diag);
-            return true;
-        } else {
-            return false;
-        }
+    public processMessage(msg: Message, isCrate: boolean, programPath: string): void {
+        let diag = parseDiagnostic(msg, programPath);
+        util.log("VerificationDiagnostics consumed " + msg);
+        this.add_and_render(diag);
     }
 }
