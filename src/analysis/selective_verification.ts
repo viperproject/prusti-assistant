@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import * as util from "./../util";
 import * as config from "./../config";
+import { EventEmitter } from "events";
 import { VerificationResult, parseVerificationResult } from "./verificationResult";
 import { failedVerificationDecorationType, successfulVerificationDecorationType } from "./../toolbox/decorations";
 import { FunctionRef, parseCompilerInfo, CompilerInfo } from "./compilerInfo";
@@ -23,6 +24,8 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
     private verificationInfo: Map<string, VerificationResult[]>;
     private rangeMap: Map<string, [vscode.Range, string]>;
     private callContracts: Map<string, CallContracts[]>;
+    private fileStateMap: Map<string, boolean>;
+    private fileStateUpdateEmitter: EventEmitter;
 
     public constructor() {
         this.lens_register = vscode.languages.registerCodeLensProvider('rust', this);
@@ -34,6 +37,8 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
         this.verificationInfo = new Map();
         this.rangeMap = new Map(); 
         this.callContracts = new Map();
+        this.fileStateMap = new Map();
+        this.fileStateUpdateEmitter = new EventEmitter();
     }
 
     public dispose() {
@@ -43,23 +48,45 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
     }
 
     // TODO: I probably broke something here
-    public provideCodeLenses(document: vscode.TextDocument, _token: vscode.CancellationToken): vscode.CodeLens[] {
+    public provideCodeLenses(document: vscode.TextDocument, token: vscode.CancellationToken): Promise<vscode.CodeLens[]> {
+        return this.codelensPromise(document, token);
+    }
+    async codelensPromise(
+        document: vscode.TextDocument, 
+        _token: vscode.CancellationToken
+    ): Promise<vscode.CodeLens[]> {
         const codeLenses: vscode.CodeLens[] = [];
         let rootPath = util.getRootPath(document.uri.fsPath);
         let procDefs = this.procedureDefs.get(rootPath);
+        let fileState = this.fileStateMap.get(document.uri.fsPath);
+        
+        
+        if (fileState !== undefined ) {
+            if (fileState) {
+                // it has already been read and we should wait for
+                // an update. Should there be an await?
+                await new Promise(resolve => {
+                    this.fileStateUpdateEmitter.once('updated' + document.uri.fsPath, () => resolve );
+                });
+            } // otherwise just proceed since this file's current info has not been
+            // read yet..
 
-        procDefs?.forEach((pd: FunctionRef) => {
-            if (pd.fileName === document.uri.fsPath) {
-                const codeLens = new vscode.CodeLens(pd.range);
-                codeLens.command = {
-                    title: "✓ Verify " + pd.identifier,
-                    command: "prusti-assistant.verify-selective",
-                    // TODO: invoke selective verification here
-                    arguments: [pd.identifier]
-                };
-                codeLenses.push(codeLens);
-            }
-        });
+            this.fileStateMap.set(document.uri.fsPath, true);
+
+            procDefs?.forEach((pd: FunctionRef) => {
+                if (pd.fileName === document.uri.fsPath) {
+                    const codeLens = new vscode.CodeLens(pd.range);
+                    codeLens.command = { 
+                        title: "✓ Verify " + pd.identifier,
+                        command: "prusti-assistant.verify-selective",
+                        // TODO: invoke selective verification here
+                        arguments: [pd.identifier]
+                    };
+                    codeLenses.push(codeLens);
+                }
+            });
+        }
+        // await delay(0);
         return codeLenses;
     }
 
@@ -181,6 +208,12 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
             util.userInfoPopup("Template for extern spec. is now on your clipboard.");
         }
 
+        info.distinctFiles.forEach((fileName) => {
+            // mark each file's information as "not read yet"
+            this.fileStateMap.set(fileName, false);
+            // and then notify CodeLensHandlers of the update
+            this.fileStateUpdateEmitter.emit('updated' + fileName);
+        })
         // create all sorts of data structures that will be practical:
         let rootPath = info.rootPath;
         util.log(`Adding CompilerInfo to path: ${rootPath}`);
