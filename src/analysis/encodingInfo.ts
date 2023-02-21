@@ -1,6 +1,6 @@
 import * as util from "./../util";
 import * as vscode from "vscode";
-import { Span, parseSpanRange } from "./../diagnostics";
+import { Span, parseSpanRange } from "./diagnostics";
 
 // the Rust types
 interface EncodingInfoRaw {

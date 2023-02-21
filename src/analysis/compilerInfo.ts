@@ -1,9 +1,10 @@
 import * as util from "./../util";
 import * as vscode from "vscode";
-import { Span, parseSpanRange } from "./../diagnostics";
+import * as path from "path";
+import { Span, parseSpanRange } from "./diagnostics";
 
 // Additional Schemas for Custom information for IDE:
-export interface CompilerInfoRaw {
+interface CompilerInfoRaw {
     procedure_defs: FunctionRefRaw[]
     function_calls: FunctionRefRaw[]
     queried_source: string | null
@@ -14,7 +15,7 @@ interface FunctionRefRaw {
     span: Span,
 }
 
-/** In this schema we replaced rust's spans with vscode's ranges 
+/** In this schema we replaced rust's spans with vscode's ranges
  * and also adjusted filepaths for crates, according to their rootPath
  */
 export interface CompilerInfo {
@@ -25,37 +26,37 @@ export interface CompilerInfo {
     distinctFiles: Set<string>,
 }
 
-/** 
+/**
  * can be both a function call or definition, which should be clear from the
- * data structure it's store in
+ * data structure it's stored in
  */
-export interface FunctionRef { 
+export interface FunctionRef {
     identifier: string, // DefPath
     fileName: string, // complete path to the file containing this method
     range: vscode.Range,
 }
 
-function transformCompilerInfo(info: CompilerInfoRaw, root: string, isCrate: boolean): CompilerInfo {
+function transformCompilerInfo(info: CompilerInfoRaw, isCrate: boolean, root: string): CompilerInfo {
     const result: CompilerInfo = {
         rootPath: root,
-        procedureDefs: [], 
+        procedureDefs: [],
         functionCalls: [],
         queriedSource: info.queried_source,
         distinctFiles: new Set(),
     };
     for (const proc of info.procedure_defs) {
-        var filename = isCrate ? root + proc.span.file_name: proc.span.file_name;
+        var filename = isCrate ? path.join(root, proc.span.file_name) : proc.span.file_name;
         result.distinctFiles.add(filename);
         let entry : FunctionRef = {
             identifier: proc.name,
-            fileName: filename, 
+            fileName: filename,
             range: parseSpanRange(proc.span),
         };
         result.procedureDefs.push(entry);
     }
 
     for (const proc of info.function_calls) {
-        let filename = isCrate ? root + proc.span.file_name : proc.span.file_name;
+        let filename = isCrate ? path.join(root, proc.span.file_name) : proc.span.file_name;
         result.distinctFiles.add(filename);
         let entry: FunctionRef = {
             identifier: proc.name,
@@ -67,29 +68,21 @@ function transformCompilerInfo(info: CompilerInfoRaw, root: string, isCrate: boo
     return result;
 }
 
-export function parseCompilerInfo(output: string, root: string, isCrate: boolean): CompilerInfo | null {
+export function parseCompilerInfo(line: string, isCrate: boolean, root: string): CompilerInfo | undefined {
     let result: CompilerInfoRaw;
-    let token = "CompilerInfo ";
-    for (const line of output.split("\n")) {
-        // to avoid unnecessary parsing of other json objects:
-        if (!line.startsWith(token)) {
-            continue;
-        }
-
-        // Parse the message into a diagnostic.
-        result = JSON.parse(line.substring(token.length)) as CompilerInfoRaw;
-        if (result.procedure_defs !== undefined) {
-            util.log("Parsed raw IDE info. Found "
-                + result.procedure_defs.length
-                + " procedure defs and "
-                + result.function_calls.length
-                + " function calls.");
-            return transformCompilerInfo(result, root, isCrate);
-        }
+    let token = "CompilerInfo";
+    if (!line.startsWith(token)) {
+        return undefined;
     }
-    return null;
+    // Parse the message into a diagnostic.
+    result = JSON.parse(line.substring(token.length)) as CompilerInfoRaw;
+    if (result.procedure_defs !== undefined) {
+        util.log("Parsed raw IDE info. Found "
+            + result.procedure_defs.length
+            + " procedure defs and "
+            + result.function_calls.length
+            + " function calls.");
+        return transformCompilerInfo(result, isCrate, root);
+    }
+    return undefined;
 }
-
-
-
-
