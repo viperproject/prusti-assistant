@@ -27,7 +27,7 @@ export function notVerifiedDecorationType() : vscode.TextEditorDecorationType {
 
 function timeAndCacheDecorator(time: number, cached: boolean) : vscode.ThemableDecorationAttachmentRenderOptions {
     let cachedStr = cached ? " (cached)":"";
-    let text = `  [took ${time} ms${cachedStr}]`;
+    let text = `  [Verified in ${time} ms${cachedStr}]`;
     return {
         contentText: text,
         color: "gray",

@@ -100,3 +100,7 @@ export function extraCargoPrustiArgs(): string[] {
 export function extraPrustiServerArgs(): string[] {
     return config().get("extraPrustiServerArgs", []);
 }
+
+export function contractsAsDefinitions(): boolean {
+    return config().get("contractsAsDefinitions", false);
+}

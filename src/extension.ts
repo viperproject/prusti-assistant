@@ -282,11 +282,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Verify on activation, if verifyOnOpen is set, otherwise still call prusti
     // but just collect IDE info.
     if (vscode.window.activeTextEditor !== undefined) {
-        await verify(
-            vscode.window.activeTextEditor.document,
-            !config.verifyOnOpen(),
-            undefined
-        );
+        if (vscode.window.activeTextEditor.document.languageId === "rust") {
+            await verify(
+                vscode.window.activeTextEditor.document,
+                !config.verifyOnOpen(),
+                undefined
+            );
+        }
     } else {
         util.log("vscode.window.activeTextEditor is not ready yet.");
     }

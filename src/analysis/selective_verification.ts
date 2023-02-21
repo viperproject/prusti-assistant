@@ -1,9 +1,11 @@
 import * as vscode from "vscode";
 import * as util from "./../util";
+import * as config from "./../config";
 import { VerificationResult, parseVerificationResult } from "./verificationResult";
 import { failedVerificationDecorationType, successfulVerificationDecorationType } from "./../toolbox/decorations";
 import { FunctionRef, parseCompilerInfo, CompilerInfo } from "./compilerInfo";
 import { PrustiLineConsumer } from "./verification"
+import { CallContracts } from "./encodingInfo"
 
 function pathKey(rootPath: string, methodIdent: string): string {
     return rootPath + ":" + methodIdent;
@@ -12,6 +14,7 @@ function pathKey(rootPath: string, methodIdent: string): string {
 export class SelectiveVerificationProvider implements vscode.CodeLensProvider, vscode.CodeActionProvider, PrustiLineConsumer {
     private lens_register: vscode.Disposable;
     private actions_register: vscode.Disposable;
+    private definitionRegister: vscode.Disposable;
     private decorations: Map<string, vscode.TextEditorDecorationType[]>;
     // for proc_defs we also have a boolean on whether these values
     // were already requested (for codelenses)
@@ -19,20 +22,24 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
     private functionCalls: Map<string, FunctionRef[]>;
     private verificationInfo: Map<string, VerificationResult[]>;
     private rangeMap: Map<string, [vscode.Range, string]>;
+    private callContracts: Map<string, CallContracts[]>;
 
     public constructor() {
         this.lens_register = vscode.languages.registerCodeLensProvider('rust', this);
         this.actions_register = vscode.languages.registerCodeActionsProvider('rust', this);
+        this.definitionRegister = vscode.languages.registerDefinitionProvider('rust', this);
         this.decorations = new Map();
         this.procedureDefs = new Map();
         this.functionCalls = new Map();
         this.verificationInfo = new Map();
         this.rangeMap = new Map(); 
+        this.callContracts = new Map();
     }
 
     public dispose() {
         this.lens_register.dispose();
         this.actions_register.dispose();
+        this.definitionRegister.dispose();
     }
 
     // TODO: I probably broke something here
@@ -118,6 +125,29 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
             });
             this.decorations.set(editorFilePath, decorators);
         }
+    }
+    public provideDefinition(
+        document: vscode.TextDocument, 
+        position: vscode.Position, 
+        _token: vscode.CancellationToken
+    ): vscode.ProviderResult<vscode.Definition | vscode.LocationLink[]> {
+        if (config.contractsAsDefinitions()) {
+            return [];
+        }
+        let rootPath = util.getRootPath(document.uri.fsPath);
+        let callContracts = this.callContracts.get(rootPath);
+        if (callContracts === undefined) {
+            return [];
+        }
+        
+        for (const callCont of callContracts) {
+            let sameFile = callCont.callLocation.uri.fsPath === document.uri.fsPath;
+            let containsPos = callCont.callLocation.range.contains(position);
+            if (sameFile && containsPos) {
+                return callCont.contractLocations;
+            } 
+        }
+        return [];
     }
 
     private clearPreviousDecorators(filePath: string): void {
