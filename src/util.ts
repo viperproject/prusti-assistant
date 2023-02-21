@@ -218,6 +218,9 @@ export function isValidRustcMessage(msg: Message) {
 }
 
 export function getCargoMessage(line: string): CargoMessage|undefined {
+    if (line[0] != "{") {
+        return undefined;
+    }
     const msg = JSON.parse(line) as CargoMessage;
     if (!isValidCargoMessage(msg)) {
         return undefined;
@@ -226,6 +229,9 @@ export function getCargoMessage(line: string): CargoMessage|undefined {
 }
 
 export function getRustcMessage(line: string): Message|undefined {
+    if (line[0] != "{") {
+        return undefined;
+    }
     const msg = JSON.parse(line) as Message;
     if (!isValidRustcMessage(msg)) {
         return undefined;
@@ -233,8 +239,8 @@ export function getRustcMessage(line: string): Message|undefined {
     return msg;
 }
 
-export function getMessage(line: string, isCrate: boolean): Message|undefined {
-    if (isCrate) {
+export function getMessage(line: string, isCargo: boolean): Message|undefined {
+    if (isCargo) {
         const cargoMessage = getCargoMessage(line);
         if (cargoMessage !== undefined) {
             return cargoMessage.message;

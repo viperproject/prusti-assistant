@@ -1,7 +1,7 @@
 import * as util from "./../util";
 import * as vscode from "vscode";
 import { parseSpanRange } from "./diagnostics"
-import { PrustiLineConsumer } from "./prusti_line_consumer"
+import { PrustiLineConsumer } from "./verification"
 
 function strToRange(range_str: string): vscode.Range {
     const arr = JSON.parse(range_str) as vscode.Position[];
@@ -12,6 +12,7 @@ export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, P
     // key1: fileName, key2: stringified range, value: [quantifier string, triggers string]
     private state_map: Map<string, Map<string, [string, string]>>;
     private hover_register: vscode.Disposable;
+
     public constructor() {
         this.state_map = new Map<string, Map<string, [string, string]>>();
         this.hover_register = vscode.languages.registerHoverProvider('rust', this);
@@ -63,8 +64,8 @@ export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, P
         this.hover_register.dispose();
     }
 
-    public tryConsumeLine(line: string, isCrate: boolean, _programPath: string): boolean {
-        const msg = util.getMessage(line, isCrate);
+    public try_process_stderr(line: string, isCrate: boolean, _programPath: string): boolean {
+        const msg = util.getRustcMessage(line);
         if (msg === undefined) {
             return false;
         }
@@ -80,6 +81,7 @@ export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, P
             const viper_quant = parsed_m["viper_quant"];
             const triggers = parsed_m["triggers"];
 
+            util.log("QuantifierChosenTriggersProvider consumed " + line);
             this.update(fileName, viper_quant, triggers, range);
             return true;
         }
@@ -199,9 +201,9 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
         this.hover_register.dispose();
     }
 
-    public tryConsumeLine(line: string, isCrate: boolean, _programPath: string): boolean {
+    public try_process_stderr(line: string, isCrate: boolean, _programPath: string): boolean {
         // TODO: check with crates
-        const msg = util.getMessage(line, isCrate);
+        const msg = util.getRustcMessage(line);
         if (msg === undefined) {
             return false;
         }
@@ -217,6 +219,7 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
             const method = parsed_m["method"];
             const instantiations = parsed_m["instantiations"];
 
+            util.log("QuantifierInstantiationsProvider consumed " + line);
             this.update(fileName, method, instantiations, range);
             return true;
         }

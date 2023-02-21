@@ -3,7 +3,7 @@ import * as util from "./../util";
 import { VerificationResult, parseVerificationResult } from "./verificationResult";
 import { failedVerificationDecorationType, successfulVerificationDecorationType } from "./../toolbox/decorations";
 import { FunctionRef, parseCompilerInfo, CompilerInfo } from "./compilerInfo";
-import { PrustiLineConsumer } from "./prusti_line_consumer"
+import { PrustiLineConsumer } from "./verification"
 
 function pathKey(rootPath: string, methodIdent: string): string {
     return rootPath + ":" + methodIdent;
@@ -89,7 +89,7 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
         return codeActions;
     }
 
-    private displayResults(): void {
+    private displayVerificationResults(): void {
         let activeEditor = vscode.window.activeTextEditor;
         let editorFilePath = activeEditor?.document.uri.fsPath;
         if (editorFilePath !== undefined) {
@@ -165,9 +165,10 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
         this.force_codelens_update();
     }
 
-    public tryConsumeLine(line: string, isCrate: boolean, programPath: string): boolean {
-        let compilerInfo = parseCompilerInfo(line, isCrate, isCrate ? programPath + "/" : programPath);
+    public try_process_stderr(line: string, isCrate: boolean, programPath: string): boolean {
+        let compilerInfo = parseCompilerInfo(line, isCrate, programPath);
         if (compilerInfo !== undefined) {
+            util.log("SelectiveVerificationProvider consumed as CompilerInfo " + line);
             this.addCompilerInfo(compilerInfo);
             return true;
         }
@@ -177,7 +178,8 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
                 this.verificationInfo.set(programPath, []);
             }
             this.verificationInfo.get(programPath)!.push(verificationResult);
-            this.displayResults();
+            util.log("SelectiveVerificationProvider consumed as VerificationResult " + line);
+            this.displayVerificationResults();
             return true;
         }
         return false;

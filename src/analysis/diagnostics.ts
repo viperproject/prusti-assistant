@@ -2,7 +2,7 @@ import * as util from "../util";
 import * as config from "../config";
 import * as vscode from "vscode";
 import * as path from "path";
-import { PrustiLineConsumer } from "./prusti_line_consumer";
+import { PrustiLineConsumer } from "./verification";
 
 // ========================================================
 // JSON Schemas
@@ -233,6 +233,11 @@ export class VerificationDiagnostics implements PrustiLineConsumer {
         this.diagnosticCollection.dispose();
     }
 
+    public reset() {
+        this.diagnostics = new Map<string, vscode.Diagnostic[]>();
+        this.diagnosticCollection.clear();
+    }
+
     public hasErrors(): boolean {
         let count = 0;
         this.diagnostics.forEach((documentDiagnostics: vscode.Diagnostic[]) => {
@@ -311,7 +316,8 @@ export class VerificationDiagnostics implements PrustiLineConsumer {
             const uri = vscode.Uri.file(filePath);
             this.last_diagnostic = diagnostic;
             setTimeout(() => {
-                // we render if more than 50ms have passed since the last time we rendered or when we are the last_render_promise
+                // thresholding: we render if more than 50ms have passed since the last
+                // time we rendered or when we are the last_diagnostic
                 if (this.last_diagnostic === diagnostic || Date.now() - this.last_rendered_time >= 50) {
                     this.renderIn();
                     this.last_rendered_time = Date.now();
@@ -347,10 +353,20 @@ export class VerificationDiagnostics implements PrustiLineConsumer {
         return true;
     }
 
-    public tryConsumeLine(line: string, isCrate: boolean, programPath: string): boolean {
-        let prustiMessage = isCrate ? util.getCargoMessage(line) : util.getRustcMessage(line);
+    public process_stdout(line: string, isCrate: boolean, programPath: string): void {
+        let prustiMessage = util.getCargoMessage(line);
         if (prustiMessage !== undefined) {
             let diag = parseDiagnostic(prustiMessage, programPath);
+            util.log("STDOUT: VerificationDiagnostics consumed " + line);
+            this.add_and_render(diag);
+        }
+    }
+
+    public try_process_stderr(line: string, isCrate: boolean, programPath: string): boolean {
+        let prustiMessage = util.getRustcMessage(line);
+        if (prustiMessage !== undefined) {
+            let diag = parseDiagnostic(prustiMessage, programPath);
+            util.log("VerificationDiagnostics consumed " + line);
             this.add_and_render(diag);
             return true;
         } else {

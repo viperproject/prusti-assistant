@@ -7,7 +7,10 @@ import * as vvt from "vs-verification-toolbox";
 import { VerificationDiagnostics } from "./diagnostics";
 import { QuantifierInstantiationsProvider, QuantifierChosenTriggersProvider} from "./quantifiers";
 import { SelectiveVerificationProvider} from "./selective_verification";
-import { PrustiLineConsumer } from "./prusti_line_consumer";
+
+export interface PrustiLineConsumer extends vscode.Disposable {
+    try_process_stderr: (line: string, isCrate: boolean, programPath: string) => boolean
+}
 
 export enum VerificationTarget {
     StandaloneFile = "file",
@@ -52,14 +55,14 @@ export class VerificationManager {
         this.verificationStatus = verificationStatus;
         this.killAllButton = killAllButton;
 
-        const quantifierInstantiationsProvider = new QuantifierInstantiationsProvider();
-        this.parts.push(quantifierInstantiationsProvider);
+        const qip = new QuantifierInstantiationsProvider();
+        this.parts.push(qip);
 
-        const quantifierChosenTriggersProvider = new QuantifierChosenTriggersProvider();
-        this.parts.push(quantifierChosenTriggersProvider);
+        const qctp = new QuantifierChosenTriggersProvider();
+        this.parts.push(qctp);
 
-        const selectiveVerificationProvider = new SelectiveVerificationProvider();
-        this.parts.push(selectiveVerificationProvider);
+        const svp = new SelectiveVerificationProvider();
+        this.parts.push(svp);
 
         this.verificationDiagnostics = new VerificationDiagnostics();
         this.parts.push(this.verificationDiagnostics);
@@ -83,7 +86,7 @@ export class VerificationManager {
         this.procDestructors.forEach((kill) => kill());
     }
 
-    private build_on_output_closure(isCrate: boolean, programPath: string) {
+    private build_stderr_closure(isCrate: boolean, programPath: string) {
         let buffer = "";
         const on_output = (data: string) => {
             buffer = buffer.concat(data);
@@ -92,10 +95,24 @@ export class VerificationManager {
             buffer = buffer.substring(ind+1);
             for (const line of parsable.split("\n")) {
                 for (const part of this.parts) {
-                    if (part.tryConsumeLine(line, isCrate, programPath)) {
+                    if (part.try_process_stderr(line, isCrate, programPath)) {
                         break;
                     }
                 }
+            }
+        }
+        return on_output;
+    }
+
+    private build_stdout_closure(isCrate: boolean, programPath: string) {
+        let buffer = "";
+        const on_output = (data: string) => {
+            buffer = buffer.concat(data);
+            const ind = buffer.lastIndexOf("\n");
+            const parsable = buffer.substring(0, ind);
+            buffer = buffer.substring(ind+1);
+            for (const line of parsable.split("\n")) {
+                this.verificationDiagnostics.process_stdout(line, isCrate, programPath);
             }
         }
         return on_output;
@@ -116,12 +133,12 @@ export class VerificationManager {
                 await removeDiagnosticMetadata(programPath);
             }
             // cargo
-            const prustiArgs = ["--message-format=json"].concat(
+            prustiArgs = ["--message-format=json"].concat(
                 config.extraCargoPrustiArgs()
             );
         } else {
             // rustc
-            const prustiArgs = [
+            prustiArgs = [
                 "--crate-type=lib",
                 "--error-format=json",
                 programPath
@@ -145,7 +162,8 @@ export class VerificationManager {
             ...config.extraPrustiEnv(),
         };
         const cwd = isCrate ? programPath : path.dirname(programPath);
-        const on_output = this.build_on_output_closure(isCrate, programPath);
+        const on_stderr = this.build_stderr_closure(isCrate, programPath);
+        const on_stdout = this.build_stdout_closure(isCrate, programPath);
         const output = await util.spawn(
             isCrate ? prusti.cargoPrusti : prusti.prustiRustc,
             prustiArgs,
@@ -154,8 +172,8 @@ export class VerificationManager {
                     cwd: cwd,
                     env: prustiEnv,
                 },
-                onStdout: isCrate ? on_output : undefined,
-                onStderr: isCrate ? undefined : on_output,
+                onStdout: on_stdout,
+                onStderr: on_stderr,
             },
             this.procDestructors,
         );
@@ -198,6 +216,10 @@ export class VerificationManager {
         util.log(`Preparing verification run #${currentRun}.`);
         this.killAll();
         this.killAllButton.show();
+        util.log(serverAddress);
+
+
+        this.verificationDiagnostics.reset();
 
         // Run verification
         const escapedFileName = path.basename(targetPath).replace("$", "\\$");
@@ -206,7 +228,7 @@ export class VerificationManager {
         if (!skip_verification) {
             this.verificationStatus.text = `$(sync~spin) Verifying ${target} '${escapedFileName}'...`;
         } else {
-            this.verificationStatus.text =  `$(sync~spin) Analyzing ${target} '${escapedFileName}'...`;
+            this.verificationStatus.text = `$(sync~spin) Analyzing ${target} '${escapedFileName}'...`;
         }
 
         let durationSecMsg: string | null = null;

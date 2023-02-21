@@ -28,8 +28,6 @@ function splitName(name: string) : [string, string] {
 }
 
 function transformVerificationResult(rawRes: VerificationResultRaw, isCrate: boolean, rootPath: string) : VerificationResult {
-    let dirPath = isCrate ? rootPath : path.dirname(rootPath) + "/";
-
     let [_fileName, methodPath] = splitName(rawRes.item_name);
     // we realized this fileName is not useful, for crates it's always main.rs
     let res = {
@@ -42,12 +40,8 @@ function transformVerificationResult(rawRes: VerificationResultRaw, isCrate: boo
 }
 
 export function parseVerificationResult(line: string, isCrate: boolean, rootPath: string): VerificationResult | undefined {
-    const msg = util.getMessage(line, isCrate);
-    if (msg === undefined) {
-        return false;
-    }
     const token = "ide_verification_result";
-    if (!msg.message.startsWith(token)) {
+    if (!line.startsWith(token)) {
         return undefined;
     }
     let rawResult = JSON.parse(line.substring(token.length)) as VerificationResultRaw;

@@ -1,5 +1,6 @@
 import * as util from "./../util";
 import * as vscode from "vscode";
+import * as path from "path";
 import { Span, parseSpanRange } from "./diagnostics";
 
 // Additional Schemas for Custom information for IDE:
@@ -44,7 +45,7 @@ function transformCompilerInfo(info: CompilerInfoRaw, isCrate: boolean, root: st
         distinctFiles: new Set(),
     };
     for (const proc of info.procedure_defs) {
-        var filename = isCrate ? root + proc.span.file_name: proc.span.file_name;
+        var filename = isCrate ? path.join(root, proc.span.file_name) : proc.span.file_name;
         result.distinctFiles.add(filename);
         let entry : FunctionRef = {
             identifier: proc.name,
@@ -55,7 +56,7 @@ function transformCompilerInfo(info: CompilerInfoRaw, isCrate: boolean, root: st
     }
 
     for (const proc of info.function_calls) {
-        let filename = isCrate ? root + proc.span.file_name : proc.span.file_name;
+        let filename = isCrate ? path.join(root, proc.span.file_name) : proc.span.file_name;
         result.distinctFiles.add(filename);
         let entry: FunctionRef = {
             identifier: proc.name,
@@ -69,7 +70,7 @@ function transformCompilerInfo(info: CompilerInfoRaw, isCrate: boolean, root: st
 
 export function parseCompilerInfo(line: string, isCrate: boolean, root: string): CompilerInfo | undefined {
     let result: CompilerInfoRaw;
-    let token = "CompilerInfo ";
+    let token = "CompilerInfo";
     if (!line.startsWith(token)) {
         return undefined;
     }
