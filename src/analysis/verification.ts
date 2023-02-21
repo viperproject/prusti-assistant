@@ -170,6 +170,7 @@ export class VerificationManager {
                 //TODO: @cedihegi: the environment was set up differently for rustc and cargo. I took this config. Is this correct?
                 PRUSTI_SELECTIVE_VERIFY: skipVerify ? undefined : selectiveVerify,
                 PRUSTI_QUERY_METHOD_SIGNATURE: skipVerify ? selectiveVerify : undefined,
+                PRUSTI_REPORT_VIPER_MESSAGES: config.reportViperMessages() ? "true" : "false",
                 PRUSTI_QUIET: "true",
                 JAVA_HOME: (await config.javaHome())!.path,
             },

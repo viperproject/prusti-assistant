@@ -104,3 +104,7 @@ export function extraPrustiServerArgs(): string[] {
 export function contractsAsDefinitions(): boolean {
     return config().get("contractsAsDefinitions", false);
 }
+
+export function reportViperMessages(): boolean {
+    return config().get("reportViperMessages", true);
+}

@@ -184,6 +184,11 @@
                     "type": "boolean",
                     "default": false,
                     "description": "If enabled you can use 'goto definition' to view contracts of function calls."
+                },
+                "prusti-assistant.showViperMessages": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "If enabled more information about quantifiers is available."
                 }
             }
         }
