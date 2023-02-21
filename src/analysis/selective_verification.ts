@@ -17,6 +17,7 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
     private lens_register: vscode.Disposable;
     private actions_register: vscode.Disposable;
     private definitionRegister: vscode.Disposable;
+    private resultOnTabChangeRegister: vscode.Disposable;
     private decorations: Map<string, vscode.TextEditorDecorationType[]>;
     // for proc_defs we also have a boolean on whether these values
     // were already requested (for codelenses)
@@ -30,9 +31,6 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
     public tokens: string[] = ["EncodingInfo", "CompilerInfo", "IdeVerificationResult"]
 
     public constructor() {
-        this.lens_register = vscode.languages.registerCodeLensProvider('rust', this);
-        this.actions_register = vscode.languages.registerCodeActionsProvider('rust', this);
-        this.definitionRegister = vscode.languages.registerDefinitionProvider('rust', this);
         this.decorations = new Map();
         this.procedureDefs = new Map();
         this.functionCalls = new Map();
@@ -41,12 +39,24 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
         this.callContracts = new Map();
         this.fileStateMap = new Map();
         this.fileStateUpdateEmitter = new EventEmitter();
+        this.lens_register = vscode.languages.registerCodeLensProvider('rust', this);
+        this.actions_register = vscode.languages.registerCodeActionsProvider('rust', this);
+        this.definitionRegister = vscode.languages.registerDefinitionProvider('rust', this);
+        this.resultOnTabChangeRegister = this.registerDecoratorOnTabChange();
     }
+    
 
     public dispose() {
         this.lens_register.dispose();
         this.actions_register.dispose();
         this.definitionRegister.dispose();
+        this.resultOnTabChangeRegister.dispose();
+    }
+
+    // what do we need to do before a verification such that the results
+    // from previous verifications will be gone.
+    public cleanPreviousRun(programPath: string) {
+        this.verificationInfo.set(programPath, []);
     }
 
     // TODO: I probably broke something here
@@ -138,7 +148,7 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
                 if (location) {
                     let [range, resFilePath] = location;
                     if (resFilePath === editorFilePath) {
-                        let range_line = util.full_line_range(range);
+                        let range_line = util.FullLineRange(range);
                         var decoration;
                         if (res.success) {
                             decoration = successfulVerificationDecorationType(res.time_ms, res.cached)
@@ -155,6 +165,7 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
             this.decorations.set(editorFilePath, decorators);
         }
     }
+
     public provideDefinition(
         document: vscode.TextDocument, 
         position: vscode.Position, 
@@ -177,6 +188,16 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
             } 
         }
         return [];
+    }
+
+    private registerDecoratorOnTabChange(): vscode.Disposable {
+        return vscode.window.onDidChangeActiveTextEditor(async (editor: vscode.TextEditor | undefined ) => {
+            if (editor && editor.document) {
+                if (editor.document.languageId === "rust") {
+                    this.displayVerificationResults();
+                }
+            }
+        });
     }
 
     private clearPreviousDecorators(filePath: string): void {

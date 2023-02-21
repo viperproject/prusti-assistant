@@ -31,6 +31,7 @@ function transformEncodingInfo(info: EncodingInfoRaw, root: string, isCrate: boo
         let contractLocations = [];
         for (const sp of cRaw.contracts_spans) {
             let range = parseSpanRange(sp);
+            // let firstLineRange = util.FullLineRange(range);
             let fileUri= vscode.Uri.file(isCrate ? root + sp.file_name : sp.file_name);
             contractLocations.push(new vscode.Location(fileUri, range));
         }

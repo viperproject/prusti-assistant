@@ -140,6 +140,7 @@ export class VerificationManager {
         selectiveVerify: string | undefined,
         isCrate: boolean,
     ): Promise<[VerificationStatus, util.Duration]> {
+        this.cleanPreviousVerification(programPath);
         let prustiArgs: string[] = [];
         if (isCrate) {
             // FIXME: Workaround for warning generation for libs.
@@ -313,6 +314,14 @@ export class VerificationManager {
                 this.verificationStatus.text = prevStatus;
             }
         }
+    }
+
+    /**
+    * Some data-structures need to be cleaned up between verifications of 
+    * the same program / crate. 
+    */
+    public cleanPreviousVerification(programPath: string) {
+        this.svp.cleanPreviousRun(programPath);
     }
 }
 

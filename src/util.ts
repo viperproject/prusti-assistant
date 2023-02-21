@@ -193,10 +193,10 @@ export function spawn(
 
 /**
  * Given a range, possibly spanning multiple lines this function will return a range
- * that includes all of the last line. The purpose of this is that decorators
+ * that includes all of the first line. The purpose of this is that decorators
  * that are displayed "behind" this range, will not be in the middle of some text
  */
-export function full_line_range(range: vscode.Range): vscode.Range {
+export function FullLineRange(range: vscode.Range): vscode.Range {
     let position = new vscode.Position(range.start.line, range.start.character);
     let position_test = new vscode.Position(range.start.line, Number.MAX_SAFE_INTEGER);
 
