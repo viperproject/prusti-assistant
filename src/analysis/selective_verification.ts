@@ -6,7 +6,7 @@ import { VerificationResult, parseVerificationResult } from "./verificationResul
 import { failedVerificationDecorationType, successfulVerificationDecorationType } from "./../toolbox/decorations";
 import { FunctionRef, parseCompilerInfo, CompilerInfo } from "./compilerInfo";
 import { PrustiMessageConsumer } from "./verification"
-import { CallContracts } from "./encodingInfo"
+import { CallContract, parseCallContracts } from "./encodingInfo"
 import { Message } from "./diagnostics"
 
 function pathKey(rootPath: string, methodIdent: string): string {
@@ -24,7 +24,7 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
     private functionCalls: Map<string, FunctionRef[]>;
     private verificationInfo: Map<string, VerificationResult[]>;
     private rangeMap: Map<string, [vscode.Range, string]>;
-    private callContracts: Map<string, CallContracts[]>;
+    private callContracts: Map<string, CallContract[]>;
     private fileStateMap: Map<string, boolean>;
     private fileStateUpdateEmitter: EventEmitter;
     public tokens: string[] = ["EncodingInfo", "CompilerInfo", "IdeVerificationResult"]
@@ -160,7 +160,7 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
         position: vscode.Position, 
         _token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.Definition | vscode.LocationLink[]> {
-        if (config.contractsAsDefinitions()) {
+        if (!config.contractsAsDefinitions()) {
             return [];
         }
         let rootPath = util.getRootPath(document.uri.fsPath);
@@ -235,7 +235,10 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
         const token = msg.message.substring(0, ind);
         switch (token) {
             case "EncodingInfo": {
-                //TODO
+                let callContracts = parseCallContracts(msg.message, isCrate, programPath);
+                if (callContracts !== undefined) {
+                    this.callContracts.set(programPath, callContracts);
+                }
                 break;
             }
             case "CompilerInfo": {

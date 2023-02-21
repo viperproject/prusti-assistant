@@ -3,6 +3,8 @@ import * as vscode from "vscode";
 import { Span, parseSpanRange } from "./diagnostics";
 
 // the Rust types
+// has this type so we can pass it as json but also for possible
+// extensions in the future
 interface EncodingInfoRaw {
     call_contract_spans: CallContractRaw[], 
 };
@@ -13,14 +15,14 @@ interface CallContractRaw {
     contracts_spans: Span[],
 };
 
-export interface CallContracts {
+export interface CallContract {
     name: string,
     callLocation: vscode.Location,
     contractLocations: vscode.Location[], 
 }
 
-function transformEncodingInfo(info: EncodingInfoRaw, root: string, isCrate: boolean): CallContracts[] {
-    let results: CallContracts[] = [];
+function transformEncodingInfo(info: EncodingInfoRaw, root: string, isCrate: boolean): CallContract[] {
+    let results: CallContract[] = [];
     for (const cRaw of info.call_contract_spans) {
         let fileName = isCrate ? root + cRaw.call_span.file_name : cRaw.call_span.file_name;
         let fileUri = vscode.Uri.file(fileName);
@@ -42,9 +44,9 @@ function transformEncodingInfo(info: EncodingInfoRaw, root: string, isCrate: boo
 }
 
 
-export function parseCallContracts(output: string, root: string, isCrate: boolean): CallContracts[] | null {
+export function parseCallContracts(output: string, isCrate: boolean, root: string): CallContract[] | undefined {
     var result;
-    const token = "EncodingInfo ";
+    const token = "EncodingInfo";
     for (const line of output.split("\n")) {
         if (!line.startsWith(token)) {
             continue;
@@ -54,5 +56,5 @@ export function parseCallContracts(output: string, root: string, isCrate: boolea
             return transformEncodingInfo(result, root, isCrate);
         }
     }
-    return null;
+    return undefined;
 }
