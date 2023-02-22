@@ -1,6 +1,6 @@
 import * as util from "./../util";
 import * as vscode from "vscode";
-import { parseSpanRange, Message } from "./diagnostics"
+import { parseSpanRange, Message, CargoMessage } from "./diagnostics"
 import { PrustiMessageConsumer } from "./verification"
 
 function strToRange(range_str: string): vscode.Range {
@@ -12,8 +12,7 @@ export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, P
     // key1: fileName, key2: stringified range, value: [quantifier string, triggers string]
     private state_map: Map<string, Map<string, [string, string]>>;
     private hover_register: vscode.Disposable;
-    private token = "QuantifierChosenTriggersMessage";
-    public tokens: string[] = [this.token];
+    private token = "quantifierChosenTriggersMessage";
 
     public constructor() {
         this.state_map = new Map<string, Map<string, [string, string]>>();
@@ -80,6 +79,10 @@ export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, P
         util.log("QuantifierChosenTriggersProvider consumed " + msg);
         this.update(fileName, viper_quant, triggers, range);
     }
+
+    public processCargoMessage(msg: CargoMessage, isCrate: boolean, programPath: string): void {
+        this.processMessage(msg.message, isCrate, programPath);
+    }
 }
 
 export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvider, vscode.HoverProvider, PrustiMessageConsumer {
@@ -92,8 +95,7 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
     private inlay_register: vscode.Disposable;
     private hover_register: vscode.Disposable;
     private changed: boolean = false;
-    private token: string = "QuantifierInstantiationsMessage";
-    public tokens: string[] = [this.token];
+    private token: string = "quantifierInstantiationsMessage";
 
     public constructor() {
         this.state_map = new Map<string, Map<string, Map<string, number>>>();
@@ -196,7 +198,6 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
     }
 
     public processMessage(msg: Message, isCrate: boolean, _programPath: string): void {
-        // TODO: check with crates
         if (msg.spans.length !== 1) {
             util.log("ERROR: multiple spans for a quantifier.");
         }
@@ -209,5 +210,9 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
 
         util.log("QuantifierInstantiationsProvider consumed " + msg);
         this.update(fileName, method, instantiations, range);
+    }
+
+    public processCargoMessage(msg: CargoMessage, isCrate: boolean, programPath: string): void {
+        this.processMessage(msg.message, isCrate, programPath);
     }
 }

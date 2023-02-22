@@ -4,12 +4,13 @@ import * as vscode from "vscode";
 import * as path from "path"
 import * as dependencies from "../dependencies";
 import * as vvt from "vs-verification-toolbox";
-import { VerificationDiagnostics, Message } from "./diagnostics";
+import { VerificationDiagnostics, Message, CargoMessage } from "./diagnostics";
 import { QuantifierInstantiationsProvider, QuantifierChosenTriggersProvider} from "./quantifiers";
 import { SelectiveVerificationProvider} from "./selective_verification";
 
 export interface PrustiMessageConsumer extends vscode.Disposable {
     processMessage(msg: Message, isCrate: boolean, programPath: string): void,
+    processCargoMessage(msg: CargoMessage, isCrate: boolean, programPath: string): void,
 }
 
 export enum VerificationTarget {
@@ -88,7 +89,7 @@ export class VerificationManager {
             const parsable = buffer.substring(0, ind);
             buffer = buffer.substring(ind+1);
             for (const line of parsable.split("\n")) {
-                const msg = util.getRustcMessage(line);
+                let msg = util.getRustcMessage(line);
                 if (msg === undefined) {
                     continue;
                 }
@@ -96,17 +97,17 @@ export class VerificationManager {
                 const token = msg.message.substring(0, ind);
                 let part: PrustiMessageConsumer = this.verificationDiagnostics;
                 switch (token) {
-                    case "IdeVerificationResult":
-                    case "CompilerInfo":
-                    case "EncodingInfo": {
+                    case "ideVerificationResult":
+                    case "compilerInfo":
+                    case "encodingInfo": {
                         part = this.svp;
                         break;
                     }
-                    case "QuantifierInstantiationsMessage": {
+                    case "quantifierInstantiationsMessage": {
                         part = this.qip;
                         break;
                     }
-                    case "QuantifierChosenTriggersMessage": {
+                    case "quantifierChosenTriggersMessage": {
                         part = this.qctp;
                         break;
                     }
@@ -126,7 +127,33 @@ export class VerificationManager {
             const parsable = buffer.substring(0, ind);
             buffer = buffer.substring(ind+1);
             for (const line of parsable.split("\n")) {
-                this.verificationDiagnostics.process_stdout(line, isCrate, programPath);
+                const cargoMsg = util.getCargoMessage(line);
+                if (cargoMsg === undefined) {
+                    continue;
+                }
+                const msg = cargoMsg.message;
+                const ind = msg.message.indexOf("{");
+                const token = msg.message.substring(0, ind);
+                util.log("Found message with token: "+token);
+                let part: PrustiMessageConsumer = this.verificationDiagnostics;
+                switch (token) {
+                    case "ideVerificationResult":
+                    case "compilerInfo":
+                    case "encodingInfo": {
+                        part = this.svp;
+                        break;
+                    }
+                    case "quantifierInstantiationsMessage": {
+                        part = this.qip;
+                        break;
+                    }
+                    case "quantifierChosenTriggersMessage": {
+                        part = this.qctp;
+                        break;
+                    }
+                    default: {}
+                }
+                part.processCargoMessage(cargoMsg, isCrate, programPath)
             }
         }
         return on_output;
@@ -188,8 +215,8 @@ export class VerificationManager {
                     cwd: cwd,
                     env: prustiEnv,
                 },
-                onStdout: on_stdout,
-                onStderr: on_stderr,
+                onStdout: isCrate ? on_stdout: undefined,
+                onStderr: isCrate ? undefined : on_stderr,
             },
             this.procDestructors,
         );

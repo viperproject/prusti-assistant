@@ -70,7 +70,7 @@ function transformCompilerInfo(info: CompilerInfoRaw, isCrate: boolean, root: st
 
 export function parseCompilerInfo(line: string, isCrate: boolean, root: string): CompilerInfo | undefined {
     let result: CompilerInfoRaw;
-    let token = "CompilerInfo";
+    let token = "compilerInfo";
     if (!line.startsWith(token)) {
         return undefined;
     }

@@ -47,7 +47,7 @@ function transformEncodingInfo(info: EncodingInfoRaw, root: string, isCrate: boo
 
 export function parseCallContracts(output: string, isCrate: boolean, root: string): CallContract[] | undefined {
     var result;
-    const token = "EncodingInfo";
+    const token = "encodingInfo";
     for (const line of output.split("\n")) {
         if (!line.startsWith(token)) {
             continue;

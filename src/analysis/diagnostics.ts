@@ -120,11 +120,9 @@ function parseDiagnostic(msg_raw: CargoMessage|Message, programPath: string, def
     let isCargo: boolean = util.isCargoMessage(msg_raw);
     if (isCargo) {
         // this is a CargoMessage
-        console.log("PARSE CARGO MESSAGE");
         msg = (msg_raw as CargoMessage).message;
     } else {
         // this is a rustc message
-        console.log("PARSE RUSTC MESSAGE");
         msg = (msg_raw as Message);
     }
     console.log(msg);
@@ -354,18 +352,15 @@ export class VerificationDiagnostics implements PrustiMessageConsumer {
         return true;
     }
 
-    public process_stdout(line: string, isCrate: boolean, programPath: string): void {
-        let prustiMessage = util.getCargoMessage(line);
-        if (prustiMessage !== undefined) {
-            let diag = parseDiagnostic(prustiMessage, programPath);
-            util.log("STDOUT: VerificationDiagnostics consumed " + line);
-            this.add_and_render(diag);
-        }
-    }
-
     public processMessage(msg: Message, isCrate: boolean, programPath: string): void {
         let diag = parseDiagnostic(msg, programPath);
-        util.log("VerificationDiagnostics consumed " + msg);
+        util.log("Consumed rustc message");
+        this.add_and_render(diag);
+    }
+
+    public processCargoMessage(msg: CargoMessage, isCrate: boolean, programPath: string): void {
+        let diag = parseDiagnostic(msg, programPath);
+        util.log("Consumed cargo message");
         this.add_and_render(diag);
     }
 }

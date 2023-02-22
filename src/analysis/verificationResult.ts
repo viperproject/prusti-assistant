@@ -22,7 +22,7 @@ function splitName(name: string) : [string, string] {
     // position of the underscore
     let position = name.search(".rs_") + 3;
     let filename = name.substring(0, position);
-    util.log("verification info with filename: " + filename);
+    util.log("verification result with filename: " + filename);
     let methodPath = name.substring(position+1);
     return [filename, methodPath]
 }
@@ -40,7 +40,7 @@ function transformVerificationResult(rawRes: VerificationResultRaw, isCrate: boo
 }
 
 export function parseVerificationResult(line: string, isCrate: boolean, rootPath: string): VerificationResult | undefined {
-    const token = "IdeVerificationResult";
+    const token = "ideVerificationResult";
     if (!line.startsWith(token)) {
         return undefined;
     }

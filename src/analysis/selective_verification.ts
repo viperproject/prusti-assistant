@@ -7,7 +7,7 @@ import { failedVerificationDecorationType, successfulVerificationDecorationType 
 import { FunctionRef, parseCompilerInfo, CompilerInfo } from "./compilerInfo";
 import { PrustiMessageConsumer } from "./verification"
 import { CallContract, parseCallContracts } from "./encodingInfo"
-import { Message } from "./diagnostics"
+import { Message, CargoMessage } from "./diagnostics"
 
 function pathKey(rootPath: string, methodIdent: string): string {
     return rootPath + ":" + methodIdent;
@@ -28,7 +28,6 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
     private callContracts: Map<string, CallContract[]>;
     private fileStateMap: Map<string, boolean>;
     private fileStateUpdateEmitter: EventEmitter;
-    public tokens: string[] = ["EncodingInfo", "CompilerInfo", "IdeVerificationResult"]
 
     public constructor() {
         this.decorations = new Map();
@@ -255,30 +254,37 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
         const ind = msg.message.indexOf("{");
         const token = msg.message.substring(0, ind);
         switch (token) {
-            case "EncodingInfo": {
+            case "encodingInfo": {
                 let callContracts = parseCallContracts(msg.message, isCrate, programPath);
                 if (callContracts !== undefined) {
+                    util.log("Consumed encodingInfo");
                     this.callContracts.set(programPath, callContracts);
+                } else {
+                    util.log("Invalid encodingInfo");
                 }
                 break;
             }
-            case "CompilerInfo": {
+            case "compilerInfo": {
                 let compilerInfo = parseCompilerInfo(msg.message, isCrate, programPath);
                 if (compilerInfo !== undefined) {
-                    util.log("Consumed CompilerInfo");
+                    util.log("Consumed compilerInfo");
                     this.addCompilerInfo(compilerInfo);
+                } else {
+                    util.log("Invalid compilerInfo");
                 }
                 break;
             }
-            case "IdeVerificationResult": {
+            case "ideVerificationResult": {
                 let verificationResult = parseVerificationResult(msg.message, isCrate, programPath);
                 if (verificationResult !== undefined) {
                     if (this.verificationInfo.get(programPath) === undefined) {
                         this.verificationInfo.set(programPath, []);
                     }
                     this.verificationInfo.get(programPath)!.push(verificationResult);
-                    util.log("Consumed IdeVerificationResult");
+                    util.log("Consumed ideVerificationResult");
                     this.displayVerificationResults();
+                } else {
+                    util.log("Invalid ideVerificationResult");
                 }
                 break;
             }
@@ -286,5 +292,9 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
                 util.log("ERROR: should never happen.");
             }
         }
+    }
+
+    public processCargoMessage(msg: CargoMessage, isCrate: boolean, programPath: string): void {
+        this.processMessage(msg.message, isCrate, programPath);
     }
 }
