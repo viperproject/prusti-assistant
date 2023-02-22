@@ -34,7 +34,7 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
         this.procedureDefs = new Map();
         this.functionCalls = new Map();
         this.verificationInfo = new Map();
-        this.rangeMap = new Map(); 
+        this.rangeMap = new Map();
         this.callContracts = new Map();
         this.fileStateMap = new Map();
         this.fileStateUpdateEmitter = new EventEmitter();
@@ -43,7 +43,7 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
         this.definitionRegister = vscode.languages.registerDefinitionProvider('rust', this);
         this.resultOnTabChangeRegister = this.registerDecoratorOnTabChange();
     }
-    
+
     public dispose() {
         this.lensRegister.dispose();
         this.actionRegister.dispose();
@@ -55,7 +55,7 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
     // from previous verifications will be gone.
     public cleanPreviousRun(programPath: string) {
         this.verificationInfo.set(programPath, []);
-        
+
         let editor = vscode.window.activeTextEditor;
         if (editor !== undefined) {
             this.clearPreviousDecorators(editor.document.uri.fsPath);
@@ -67,21 +67,21 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
     }
 
     private async codelensPromise(
-        document: vscode.TextDocument, 
+        document: vscode.TextDocument,
         _token: vscode.CancellationToken
     ): Promise<vscode.CodeLens[]> {
         const codeLenses: vscode.CodeLens[] = [];
         let rootPath = util.getRootPath(document.uri.fsPath);
         let procDefs = this.procedureDefs.get(rootPath);
         let fileState = this.fileStateMap.get(document.uri.fsPath);
-        
-        
-        if (fileState !== undefined ) {
+
+
+        if (fileState !== undefined) {
             if (fileState) {
                 // it has already been read and we should wait for
                 // an update. Should there be an await?
                 await new Promise(resolve => {
-                    this.fileStateUpdateEmitter.once('updated' + document.uri.fsPath, () => resolve );
+                    this.fileStateUpdateEmitter.once('updated' + document.uri.fsPath, () => resolve);
                 });
             } // otherwise just proceed since this file's current info has not been
             // read yet..
@@ -91,7 +91,7 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
             procDefs?.forEach((pd: FunctionRef) => {
                 if (pd.fileName === document.uri.fsPath) {
                     const codeLens = new vscode.CodeLens(pd.range);
-                    codeLens.command = { 
+                    codeLens.command = {
                         title: "✓ Verify " + pd.identifier,
                         command: "prusti-assistant.verify-selective",
                         arguments: [pd.identifier]
@@ -169,8 +169,8 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
     }
 
     public provideDefinition(
-        document: vscode.TextDocument, 
-        position: vscode.Position, 
+        document: vscode.TextDocument,
+        position: vscode.Position,
         _token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.Definition | vscode.LocationLink[]> {
         if (!config.contractsAsDefinitions()) {
@@ -181,13 +181,13 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
         if (callContracts === undefined) {
             return [];
         }
-        
+
         for (const callCont of callContracts) {
             let sameFile = callCont.callLocation.uri.fsPath === document.uri.fsPath;
             let containsPos = callCont.callLocation.range.contains(position);
             if (sameFile && containsPos) {
                 return callCont.contractLocations;
-            } 
+            }
         }
         return [];
     }

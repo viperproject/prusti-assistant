@@ -128,7 +128,7 @@ export class VerificationDiagnostics implements PrustiMessageConsumer {
 
     constructor() {
         this.diagnostics = new Map<string, vscode.Diagnostic[]>();
-        this.diagnosticCollection = vscode.languages.createDiagnosticCollection("prusti"); 
+        this.diagnosticCollection = vscode.languages.createDiagnosticCollection("prusti");
     }
 
     public dispose() {

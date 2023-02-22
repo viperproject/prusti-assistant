@@ -6,7 +6,7 @@ import { Span, parseSpanRange } from "./message";
 // has this type so we can pass it as json but also for possible
 // extensions in the future
 interface EncodingInfoRaw {
-    call_contract_spans: CallContractRaw[], 
+    call_contract_spans: CallContractRaw[],
 };
 
 interface CallContractRaw {
@@ -18,7 +18,7 @@ interface CallContractRaw {
 export interface CallContract {
     name: string,
     callLocation: vscode.Location,
-    contractLocations: vscode.Location[], 
+    contractLocations: vscode.Location[],
 }
 
 function transformEncodingInfo(info: EncodingInfoRaw, root: string, isCrate: boolean): CallContract[] {
