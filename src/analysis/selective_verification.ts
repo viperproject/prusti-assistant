@@ -56,9 +56,13 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
     // from previous verifications will be gone.
     public cleanPreviousRun(programPath: string) {
         this.verificationInfo.set(programPath, []);
+        
+        let editor = vscode.window.activeTextEditor;
+        if (editor !== undefined) {
+            this.clearPreviousDecorators(editor.document.uri.fsPath);
+        }
     }
 
-    // TODO: I probably broke something here
     public provideCodeLenses(document: vscode.TextDocument, token: vscode.CancellationToken): Promise<vscode.CodeLens[]> {
         return this.codelensPromise(document, token);
     }
@@ -90,7 +94,6 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
                     codeLens.command = { 
                         title: "✓ Verify " + pd.identifier,
                         command: "prusti-assistant.verify-selective",
-                        // TODO: invoke selective verification here
                         arguments: [pd.identifier]
                     };
                     codeLenses.push(codeLens);

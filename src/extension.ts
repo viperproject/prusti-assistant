@@ -153,7 +153,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Define verification function
     async function verify(document: vscode.TextDocument, skip_verify: boolean, selective_verify: string | undefined) {
         util.log(`Run verification on ${document.uri.fsPath}...`);
-        projects.update();
+        await projects.update();
         const cratePath = projects.getParent(document.uri.fsPath);
 
         if (server.address === undefined) {
@@ -267,17 +267,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             }
         })
     );
-    /* TODO: fix this
-    context.subscriptions.push(
-        vscode.window.onDidChangeActiveTextEditor(async (editor: vscode.TextEditor | undefined ) => {
-            if (editor && editor.document) {
-                if (editor.document.languageId === "rust") {
-                    displayResults();
-                }
-            }
-        })
-    )
-    */
 
     // Verify on activation, if verifyOnOpen is set, otherwise still call prusti
     // but just collect IDE info.

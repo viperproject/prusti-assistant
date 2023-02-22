@@ -260,7 +260,7 @@ export function getRootPath(filePath: string): string {
     let res;
     let parent = projects.getParent(filePath);
     if (parent !== undefined) {
-        res = parent.path + "/";
+        res = parent.path;
     } else {
         res = filePath;
     }
