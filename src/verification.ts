@@ -1,17 +1,13 @@
-import * as util from "./../util";
-import * as config from "./../config"
 import * as vscode from "vscode";
 import * as path from "path"
-import * as dependencies from "../dependencies";
 import * as vvt from "vs-verification-toolbox";
-import { VerificationDiagnostics, Message, CargoMessage } from "./diagnostics";
-import { QuantifierInstantiationsProvider, QuantifierChosenTriggersProvider} from "./quantifiers";
-import { SelectiveVerificationProvider} from "./selective_verification";
-
-export interface PrustiMessageConsumer extends vscode.Disposable {
-    processMessage(msg: Message, isCrate: boolean, programPath: string): void,
-    processCargoMessage(msg: CargoMessage, isCrate: boolean, programPath: string): void,
-}
+import * as util from "./util";
+import * as config from "./config"
+import * as dependencies from "./dependencies";
+import { VerificationDiagnostics } from "./analysis/diagnostics";
+import { PrustiMessageConsumer, getRustcMessage, getCargoMessage } from "./analysis/message";
+import { QuantifierInstantiationsProvider, QuantifierChosenTriggersProvider } from "./analysis/quantifiers";
+import { SelectiveVerificationProvider} from "./analysis/selectiveVerification";
 
 export enum VerificationTarget {
     StandaloneFile = "file",
@@ -81,85 +77,59 @@ export class VerificationManager {
         this.procDestructors.forEach((kill) => kill());
     }
 
-    private build_stderr_closure(isCrate: boolean, programPath: string) {
+    private findConsumer(token: string): PrustiMessageConsumer {
+        switch (token) {
+            case "ideVerificationResult":
+            case "compilerInfo":
+            case "encodingInfo": {
+                return this.svp;
+            }
+            case "quantifierInstantiationsMessage": {
+                return this.qip;
+            }
+            case "quantifierChosenTriggersMessage": {
+                return this.qctp;
+            }
+            default: {
+                return this.verificationDiagnostics;
+            }
+        }
+    }
+
+    private buildOutputClosure(isCrate: boolean, programPath: string) {
         let buffer = "";
-        const on_output = (data: string) => {
+        const onOutput = (data: string) => {
             buffer = buffer.concat(data);
             const ind = buffer.lastIndexOf("\n");
             const parsable = buffer.substring(0, ind);
             buffer = buffer.substring(ind+1);
             for (const line of parsable.split("\n")) {
-                let msg = util.getRustcMessage(line);
-                if (msg === undefined) {
-                    continue;
+                if (isCrate) {
+                    const cargoMsg = getCargoMessage(line);
+                    if (cargoMsg === undefined) {
+                        continue;
+                    }
+                    const msg = cargoMsg.message;
+                    const ind = msg.message.indexOf("{");
+                    const token = msg.message.substring(0, ind);
+                    const part = this.findConsumer(token);
+                    part.processCargoMessage(cargoMsg, isCrate, programPath)
+                } else {
+                    const msg = getRustcMessage(line);
+                    if (msg === undefined) {
+                        continue;
+                    }
+                    const ind = msg.message.indexOf("{");
+                    const token = msg.message.substring(0, ind);
+                    const part = this.findConsumer(token);
+                    part.processMessage(msg, isCrate, programPath)
                 }
-                const ind = msg.message.indexOf("{");
-                const token = msg.message.substring(0, ind);
-                let part: PrustiMessageConsumer = this.verificationDiagnostics;
-                switch (token) {
-                    case "ideVerificationResult":
-                    case "compilerInfo":
-                    case "encodingInfo": {
-                        part = this.svp;
-                        break;
-                    }
-                    case "quantifierInstantiationsMessage": {
-                        part = this.qip;
-                        break;
-                    }
-                    case "quantifierChosenTriggersMessage": {
-                        part = this.qctp;
-                        break;
-                    }
-                    default: {}
-                }
-                part.processMessage(msg, isCrate, programPath)
             }
         }
-        return on_output;
+        return onOutput;
     }
 
-    private build_stdout_closure(isCrate: boolean, programPath: string) {
-        let buffer = "";
-        const on_output = (data: string) => {
-            buffer = buffer.concat(data);
-            const ind = buffer.lastIndexOf("\n");
-            const parsable = buffer.substring(0, ind);
-            buffer = buffer.substring(ind+1);
-            for (const line of parsable.split("\n")) {
-                const cargoMsg = util.getCargoMessage(line);
-                if (cargoMsg === undefined) {
-                    continue;
-                }
-                const msg = cargoMsg.message;
-                const ind = msg.message.indexOf("{");
-                const token = msg.message.substring(0, ind);
-                util.log("Found message with token: "+token);
-                let part: PrustiMessageConsumer = this.verificationDiagnostics;
-                switch (token) {
-                    case "ideVerificationResult":
-                    case "compilerInfo":
-                    case "encodingInfo": {
-                        part = this.svp;
-                        break;
-                    }
-                    case "quantifierInstantiationsMessage": {
-                        part = this.qip;
-                        break;
-                    }
-                    case "quantifierChosenTriggersMessage": {
-                        part = this.qctp;
-                        break;
-                    }
-                    default: {}
-                }
-                part.processCargoMessage(cargoMsg, isCrate, programPath)
-            }
-        }
-        return on_output;
-    }
-
-    private async run_and_process_output(
+    private async runAndProcessOutput(
         prusti: dependencies.PrustiLocation,
         programPath: string,
         serverAddress: string,
@@ -204,9 +174,9 @@ export class VerificationManager {
             },
             ...config.extraPrustiEnv(),
         };
+        util.log(JSON.stringify(prustiEnv));
         const cwd = isCrate ? programPath : path.dirname(programPath);
-        const on_stderr = this.build_stderr_closure(isCrate, programPath);
-        const on_stdout = this.build_stdout_closure(isCrate, programPath);
+        const onOutput= this.buildOutputClosure(isCrate, programPath);
         const output = await util.spawn(
             isCrate ? prusti.cargoPrusti : prusti.prustiRustc,
             prustiArgs,
@@ -215,8 +185,8 @@ export class VerificationManager {
                     cwd: cwd,
                     env: prustiEnv,
                 },
-                onStdout: isCrate ? on_stdout: undefined,
-                onStderr: isCrate ? undefined : on_stderr,
+                onStdout: isCrate ? onOutput : undefined,
+                onStderr: isCrate ? undefined : onOutput,
             },
             this.procDestructors,
         );
@@ -252,14 +222,13 @@ export class VerificationManager {
         return [status, output.duration];
     }
 
-    public async verify(prusti: dependencies.PrustiLocation, serverAddress: string, targetPath: string, target: VerificationTarget, skip_verification: boolean, selective_verify: string | undefined): Promise<void> {
+    public async verify(prusti: dependencies.PrustiLocation, serverAddress: string, targetPath: string, target: VerificationTarget, skipVerification: boolean, selectiveVerify: string | undefined): Promise<void> {
         // Prepare verification
         this.runCount += 1;
         const currentRun = this.runCount;
         util.log(`Preparing verification run #${currentRun}.`);
         this.killAll();
         this.killAllButton.show();
-        util.log(serverAddress);
 
 
         this.verificationDiagnostics.reset();
@@ -268,7 +237,7 @@ export class VerificationManager {
         const escapedFileName = path.basename(targetPath).replace("$", "\\$");
         const prevStatus = this.verificationStatus.text;
 
-        if (!skip_verification) {
+        if (!skipVerification) {
             this.verificationStatus.text = `$(sync~spin) Verifying ${target} '${escapedFileName}'...`;
         } else {
             this.verificationStatus.text = `$(sync~spin) Analyzing ${target} '${escapedFileName}'...`;
@@ -280,13 +249,13 @@ export class VerificationManager {
             "See the log (View -> Output -> Prusti Assistant) for more details.";
         let crashed = false;
         try {
-            util.log("starting verification");
-            let [status, duration] = await this.run_and_process_output(
+            util.log("Starting verification");
+            let [status, duration] = await this.runAndProcessOutput(
                     prusti,
                     targetPath,
                     serverAddress,
-                    skip_verification,
-                    selective_verify,
+                    skipVerification,
+                    selectiveVerify,
                     target === VerificationTarget.Crate
             );
 
@@ -337,15 +306,15 @@ export class VerificationManager {
                 this.verificationStatus.text = `$(check) Verification of ${target} '${escapedFileName}' succeeded (${durationSecMsg} s)`;
                 this.verificationStatus.command = undefined;
             }
-            if (skip_verification) {
+            if (skipVerification) {
                 this.verificationStatus.text = prevStatus;
             }
         }
     }
 
     /**
-    * Some data-structures need to be cleaned up between verifications of 
-    * the same program / crate. 
+    * Some data-structures need to be cleaned up between verifications of
+    * the same program / crate.
     */
     public cleanPreviousVerification(programPath: string) {
         this.svp.cleanPreviousRun(programPath);

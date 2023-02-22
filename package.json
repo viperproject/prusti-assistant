@@ -188,7 +188,7 @@
                 "prusti-assistant.showViperMessages": {
                     "type": "boolean",
                     "default": true,
-                    "description": "If enabled more information about quantifiers is available."
+                    "description": "If enabled more information about quantifiers is available. This feature has to be enabled also server-side (done by this extension)."
                 }
             }
         }

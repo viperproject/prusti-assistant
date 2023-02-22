@@ -120,6 +120,7 @@ export async function restart(context: vscode.ExtensionContext, verificationStat
         ...process.env,  // Needed to run Rustup
         ...{
             JAVA_HOME: (await config.javaHome())!.path,
+            PRUSTI_REPORT_VIPER_MESSAGES: config.reportViperMessages() ? "true" : "false",
         },
         ...config.extraPrustiEnv(),
     };

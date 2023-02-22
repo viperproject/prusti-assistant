@@ -5,7 +5,7 @@ import * as checks from "./checks";
 import { prusti, installDependencies, prustiVersion } from "./dependencies";
 import * as server from "./server";
 import * as state from "./state";
-import * as verification from "./analysis/verification";
+import * as verification from "./verification";
 import { projects } from "./projects";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {

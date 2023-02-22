@@ -2,57 +2,9 @@ import * as util from "../util";
 import * as config from "../config";
 import * as vscode from "vscode";
 import * as path from "path";
-import { PrustiMessageConsumer } from "./verification";
-
-// ========================================================
-// JSON Schemas
-// ========================================================
-
-export interface CargoMessage {
-    message: Message;
-    target: Target;
-}
-
-interface Target {
-    src_path: string;
-}
-
-export interface Message {
-    children: Message[];
-    code: Code | null;
-    level: Level;
-    message: string;
-    spans: Span[];
-}
-
-interface Code {
-    code: string;
-    explanation: string;
-}
-
-enum Level {
-    Error = "error",
-    Help = "help",
-    Note = "note",
-    Warning = "warning",
-    Empty = "",
-}
-
-export interface Span {
-    column_end: number;
-    column_start: number;
-    file_name: string;
-    is_primary: boolean;
-    label: string | null;
-    line_end: number;
-    line_start: number;
-    expansion: Expansion | null;
-}
-
-interface Expansion {
-    span: Span;
-}
-
+import { PrustiMessageConsumer, Message, CargoMessage, isCargoMessage,
+         Span, parseSpanRange, parseMultiSpanRange,
+         getCallSiteSpan, dummyRange, mapDiagnosticLevel } from "./message";
 
 // ========================================================
 // Diagnostic Parsing
@@ -63,61 +15,12 @@ interface Diagnostic {
     diagnostic: vscode.Diagnostic;
 }
 
-function parseDiagnosticLevel(level: Level): vscode.DiagnosticSeverity {
-    switch (level) {
-        case Level.Error: return vscode.DiagnosticSeverity.Error;
-        case Level.Note: return vscode.DiagnosticSeverity.Information;
-        case Level.Help: return vscode.DiagnosticSeverity.Hint;
-        case Level.Warning: return vscode.DiagnosticSeverity.Warning;
-        case Level.Empty: return vscode.DiagnosticSeverity.Information;
-        default: return vscode.DiagnosticSeverity.Error;
-    }
-}
-
-function dummyRange(): vscode.Range {
-    return new vscode.Range(0, 0, 0, 0);
-}
-
-function parseMultiSpanRange(multiSpan: Span[]): vscode.Range {
-    let finalRange;
-    for (const span of multiSpan) {
-        const range = parseSpanRange(span);
-        if (finalRange === undefined) {
-            finalRange = range;
-        } else {
-            // Merge
-            finalRange = finalRange.union(range);
-        }
-    }
-    return finalRange ?? dummyRange();
-}
-
-export function parseSpanRange(span: Span): vscode.Range {
-    let col_start = span.column_start - 1;
-    if (span.column_start == 0) {
-        col_start = 0;
-    }
-    return new vscode.Range(
-        span.line_start - 1,
-        col_start,
-        span.line_end - 1,
-        span.column_end - 1,
-    );
-}
-
-function getCallSiteSpan(span: Span): Span {
-    while (span.expansion !== null) {
-        span = span.expansion.span;
-    }
-    return span;
-}
-
 /**
  * Parses a message into a diagnostic.
  */
 function parseDiagnostic(msg_raw: CargoMessage|Message, programPath: string, defaultRange?: vscode.Range): Diagnostic {
     let msg: Message;
-    let isCargo: boolean = util.isCargoMessage(msg_raw);
+    let isCargo: boolean = isCargoMessage(msg_raw);
     if (isCargo) {
         // this is a CargoMessage
         msg = (msg_raw as CargoMessage).message;
@@ -126,7 +29,7 @@ function parseDiagnostic(msg_raw: CargoMessage|Message, programPath: string, def
         msg = (msg_raw as Message);
     }
     console.log(msg);
-    const level = parseDiagnosticLevel(msg.level);
+    const level = mapDiagnosticLevel(msg.level);
 
 
     // Read primary message
@@ -219,8 +122,8 @@ function parseDiagnostic(msg_raw: CargoMessage|Message, programPath: string, def
 export class VerificationDiagnostics implements PrustiMessageConsumer {
     private diagnostics: Map<string, vscode.Diagnostic[]>;
     private diagnosticCollection: vscode.DiagnosticCollection;
-    private last_rendered_time: number = 0;
-    private last_diagnostic: Diagnostic|null = null;
+    private lastRenderedTime: number = 0;
+    private lastDiagnostic: Diagnostic|null = null;
     public tokens = [""];
 
     constructor() {
@@ -313,15 +216,15 @@ export class VerificationDiagnostics implements PrustiMessageConsumer {
             const filePath = diagnostic.file_path;
             const fileDiagnostics = this.diagnostics.get(filePath);
             const uri = vscode.Uri.file(filePath);
-            this.last_diagnostic = diagnostic;
+            this.lastDiagnostic = diagnostic;
             setTimeout(() => {
                 // thresholding: we render if more than 50ms have passed since the last
-                // time we rendered or when we are the last_diagnostic
-                if (this.last_diagnostic === diagnostic || Date.now() - this.last_rendered_time >= 50) {
+                // time we rendered or when we are the lastDiagnostic
+                if (this.lastDiagnostic === diagnostic || Date.now() - this.lastRenderedTime >= 50) {
                     this.renderIn();
-                    this.last_rendered_time = Date.now();
+                    this.lastRenderedTime = Date.now();
                 }
-            }, Math.max(50 - (Date.now() - this.last_rendered_time), 0))
+            }, Math.max(50 - (Date.now() - this.lastRenderedTime), 0))
         }
     }
 

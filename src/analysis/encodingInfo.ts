@@ -1,6 +1,6 @@
 import * as util from "./../util";
 import * as vscode from "vscode";
-import { Span, parseSpanRange } from "./diagnostics";
+import { Span, parseSpanRange } from "./message";
 
 // the Rust types
 // has this type so we can pass it as json but also for possible

@@ -1,7 +1,6 @@
 import * as childProcess from "child_process";
 import * as vscode from "vscode";
 import * as treeKill from "tree-kill";
-import { CargoMessage, Message } from "./analysis/diagnostics"
 import { projects } from "./projects";
 
 export function userInfo(message: string, statusBar?: vscode.StatusBarItem): void {
@@ -201,55 +200,6 @@ export function FullLineRange(range: vscode.Range): vscode.Range {
     let position_test = new vscode.Position(range.start.line, Number.MAX_SAFE_INTEGER);
 
     return new vscode.Range(position, position_test)
-}
-
-// we could implement some more thorough checking, but for now, this suffices
-export function isCargoMessage(msg: Message|CargoMessage): msg is CargoMessage {
-    return ((msg as CargoMessage).target !== undefined);
-}
-
-export function isValidCargoMessage(msg: CargoMessage): boolean {
-    return (msg.message !== undefined && isValidRustcMessage(msg.message));
-}
-
-export function isValidRustcMessage(msg: Message) {
-    // TODO: remove FakeError once fixed
-    return (msg.message !== undefined && msg.message !== "[Prusti: FakeError]");
-}
-
-export function getCargoMessage(line: string): CargoMessage|undefined {
-    if (line[0] != "{") {
-        return undefined;
-    }
-    const msg = JSON.parse(line) as CargoMessage;
-    if (!isValidCargoMessage(msg)) {
-        return undefined;
-    }
-    return msg;
-}
-
-export function getRustcMessage(line: string): Message|undefined {
-    if (line[0] != "{") {
-        return undefined;
-    }
-    const msg = JSON.parse(line) as Message;
-    if (!isValidRustcMessage(msg)) {
-        return undefined;
-    }
-    return msg;
-}
-
-export function getMessage(line: string, isCargo: boolean): Message|undefined {
-    if (isCargo) {
-        const cargoMessage = getCargoMessage(line);
-        if (cargoMessage !== undefined) {
-            return cargoMessage.message;
-        }
-        return undefined;
-    } else {
-        const rustcMessage = getRustcMessage(line);
-        return rustcMessage;
-    }
 }
 
 /** Either returns the path to the root of the crate containing

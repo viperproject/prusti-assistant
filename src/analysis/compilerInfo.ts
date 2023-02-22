@@ -1,7 +1,7 @@
 import * as util from "./../util";
 import * as vscode from "vscode";
 import * as path from "path";
-import { Span, parseSpanRange } from "./diagnostics";
+import { Span, parseSpanRange } from "./message";
 
 // Additional Schemas for Custom information for IDE:
 interface CompilerInfoRaw {

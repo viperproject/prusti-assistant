@@ -5,19 +5,19 @@ import { EventEmitter } from "events";
 import { VerificationResult, parseVerificationResult } from "./verificationResult";
 import { failedVerificationDecorationType, successfulVerificationDecorationType } from "./../toolbox/decorations";
 import { FunctionRef, parseCompilerInfo, CompilerInfo } from "./compilerInfo";
-import { PrustiMessageConsumer } from "./verification"
 import { CallContract, parseCallContracts } from "./encodingInfo"
-import { Message, CargoMessage } from "./diagnostics"
+import { PrustiMessageConsumer, Message, CargoMessage } from "./message"
 
 function pathKey(rootPath: string, methodIdent: string): string {
     return rootPath + ":" + methodIdent;
 }
 
 export class SelectiveVerificationProvider implements vscode.CodeLensProvider, vscode.CodeActionProvider, PrustiMessageConsumer {
-    private lens_register: vscode.Disposable;
-    private actions_register: vscode.Disposable;
+    private lensRegister: vscode.Disposable;
+    private actionRegister: vscode.Disposable;
     private definitionRegister: vscode.Disposable;
     private resultOnTabChangeRegister: vscode.Disposable;
+
     private decorations: Map<string, vscode.TextEditorDecorationType[]>;
     // for proc_defs we also have a boolean on whether these values
     // were already requested (for codelenses)
@@ -38,16 +38,15 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
         this.callContracts = new Map();
         this.fileStateMap = new Map();
         this.fileStateUpdateEmitter = new EventEmitter();
-        this.lens_register = vscode.languages.registerCodeLensProvider('rust', this);
-        this.actions_register = vscode.languages.registerCodeActionsProvider('rust', this);
+        this.lensRegister = vscode.languages.registerCodeLensProvider('rust', this);
+        this.actionRegister = vscode.languages.registerCodeActionsProvider('rust', this);
         this.definitionRegister = vscode.languages.registerDefinitionProvider('rust', this);
         this.resultOnTabChangeRegister = this.registerDecoratorOnTabChange();
     }
     
-
     public dispose() {
-        this.lens_register.dispose();
-        this.actions_register.dispose();
+        this.lensRegister.dispose();
+        this.actionRegister.dispose();
         this.definitionRegister.dispose();
         this.resultOnTabChangeRegister.dispose();
     }
@@ -66,7 +65,8 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
     public provideCodeLenses(document: vscode.TextDocument, token: vscode.CancellationToken): Promise<vscode.CodeLens[]> {
         return this.codelensPromise(document, token);
     }
-    async codelensPromise(
+
+    private async codelensPromise(
         document: vscode.TextDocument, 
         _token: vscode.CancellationToken
     ): Promise<vscode.CodeLens[]> {

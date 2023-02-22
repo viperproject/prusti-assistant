@@ -1,4 +1,3 @@
-import * as util from "./../util";
 import * as vscode from "vscode";
 import * as path from "path";
 
@@ -22,7 +21,6 @@ function splitName(name: string) : [string, string] {
     // position of the underscore
     let position = name.search(".rs_") + 3;
     let filename = name.substring(0, position);
-    util.log("verification result with filename: " + filename);
     let methodPath = name.substring(position+1);
     return [filename, methodPath]
 }
