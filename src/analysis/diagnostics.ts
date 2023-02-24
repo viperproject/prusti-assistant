@@ -255,14 +255,14 @@ export class VerificationDiagnostics implements PrustiMessageConsumer {
         return true;
     }
 
-    public processMessage(msg: Message, isCrate: boolean, programPath: string): void {
-        let diag = parseDiagnostic(msg, programPath);
+    public processMessage(msg: Message, isCrate: boolean, rootPath: string): void {
+        let diag = parseDiagnostic(msg, rootPath);
         util.log("Consumed rustc message");
         this.add_and_render(diag);
     }
 
-    public processCargoMessage(msg: CargoMessage, isCrate: boolean, programPath: string): void {
-        let diag = parseDiagnostic(msg, programPath);
+    public processCargoMessage(msg: CargoMessage, isCrate: boolean, rootPath: string): void {
+        let diag = parseDiagnostic(msg, rootPath);
         util.log("Consumed cargo message");
         this.add_and_render(diag);
     }

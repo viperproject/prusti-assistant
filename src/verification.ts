@@ -174,7 +174,6 @@ export class VerificationManager {
             },
             ...config.extraPrustiEnv(),
         };
-        util.log(JSON.stringify(prustiEnv));
         const cwd = isCrate ? programPath : path.dirname(programPath);
         const onOutput= this.buildOutputClosure(isCrate, programPath);
         const output = await util.spawn(

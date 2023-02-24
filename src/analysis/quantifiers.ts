@@ -1,5 +1,6 @@
-import * as util from "./../util";
+import * as util from "../util";
 import * as vscode from "vscode";
+import * as path from "path";
 import { PrustiMessageConsumer, parseSpanRange, Message, CargoMessage, dummyRange } from "./message"
 
 function strToRange(rangeStr: string): vscode.Range {
@@ -66,7 +67,7 @@ export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, P
         this.hoverRegister.dispose();
     }
 
-    public processMessage(msg: Message, isCrate: boolean, _programPath: string): void {
+    public processMessage(msg: Message, isCrate: boolean, rootPath: string): void {
         if (msg.spans.length !== 1) {
             util.log("ERROR: multiple spans for a quantifier.");
         }
@@ -77,12 +78,12 @@ export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, P
         const viperQuant = parsedMsg["viper_quant"];
         const triggers = parsedMsg["triggers"];
 
-        util.log("QuantifierChosenTriggersProvider consumed " + msg);
-        this.update(fileName, viperQuant, triggers, range);
+        util.log("QuantifierChosenTriggersProvider consumed " + JSON.stringify(msg));
+        this.update(isCrate ? path.join(rootPath, fileName) : fileName, viperQuant, triggers, range);
     }
 
-    public processCargoMessage(msg: CargoMessage, isCrate: boolean, programPath: string): void {
-        this.processMessage(msg.message, isCrate, programPath);
+    public processCargoMessage(msg: CargoMessage, isCrate: boolean, rootPath: string): void {
+        this.processMessage(msg.message, isCrate, rootPath);
     }
 }
 
@@ -198,7 +199,7 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
         this.hoverRegister.dispose();
     }
 
-    public processMessage(msg: Message, isCrate: boolean, _programPath: string): void {
+    public processMessage(msg: Message, isCrate: boolean, rootPath: string): void {
         if (msg.spans.length !== 1) {
             util.log("ERROR: multiple spans for a quantifier.");
         }
@@ -209,11 +210,11 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
         const method = parsedMsg["method"];
         const instantiations = parsedMsg["instantiations"];
 
-        util.log("QuantifierInstantiationsProvider consumed " + msg);
-        this.update(fileName, method, instantiations, range);
+        util.log("QuantifierInstantiationsProvider consumed " + JSON.stringify(msg));
+        this.update(isCrate ? path.join(rootPath, fileName) : fileName, method, instantiations, range);
     }
 
-    public processCargoMessage(msg: CargoMessage, isCrate: boolean, programPath: string): void {
-        this.processMessage(msg.message, isCrate, programPath);
+    public processCargoMessage(msg: CargoMessage, isCrate: boolean, rootPath: string): void {
+        this.processMessage(msg.message, isCrate, rootPath);
     }
 }

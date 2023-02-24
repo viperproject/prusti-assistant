@@ -253,22 +253,22 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
         this.force_codelens_update();
     }
 
-    public processMessage(msg: Message, isCrate: boolean, programPath: string): void {
+    public processMessage(msg: Message, isCrate: boolean, rootPath: string): void {
         const ind = msg.message.indexOf("{");
         const token = msg.message.substring(0, ind);
         switch (token) {
             case "encodingInfo": {
-                let callContracts = parseCallContracts(msg.message, isCrate, programPath);
+                let callContracts = parseCallContracts(msg.message, isCrate, rootPath);
                 if (callContracts !== undefined) {
                     util.log("Consumed encodingInfo");
-                    this.callContracts.set(programPath, callContracts);
+                    this.callContracts.set(rootPath, callContracts);
                 } else {
                     util.log("Invalid encodingInfo");
                 }
                 break;
             }
             case "compilerInfo": {
-                let compilerInfo = parseCompilerInfo(msg.message, isCrate, programPath);
+                let compilerInfo = parseCompilerInfo(msg.message, isCrate, rootPath);
                 if (compilerInfo !== undefined) {
                     util.log("Consumed compilerInfo");
                     this.addCompilerInfo(compilerInfo);
@@ -278,12 +278,12 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
                 break;
             }
             case "ideVerificationResult": {
-                let verificationResult = parseVerificationResult(msg.message, isCrate, programPath);
+                let verificationResult = parseVerificationResult(msg.message, isCrate, rootPath);
                 if (verificationResult !== undefined) {
-                    if (this.verificationInfo.get(programPath) === undefined) {
-                        this.verificationInfo.set(programPath, []);
+                    if (this.verificationInfo.get(rootPath) === undefined) {
+                        this.verificationInfo.set(rootPath, []);
                     }
-                    this.verificationInfo.get(programPath)!.push(verificationResult);
+                    this.verificationInfo.get(rootPath)!.push(verificationResult);
                     util.log("Consumed ideVerificationResult");
                     this.displayVerificationResults();
                 } else {
@@ -297,7 +297,7 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
         }
     }
 
-    public processCargoMessage(msg: CargoMessage, isCrate: boolean, programPath: string): void {
-        this.processMessage(msg.message, isCrate, programPath);
+    public processCargoMessage(msg: CargoMessage, isCrate: boolean, rootPath: string): void {
+        this.processMessage(msg.message, isCrate, rootPath);
     }
 }

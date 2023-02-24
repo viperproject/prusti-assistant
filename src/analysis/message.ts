@@ -1,8 +1,8 @@
 import * as vscode from "vscode";
 
 export interface PrustiMessageConsumer extends vscode.Disposable {
-    processMessage(msg: Message, isCrate: boolean, programPath: string): void,
-    processCargoMessage(msg: CargoMessage, isCrate: boolean, programPath: string): void,
+    processMessage(msg: Message, isCrate: boolean, rootPath: string): void,
+    processCargoMessage(msg: CargoMessage, isCrate: boolean, rootPath: string): void,
 }
 
 // ========================================================
