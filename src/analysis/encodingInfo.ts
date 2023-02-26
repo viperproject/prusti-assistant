@@ -2,9 +2,10 @@ import * as util from "./../util";
 import * as vscode from "vscode";
 import { Span, parseSpanRange } from "./message";
 
-// the Rust types
-// has this type so we can pass it as json but also for possible
-// extensions in the future
+/** the Rust types:
+* has this nested type so we can pass it as json but also for possible
+* extensions in the future
+*/
 interface EncodingInfoRaw {
     call_contract_spans: CallContractRaw[],
 };
@@ -15,6 +16,9 @@ interface CallContractRaw {
     contracts_spans: Span[],
 };
 
+/** The defpath and position of a function call and the ranges of all
+* its contract-items that we can get(some are missing at the moment)
+*/
 export interface CallContract {
     name: string,
     callLocation: vscode.Location,

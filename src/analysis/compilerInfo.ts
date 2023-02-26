@@ -36,6 +36,9 @@ export interface FunctionRef {
     range: vscode.Range,
 }
 
+/** Transform spans to ranges (rust repr. vs vscode representation) and
+* adjust paths of spans (for crates they are relative to root folder)
+*/
 function transformCompilerInfo(info: CompilerInfoRaw, isCrate: boolean, root: string): CompilerInfo {
     const result: CompilerInfo = {
         rootPath: root,

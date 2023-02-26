@@ -151,7 +151,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     );
 
     // Define verification function
-    async function verify(document: vscode.TextDocument, skip_verify: boolean, selective_verify: string | undefined) {
+    async function verify(
+        document: vscode.TextDocument,
+        skipVerify: boolean,
+        defPathArg: {
+            selectiveVerification?: string,
+            externalSpecRequest?: string,
+        }
+    ) {
         util.log(`Run verification on ${document.uri.fsPath}...`);
         await projects.update();
         const cratePath = projects.getParent(document.uri.fsPath);
@@ -176,8 +183,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 server.address || "",
                 document.uri.fsPath,
                 verification.VerificationTarget.StandaloneFile,
-                skip_verify,
-                selective_verify
+                skipVerify,
+                defPathArg
             );
         } else {
             await verificationManager.verify(
@@ -185,8 +192,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 server.address || "",
                 cratePath.path,
                 verification.VerificationTarget.Crate,
-                skip_verify,
-                selective_verify,
+                skipVerify,
+                defPathArg,
             );
         }
     }
@@ -197,7 +204,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             const activeTextEditor = vscode.window.activeTextEditor;
             if (activeTextEditor !== undefined) {
                 await activeTextEditor.document.save().then(
-                    () => verify(activeTextEditor.document, false, undefined)
+                    () => verify(activeTextEditor.document, false, {})
                 );
             } else {
                 util.log("vscode.window.activeTextEditor is not ready yet.");
@@ -209,9 +216,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         vscode.commands.registerCommand(verifySelectiveCommand, async (name: string) => {
             const activeTextEditor = vscode.window.activeTextEditor;
             util.log("Verify selective received arg: " + name);
+            let defPathArg = {
+                selectiveVerification: name,
+            }
             if (activeTextEditor !== undefined) {
                 await activeTextEditor.document.save().then(
-                    () => verify(activeTextEditor.document, false, name)
+                    () => verify(activeTextEditor.document, false, defPathArg)
                 );
             }
         })
@@ -220,10 +230,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     context.subscriptions.push(
         vscode.commands.registerCommand(queryMethodSignatureCommand, async (name: string) => {
             const activeTextEditor = vscode.window.activeTextEditor;
-            util.log("Verify selective received arg: " + name);
+            let defPathArg = {
+                externalSpecRequest: name,
+            }
             if (activeTextEditor !== undefined) {
                 await activeTextEditor.document.save().then(
-                    () => verify(activeTextEditor.document, true, name)
+                    () => verify(activeTextEditor.document, true, defPathArg)
                 );
             }
         })
@@ -235,7 +247,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             const activeTextEditor = vscode.window.activeTextEditor;
             if (activeTextEditor !== undefined) {
                 await activeTextEditor.document.save().then(
-                    () => verify(activeTextEditor.document, true, undefined)
+                    () => verify(activeTextEditor.document, true, {})
                 );
             } else {
                 util.log("vscode.window.activeTextEditor is not ready yet.");
@@ -248,9 +260,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {
             const is_prusti_toml = document.fileName.endsWith("Prusti.toml");
             if ((is_prusti_toml || document.languageId === "rust") && config.verifyOnSave()) {
-                await verify(document, false, undefined);
+                await verify(document, false, {});
             } else {
-                await verify(document, true, undefined);
+                await verify(document, true, {});
             }
         })
     );
@@ -260,9 +272,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         vscode.workspace.onDidOpenTextDocument(async (document: vscode.TextDocument) => {
             if (document.languageId === "rust") {
                 if (config.verifyOnOpen()) {
-                    await verify(document, false, undefined);
+                    await verify(document, false, {});
                 } else {
-                    await verify(document, true, undefined);
+                    if (!verificationManager.wasVerifiedBefore(document.uri.fsPath)) {
+                        await verify(document, true, {});
+                    }
                 }
             }
         })
@@ -275,7 +289,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             await verify(
                 vscode.window.activeTextEditor.document,
                 !config.verifyOnOpen(),
-                undefined
+                {}
             );
         }
     } else {

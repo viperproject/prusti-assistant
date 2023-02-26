@@ -12,7 +12,18 @@ function pathKey(rootPath: string, methodIdent: string): string {
     return rootPath + ":" + methodIdent;
 }
 
-export class SelectiveVerificationProvider implements vscode.CodeLensProvider, vscode.CodeActionProvider, PrustiMessageConsumer {
+/** A collection of information that is maintained to provide the following
+* features:
+* - selective verification: there is codeLens above each function that can
+*   be verified, and when clicked on will verify that method only.
+* - extern_spec templates: for each function call to a method outside our current
+*   care we provide a CodeAction to generate a extern_spec block for that method.
+* - verification results: display within text editor if methods failed or succeeded
+*   verification, how long it took, and whether the result was cached.
+* - Contracts of calls: for each function call, a user can request the specification
+*   of that method, i.e. contract items of that method.
+*/
+export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActionProvider, PrustiMessageConsumer {
     private lensRegister: vscode.Disposable;
     private actionRegister: vscode.Disposable;
     private definitionRegister: vscode.Disposable;
@@ -51,8 +62,9 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
         this.resultOnTabChangeRegister.dispose();
     }
 
-    // what do we need to do before a verification such that the results
-    // from previous verifications will be gone.
+    /** what do we need to do before a verification such that the results
+    * from previous verifications will be gone.
+    */
     public cleanPreviousRun(programPath: string) {
         this.verificationInfo.set(programPath, []);
 
@@ -62,6 +74,20 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
         }
     }
 
+    /** When opening a new file, check whether it is part of a crate that
+    * has been verified before. Before in this context means while vscode
+    * was running.
+    */
+    public wasVerifiedBefore(programPath: string): boolean {
+        let root = util.getRootPath(programPath);
+        return (this.verificationInfo.get(root) !== undefined)
+    }
+
+
+    /** CodeLenses should annotate all items in a crate or program that can
+    * be verified. They are clickable which will result in a selective
+    * verification of this method.
+    */
     public provideCodeLenses(document: vscode.TextDocument, token: vscode.CancellationToken): Promise<vscode.CodeLens[]> {
         return this.codelensPromise(document, token);
     }
@@ -76,34 +102,42 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
         let fileState = this.fileStateMap.get(document.uri.fsPath);
 
 
-        if (fileState !== undefined) {
-            if (fileState) {
-                // it has already been read and we should wait for
-                // an update. Should there be an await?
-                await new Promise(resolve => {
-                    this.fileStateUpdateEmitter.once('updated' + document.uri.fsPath, () => resolve);
-                });
-            } // otherwise just proceed since this file's current info has not been
-            // read yet..
-
-            this.fileStateMap.set(document.uri.fsPath, true);
-
-            procDefs?.forEach((pd: FunctionRef) => {
-                if (pd.fileName === document.uri.fsPath) {
-                    const codeLens = new vscode.CodeLens(pd.range);
-                    codeLens.command = {
-                        title: "✓ Verify " + pd.identifier,
-                        command: "prusti-assistant.verify-selective",
-                        arguments: [pd.identifier]
-                    };
-                    codeLenses.push(codeLens);
-                }
+        if (fileState === undefined) {
+            return [];
+        } else if (fileState) {
+            // it has already been read and we should wait for an update
+            // otherwise providing this info again will only cause the ranges
+            // to be out-of-date, meaning they end up in the wrong places.
+            await new Promise(resolve => {
+                this.fileStateUpdateEmitter.once('updated' + document.uri.fsPath, () => resolve);
             });
         }
-        // await delay(0);
+        // otherwise just proceed since this file's current info has not been
+        // read before, so the stored info is still correct (unless of
+        // course people start editing files from other editors, but that's
+        // not our concern here)
+
+        this.fileStateMap.set(document.uri.fsPath, true);
+        // mark the info for this file as "read" or dirty or however to interpret this
+
+        procDefs?.forEach((pd: FunctionRef) => {
+            if (pd.fileName === document.uri.fsPath) {
+                const codeLens = new vscode.CodeLens(pd.range);
+                codeLens.command = {
+                    title: "✓ Verify " + pd.identifier,
+                    command: "prusti-assistant.verify-selective",
+                    arguments: [pd.identifier]
+                };
+                codeLenses.push(codeLens);
+            }
+        });
         return codeLenses;
     }
 
+    /* CodeActions should be provided at every function call. When they
+    * are invoked, we will run prusti to request a block of code that
+    * contains a template for creating extern_specs for that function.
+    */
     public provideCodeActions(
             document: vscode.TextDocument,
             range: vscode.Range,
@@ -112,8 +146,6 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
         ): vscode.CodeAction[] {
         const codeActions: vscode.CodeAction[] = [];
 
-        // figure out whether or not this file is part of a crate, or a
-        // standalone file
         let rootPath = util.getRootPath(document.uri.fsPath);
         let fnCalls = this.functionCalls.get(rootPath);
 
@@ -137,6 +169,11 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
         return codeActions;
     }
 
+    /** To make the results of a verification run more readable, we add
+    * some decorations here. We display a green checkmark or x depending on the
+    * result, and also some greyed out text, containing the duration
+    * for the verification, and whether the result is cached or not
+    */
     private displayVerificationResults(): void {
         let activeEditor = vscode.window.activeTextEditor;
         let editorFilePath = activeEditor?.document.uri.fsPath;
@@ -168,6 +205,11 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
         }
     }
 
+    /** When calling functions, it would often be useful to see the full
+    * contract of this call. More as a prototype, we provide the spans of the
+    * contracts as definitions, so a user can "peek-definitions" to see
+    * the various items of a calls contract. This feature is configurable
+    */
     public provideDefinition(
         document: vscode.TextDocument,
         position: vscode.Position,
@@ -192,6 +234,9 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
         return [];
     }
 
+    /** When changing the tab of a file, in case there is a verification-result
+    * to display, this function makes sure this is happening.
+    */
     private registerDecoratorOnTabChange(): vscode.Disposable {
         return vscode.window.onDidChangeActiveTextEditor(async (editor: vscode.TextEditor | undefined ) => {
             if (editor && editor.document) {
@@ -202,6 +247,10 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
         });
     }
 
+    /** Clear decorators of a file. Needed when the same file or crate is
+    * verified multiple times, because otherwise some of the decorations
+    * start to appear twice.
+    */
     private clearPreviousDecorators(filePath: string): void {
         let prev = this.decorations.get(filePath);
         if (prev !== undefined) {
@@ -211,8 +260,7 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
         }
     }
 
-    /**
-     * very primitive way of causing a re-rendering of the Codelenses in the
+    /** Very primitive way of causing a re-rendering of the Codelenses in the
      * current file. This was needed because in some cases it took quite a few
      * seconds until they were updated.
      */
@@ -227,11 +275,19 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
     }
 
     public addCompilerInfo(info: CompilerInfo): void {
+        // if prusti returns an extern_spec template, we move it to the
+        // clipboard. This happens independently of whether it was actually
+        // requested, so currently there is no error if this fails.
         if (info.queriedSource) {
-            // yet to be formatted:
             vscode.env.clipboard.writeText(info.queriedSource);
             util.userInfoPopup("Template for extern spec. is now on your clipboard.");
         }
+
+        // create all sorts of data structures that will be practical:
+        let rootPath = info.rootPath;
+        util.log(`Adding CompilerInfo to path: ${rootPath}`);
+        this.procedureDefs.set(rootPath, info.procedureDefs);
+        this.functionCalls.set(rootPath, info.functionCalls);
 
         info.distinctFiles.forEach((fileName) => {
             // mark each file's information as "not read yet"
@@ -239,12 +295,6 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
             // and then notify CodeLensHandlers of the update
             this.fileStateUpdateEmitter.emit('updated' + fileName);
         })
-        // create all sorts of data structures that will be practical:
-        let rootPath = info.rootPath;
-        util.log(`Adding CompilerInfo to path: ${rootPath}`);
-        this.procedureDefs.set(rootPath, info.procedureDefs);
-        this.functionCalls.set(rootPath, info.functionCalls);
-
         info.procedureDefs.forEach((pd: FunctionRef) => {
             let key: string = pathKey(rootPath, pd.identifier);
             this.rangeMap.set(key, [pd.range, pd.fileName]);
