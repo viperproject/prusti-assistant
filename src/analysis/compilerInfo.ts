@@ -77,7 +77,7 @@ export function parseCompilerInfo(line: string, isCrate: boolean, root: string):
     // Parse the message into a diagnostic.
     result = JSON.parse(line.substring(token.length)) as CompilerInfoRaw;
     if (result.procedure_defs !== undefined) {
-        util.log("Parsed raw IDE info. Found "
+        util.log("Parsed raw CompilerInfo. Found "
             + result.procedure_defs.length
             + " procedure defs and "
             + result.function_calls.length

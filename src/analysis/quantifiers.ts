@@ -12,11 +12,27 @@ export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, P
     // key1: fileName, key2: stringified range, value: [quantifier string, triggers string]
     private stateMap: Map<string, Map<string, [string, string]>>;
     private hoverRegister: vscode.Disposable;
+    private onDocumentChangeRegister: vscode.Disposable;
     private token = "quantifierChosenTriggersMessage";
 
     public constructor() {
         this.stateMap = new Map<string, Map<string, [string, string]>>();
         this.hoverRegister = vscode.languages.registerHoverProvider('rust', this);
+        this.onDocumentChangeRegister = this.registerOnDocumentChange();
+    }
+
+    private registerOnDocumentChange(): vscode.Disposable {
+        return vscode.workspace.onDidChangeTextDocument(
+            async (event: vscode.TextDocumentChangeEvent) => {
+                if (event.document.languageId === "rust") {
+                    this.invalidateDocument(event.document.fileName);
+                }
+            });
+    }
+
+    private invalidateDocument(fileName: string) {
+        util.log(`QCTP: invalidate ${fileName}`);
+        this.stateMap.set(fileName, new Map());
     }
 
     private getHoverText(document: vscode.TextDocument, position: vscode.Position): string|undefined {
@@ -53,6 +69,11 @@ export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, P
         return new vscode.Hover(md_text);
     }
 
+    public reset(): void {
+        util.log("QCTP: reset");
+        this.stateMap = new Map();
+    }
+
     public update(fileName: string, quantifier: string, triggers: string, range: vscode.Range): void {
         if (!this.stateMap.has(fileName)) {
             const rangeMap = new Map<string, [string, string]>();
@@ -65,6 +86,7 @@ export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, P
 
     public dispose() {
         this.hoverRegister.dispose();
+        this.onDocumentChangeRegister.dispose();
     }
 
     public processMessage(msg: Message, isCrate: boolean, rootPath: string): void {
@@ -78,7 +100,7 @@ export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, P
         const viperQuant = parsedMsg["viper_quant"];
         const triggers = parsedMsg["triggers"];
 
-        util.log("QuantifierChosenTriggersProvider consumed " + JSON.stringify(msg));
+        util.log("QuantifierChosenTriggersProvider consumed msg");
         this.update(isCrate ? path.join(rootPath, fileName) : fileName, viperQuant, triggers, range);
     }
 
@@ -96,6 +118,7 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
     private inlayCacheMap: Map<string, vscode.InlayHint[]>
     private inlayRegister: vscode.Disposable;
     private hoverRegister: vscode.Disposable;
+    private onDocumentChangeRegister: vscode.Disposable;
     private changed: boolean = false;
     private token: string = "quantifierInstantiationsMessage";
 
@@ -104,15 +127,37 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
         this.inlayCacheMap = new Map<string, vscode.InlayHint[]>();
         this.hoverRegister = vscode.languages.registerHoverProvider('rust', this);
         this.inlayRegister = vscode.languages.registerInlayHintsProvider('rust', this);
-        setInterval(() => this.reregisterInlayHintsProvider(), 1000);
+        this.onDocumentChangeRegister = this.registerOnDocumentChange();
+        setInterval(() => this.changed ? this.reregisterInlayHintsProvider() : {}, 1000);
     }
 
     private reregisterInlayHintsProvider(): void {
-        if (this.changed) {
-            this.inlayRegister.dispose();
-            this.inlayRegister = vscode.languages.registerInlayHintsProvider('rust', this);
-            util.log("Successfully reregistered InlayHintsProvider");
-        }
+        this.inlayRegister.dispose();
+        this.inlayRegister = vscode.languages.registerInlayHintsProvider('rust', this);
+        util.log("Successfully reregistered InlayHintsProvider");
+    }
+
+    private registerOnDocumentChange(): vscode.Disposable {
+        return vscode.workspace.onDidChangeTextDocument(
+            async (event: vscode.TextDocumentChangeEvent) => {
+                if (event.document.languageId === "rust") {
+                    this.invalidateDocument(event.document.fileName);
+                }
+            });
+    }
+
+    private invalidateDocument(fileName: string) {
+        util.log(`QIP: invalidate ${fileName}`);
+        this.stateMap.set(fileName, new Map());
+        this.inlayCacheMap.set(fileName, []);
+        this.reregisterInlayHintsProvider();
+    }
+
+    public reset(): void {
+        util.log("QIP: reset");
+        this.stateMap = new Map();
+        this.inlayCacheMap = new Map();
+        this.reregisterInlayHintsProvider();
     }
 
     public provideInlayHints(document: vscode.TextDocument, range: vscode.Range, _token: vscode.CancellationToken): vscode.InlayHint[] {
@@ -139,7 +184,7 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
             this.changed = false;
         }
         const ret = this.inlayCacheMap.get(document.fileName)!;
-        return this.inlayCacheMap.get(document.fileName)!;
+        return ret;
     }
 
     public resolveInlayHint(hint: vscode.InlayHint, _token: vscode.CancellationToken): vscode.InlayHint {
@@ -197,6 +242,7 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
     public dispose() {
         this.inlayRegister.dispose();
         this.hoverRegister.dispose();
+        this.onDocumentChangeRegister.dispose();
     }
 
     public processMessage(msg: Message, isCrate: boolean, rootPath: string): void {
@@ -210,7 +256,7 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
         const method = parsedMsg["method"];
         const instantiations = parsedMsg["instantiations"];
 
-        util.log("QuantifierInstantiationsProvider consumed " + JSON.stringify(msg));
+        util.log("QuantifierInstantiationsProvider consumed msg");
         this.update(isCrate ? path.join(rootPath, fileName) : fileName, method, instantiations, range);
     }
 

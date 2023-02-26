@@ -78,6 +78,11 @@ export function userInfoPopup(message: string, actionLabel?: string, action?: ()
     }
 }
 
+const subProcessLogChannel = vscode.window.createOutputChannel("Prusti Assistant Subprocesses")
+function logSubProcess(message: string): void {
+    subProcessLogChannel.appendLine(message);
+}
+
 const logChannel = vscode.window.createOutputChannel("Prusti Assistant");
 export function log(message: string): void {
     console.log(message);
@@ -159,14 +164,14 @@ export function spawn(
 
     function printOutput(duration: Duration, code: number | null, signal: NodeJS.Signals | null) {
         const durationSecMsg = (duration[0] + duration[1] / 1e9).toFixed(1);
-        log(`Output from '${description}' (${durationSecMsg}s):`);
-        log("┌──── Begin stdout ────┐");
-        log(stdout);
-        log("└──── End stdout ──────┘");
-        log("┌──── Begin stderr ────┐");
-        log(stderr);
-        log("└──── End stderr ──────┘");
-        log(`Exit code ${code}, signal ${signal}.`);
+        logSubProcess(`Output from '${description}' (${durationSecMsg}s):`);
+        logSubProcess("┌──── Begin stdout ────┐");
+        logSubProcess(stdout);
+        logSubProcess("└──── End stdout ──────┘");
+        logSubProcess("┌──── Begin stderr ────┐");
+        logSubProcess(stderr);
+        logSubProcess("└──── End stderr ──────┘");
+        logSubProcess(`Exit code ${code}, signal ${signal}.`);
     }
 
     return new Promise((resolve, reject) => {

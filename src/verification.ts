@@ -96,9 +96,12 @@ export class VerificationManager {
         }
     }
 
-    private buildOutputClosure(isCrate: boolean, programPath: string) {
+    private buildOutputClosure(isCrate: boolean, programPath: string, currentRun: number) {
         let buffer = "";
         const onOutput = (data: string) => {
+            if (currentRun != this.runCount) {
+                return;
+            }
             buffer = buffer.concat(data);
             const ind = buffer.lastIndexOf("\n");
             const parsable = buffer.substring(0, ind);
@@ -136,8 +139,8 @@ export class VerificationManager {
         skipVerify: boolean,
         selectiveVerify: string | undefined,
         isCrate: boolean,
+        currentRun: number,
     ): Promise<[VerificationStatus, util.Duration]> {
-        this.cleanPreviousVerification(programPath);
         let prustiArgs: string[] = [];
         if (isCrate) {
             // FIXME: Workaround for warning generation for libs.
@@ -165,7 +168,6 @@ export class VerificationManager {
                 PRUSTI_SERVER_ADDRESS: serverAddress,
                 PRUSTI_SHOW_IDE_INFO: "true",
                 PRUSTI_SKIP_VERIFICATION: skipVerify ? "true" : "false",
-                //TODO: @cedihegi: the environment was set up differently for rustc and cargo. I took this config. Is this correct?
                 PRUSTI_SELECTIVE_VERIFY: skipVerify ? undefined : selectiveVerify,
                 PRUSTI_QUERY_METHOD_SIGNATURE: skipVerify ? selectiveVerify : undefined,
                 PRUSTI_REPORT_VIPER_MESSAGES: config.reportViperMessages() ? "true" : "false",
@@ -175,7 +177,7 @@ export class VerificationManager {
             ...config.extraPrustiEnv(),
         };
         const cwd = isCrate ? programPath : path.dirname(programPath);
-        const onOutput= this.buildOutputClosure(isCrate, programPath);
+        const onOutput= this.buildOutputClosure(isCrate, programPath, currentRun);
         const output = await util.spawn(
             isCrate ? prusti.cargoPrusti : prusti.prustiRustc,
             prustiArgs,
@@ -221,16 +223,22 @@ export class VerificationManager {
         return [status, output.duration];
     }
 
-    public async verify(prusti: dependencies.PrustiLocation, serverAddress: string, targetPath: string, target: VerificationTarget, skipVerification: boolean, selectiveVerify: string | undefined): Promise<void> {
+    public async verify(prusti: dependencies.PrustiLocation,
+                        serverAddress: string,
+                        targetPath: string,
+                        target: VerificationTarget,
+                        skipVerification: boolean,
+                        selectiveVerify: string | undefined
+                       ): Promise<void> {
         // Prepare verification
         this.runCount += 1;
+        util.log(`VERIFY, targetPath=${targetPath}, target=${target}, skipVerification=${skipVerification}, selectiveVerify=${selectiveVerify}, this.runCount=${this.runCount}`);
         const currentRun = this.runCount;
         util.log(`Preparing verification run #${currentRun}.`);
         this.killAll();
         this.killAllButton.show();
 
-
-        this.verificationDiagnostics.reset();
+        this.clearPreviousVerification(targetPath, target == VerificationTarget.Crate, skipVerification, selectiveVerify);
 
         // Run verification
         const escapedFileName = path.basename(targetPath).replace("$", "\\$");
@@ -255,7 +263,8 @@ export class VerificationManager {
                     serverAddress,
                     skipVerification,
                     selectiveVerify,
-                    target === VerificationTarget.Crate
+                    target === VerificationTarget.Crate,
+                    currentRun
             );
 
             durationSecMsg = (duration[0] + duration[1] / 1e9).toFixed(1);
@@ -278,7 +287,6 @@ export class VerificationManager {
         }
 
         if (currentRun != this.runCount) {
-            // TODO: take this into consideration everywhere
             util.log(`Discarding the result of the verification run #${currentRun}, because the latest is #${this.runCount}.`);
         } else {
             this.killAllButton.hide();
@@ -315,8 +323,13 @@ export class VerificationManager {
     * Some data-structures need to be cleaned up between verifications of
     * the same program / crate.
     */
-    public cleanPreviousVerification(programPath: string) {
-        this.svp.cleanPreviousRun(programPath);
+    public clearPreviousVerification(programPath: string, _isCrate: boolean, skipVerification: boolean, _selectiveVerify: string|undefined) {
+        this.verificationDiagnostics.reset();
+        this.svp.clearPreviousRun(programPath);
+        if (!skipVerification) {
+          this.qip.reset();
+          this.qctp.reset();
+        }
     }
 }
 

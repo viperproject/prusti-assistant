@@ -53,7 +53,7 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
 
     // what do we need to do before a verification such that the results
     // from previous verifications will be gone.
-    public cleanPreviousRun(programPath: string) {
+    public clearPreviousRun(programPath: string) {
         this.verificationInfo.set(programPath, []);
 
         let editor = vscode.window.activeTextEditor;
@@ -216,7 +216,7 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
      * current file. This was needed because in some cases it took quite a few
      * seconds until they were updated.
      */
-    private force_codelens_update(): void {
+    private forceCodelensUpdate(): void {
         const cancel = vscode.languages.registerCodeLensProvider('rust', {
             provideCodeLenses(_document: vscode.TextDocument, _token: vscode.CancellationToken): vscode.CodeLens[] {
                 const codeLenses: vscode.CodeLens[] = [];
@@ -250,7 +250,7 @@ export class SelectiveVerificationProvider implements vscode.CodeLensProvider, v
             this.rangeMap.set(key, [pd.range, pd.fileName]);
         });
 
-        this.force_codelens_update();
+        this.forceCodelensUpdate();
     }
 
     public processMessage(msg: Message, isCrate: boolean, rootPath: string): void {
