@@ -7,7 +7,7 @@ import * as dependencies from "./dependencies";
 import { VerificationDiagnostics } from "./analysis/diagnostics";
 import { PrustiMessageConsumer, getRustcMessage, getCargoMessage } from "./analysis/message";
 import { QuantifierInstantiationsProvider, QuantifierChosenTriggersProvider } from "./analysis/quantifiers";
-import { SelectiveVerificationProvider} from "./analysis/selectiveVerification";
+import { InfoCollection} from "./analysis/infoCollection";
 
 export enum VerificationTarget {
     StandaloneFile = "file",
@@ -47,7 +47,7 @@ export class VerificationManager {
     private verificationDiagnostics: VerificationDiagnostics;
     private qip: QuantifierInstantiationsProvider;
     private qctp: QuantifierChosenTriggersProvider;
-    private svp: SelectiveVerificationProvider;
+    private infoCollection: InfoCollection;
 
     public constructor(verificationStatus: vscode.StatusBarItem, killAllButton: vscode.StatusBarItem) {
         this.verificationStatus = verificationStatus;
@@ -55,7 +55,7 @@ export class VerificationManager {
 
         this.qip = new QuantifierInstantiationsProvider();
         this.qctp = new QuantifierChosenTriggersProvider();
-        this.svp = new SelectiveVerificationProvider();
+        this.infoCollection = new InfoCollection();
         this.verificationDiagnostics = new VerificationDiagnostics();
     }
 
@@ -64,7 +64,7 @@ export class VerificationManager {
         this.killAll();
         this.qip.dispose();
         this.qctp.dispose();
-        this.svp.dispose();
+        this.infoCollection.dispose();
         this.verificationDiagnostics.dispose();
     }
 
@@ -82,7 +82,7 @@ export class VerificationManager {
             case "ideVerificationResult":
             case "compilerInfo":
             case "encodingInfo": {
-                return this.svp;
+                return this.infoCollection;
             }
             case "quantifierInstantiationsMessage": {
                 return this.qip;
@@ -132,12 +132,23 @@ export class VerificationManager {
         return onOutput;
     }
 
+    /** The core function invoking prusti. Not only for verification, but
+    * also to collect other information (without verifying anything).
+    *
+    * @param skipVerify: whether or not verification should be skipped
+    * @param defPathArg: there are 2 cases when we pass a defpath to prusti. One
+    * is for selective verification, the other is when we request a template for
+    * an external specification.
+    */
     private async runAndProcessOutput(
         prusti: dependencies.PrustiLocation,
         programPath: string,
         serverAddress: string,
         skipVerify: boolean,
-        selectiveVerify: string | undefined,
+        defPathArg: {
+            selectiveVerification?: string,
+            externalSpecRequest?: string,
+        },
         isCrate: boolean,
         currentRun: number,
     ): Promise<[VerificationStatus, util.Duration]> {
@@ -168,8 +179,9 @@ export class VerificationManager {
                 PRUSTI_SERVER_ADDRESS: serverAddress,
                 PRUSTI_SHOW_IDE_INFO: "true",
                 PRUSTI_SKIP_VERIFICATION: skipVerify ? "true" : "false",
-                PRUSTI_SELECTIVE_VERIFY: skipVerify ? undefined : selectiveVerify,
-                PRUSTI_QUERY_METHOD_SIGNATURE: skipVerify ? selectiveVerify : undefined,
+                //TODO: @cedihegi: the environment was set up differently for rustc and cargo. I took this config. Is this correct?
+                PRUSTI_SELECTIVE_VERIFY: defPathArg.selectiveVerification,
+                PRUSTI_QUERY_METHOD_SIGNATURE: defPathArg.externalSpecRequest,
                 PRUSTI_REPORT_VIPER_MESSAGES: config.reportViperMessages() ? "true" : "false",
                 PRUSTI_QUIET: "true",
                 JAVA_HOME: (await config.javaHome())!.path,
@@ -223,22 +235,25 @@ export class VerificationManager {
         return [status, output.duration];
     }
 
-    public async verify(prusti: dependencies.PrustiLocation,
-                        serverAddress: string,
-                        targetPath: string,
-                        target: VerificationTarget,
-                        skipVerification: boolean,
-                        selectiveVerify: string | undefined
-                       ): Promise<void> {
+    public async verify(
+        prusti: dependencies.PrustiLocation,
+        serverAddress: string,
+        targetPath: string,
+        target: VerificationTarget,
+        skipVerification: boolean,
+        defPathArg: {
+            selectiveVerification?: string,
+            externalSpecRequest?: string,
+        }
+    ): Promise<void> {
         // Prepare verification
         this.runCount += 1;
-        util.log(`VERIFY, targetPath=${targetPath}, target=${target}, skipVerification=${skipVerification}, selectiveVerify=${selectiveVerify}, this.runCount=${this.runCount}`);
         const currentRun = this.runCount;
         util.log(`Preparing verification run #${currentRun}.`);
         this.killAll();
         this.killAllButton.show();
 
-        this.clearPreviousVerification(targetPath, target == VerificationTarget.Crate, skipVerification, selectiveVerify);
+        this.clearPreviousVerification(targetPath, target == VerificationTarget.Crate, skipVerification, defPathArg);
 
         // Run verification
         const escapedFileName = path.basename(targetPath).replace("$", "\\$");
@@ -262,7 +277,7 @@ export class VerificationManager {
                     targetPath,
                     serverAddress,
                     skipVerification,
-                    selectiveVerify,
+                    defPathArg,
                     target === VerificationTarget.Crate,
                     currentRun
             );
@@ -323,13 +338,25 @@ export class VerificationManager {
     * Some data-structures need to be cleaned up between verifications of
     * the same program / crate.
     */
-    public clearPreviousVerification(programPath: string, _isCrate: boolean, skipVerification: boolean, _selectiveVerify: string|undefined) {
+    public clearPreviousVerification(
+        programPath: string,
+        _isCrate: boolean,
+        skipVerification: boolean,
+        _defPathArg: {
+            selectiveVerification?: string,
+            externalSpecRequest?: string,
+        }
+    ) {
         this.verificationDiagnostics.reset();
-        this.svp.clearPreviousRun(programPath);
+        this.infoCollection.clearPreviousRun(programPath);
         if (!skipVerification) {
           this.qip.reset();
           this.qctp.reset();
         }
+    }
+
+    public wasVerifiedBefore(programPath: string): boolean {
+        return this.infoCollection.wasVerifiedBefore(programPath);
     }
 }
 
