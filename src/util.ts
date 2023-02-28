@@ -200,7 +200,7 @@ export function spawn(
  * that includes all of the first line. The purpose of this is that decorators
  * that are displayed "behind" this range, will not be in the middle of some text
  */
-export function FullLineRange(range: vscode.Range): vscode.Range {
+export function fullLineRange(range: vscode.Range): vscode.Range {
     let position = new vscode.Position(range.start.line, range.start.character);
     let position_test = new vscode.Position(range.start.line, Number.MAX_SAFE_INTEGER);
 

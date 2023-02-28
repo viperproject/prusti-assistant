@@ -1,4 +1,5 @@
 import * as util from "./../util";
+import * as path from "path";
 import * as vscode from "vscode";
 import { Span, parseSpanRange } from "./message";
 
@@ -28,15 +29,16 @@ export interface CallContract {
 function transformEncodingInfo(info: EncodingInfoRaw, root: string, isCrate: boolean): CallContract[] {
     let results: CallContract[] = [];
     for (const cRaw of info.call_contract_spans) {
-        let fileName = isCrate ? root + cRaw.call_span.file_name : cRaw.call_span.file_name;
+        let fileName = isCrate ? path.join(root, cRaw.call_span.file_name) : cRaw.call_span.file_name;
         let fileUri = vscode.Uri.file(fileName);
+        util.log("added Encoding Info for file: " + fileName);
         let callRange = parseSpanRange(cRaw.call_span);
         let callLocation = new vscode.Location(fileUri, callRange);
         let contractLocations = [];
         for (const sp of cRaw.contracts_spans) {
             let range = parseSpanRange(sp);
             // let firstLineRange = util.FullLineRange(range);
-            let fileUri= vscode.Uri.file(isCrate ? root + sp.file_name : sp.file_name);
+            let fileUri = vscode.Uri.file(isCrate ? path.join(root, sp.file_name) : sp.file_name);
             contractLocations.push(new vscode.Location(fileUri, range));
         }
         results.push({

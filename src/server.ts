@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import * as util from "./util";
-import { prusti } from "./dependencies";
+import * as semver from "semver";
+import { prusti, prustiSemanticVersion } from "./dependencies";
 import * as config from "./config";
 import { ServerManager } from "./toolbox/serverManager";
 
@@ -116,11 +117,18 @@ export async function restart(context: vscode.ExtensionContext, verificationStat
     const prustiServerArgs = ["--port=0"].concat(
         config.extraPrustiServerArgs()
     );
+
+    // only set this env variable if prusti has at least version 0.3.0
+    const versionDependentArgs = semver.lt(prustiSemanticVersion, "0.3.0") ? {} :
+        {
+            PRUSTI_REPORT_VIPER_MESSAGES: config.reportViperMessages() ? "true" : "false",
+        };
+
     const prustiServerEnv = {
         ...process.env,  // Needed to run Rustup
+        ...versionDependentArgs,
         ...{
             JAVA_HOME: (await config.javaHome())!.path,
-            PRUSTI_REPORT_VIPER_MESSAGES: config.reportViperMessages() ? "true" : "false",
         },
         ...config.extraPrustiEnv(),
     };

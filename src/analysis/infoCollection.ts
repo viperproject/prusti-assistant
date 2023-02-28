@@ -187,7 +187,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
                 if (location) {
                     let [range, resFilePath] = location;
                     if (resFilePath === editorFilePath) {
-                        let range_line = util.FullLineRange(range);
+                        let range_line = util.fullLineRange(range);
                         var decoration;
                         if (res.success) {
                             decoration = successfulVerificationDecorationType(res.time_ms, res.cached)
@@ -224,11 +224,11 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
             return [];
         }
 
-        for (const callCont of callContracts) {
-            let sameFile = callCont.callLocation.uri.fsPath === document.uri.fsPath;
-            let containsPos = callCont.callLocation.range.contains(position);
+        for (const contract of callContracts) {
+            let sameFile = contract.callLocation.uri.fsPath === document.uri.fsPath;
+            let containsPos = contract.callLocation.range.contains(position);
             if (sameFile && containsPos) {
-                return callCont.contractLocations;
+                return contract.contractLocations;
             }
         }
         return [];

@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import * as config from "./config";
 import * as util from "./util";
 import * as checks from "./checks";
-import { prusti, installDependencies, prustiVersion } from "./dependencies";
+import { prusti, installDependencies, prustiVersion, updatePrustiSemVersion } from "./dependencies";
 import * as server from "./server";
 import * as state from "./state";
 import * as verification from "./verification";
@@ -115,6 +115,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         })
     );
 
+    // Verification manager
+    await updatePrustiSemVersion();
+    const verificationManager = new verification.VerificationManager(
+        verificationStatus,
+        killAllButton,
+    );
+    context.subscriptions.push(verificationManager);
+
     // Update dependencies on config change
     context.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration(async event => {
@@ -132,18 +140,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 util.log("Restart the server because the configuration has changed...");
                 await server.restart(context, verificationStatus);
             }
+            // update version
+            await updatePrustiSemVersion();
+
             // Let the test suite know that the new configuration has been
             // processed
             state.notifyConfigUpdate();
         })
     );
 
-    // Verification manager
-    const verificationManager = new verification.VerificationManager(
-        verificationStatus,
-        killAllButton
-    );
-    context.subscriptions.push(verificationManager);
 
     // Kill-all on command
     context.subscriptions.push(

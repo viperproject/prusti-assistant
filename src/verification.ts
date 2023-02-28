@@ -4,6 +4,7 @@ import * as vvt from "vs-verification-toolbox";
 import * as util from "./util";
 import * as config from "./config"
 import * as dependencies from "./dependencies";
+import * as semver from "semver";
 import { VerificationDiagnostics } from "./analysis/diagnostics";
 import { PrustiMessageConsumer, getRustcMessage, getCargoMessage } from "./analysis/message";
 import { QuantifierInstantiationsProvider, QuantifierChosenTriggersProvider } from "./analysis/quantifiers";
@@ -49,7 +50,10 @@ export class VerificationManager {
     private qctp: QuantifierChosenTriggersProvider;
     private infoCollection: InfoCollection;
 
-    public constructor(verificationStatus: vscode.StatusBarItem, killAllButton: vscode.StatusBarItem) {
+    public constructor(
+        verificationStatus: vscode.StatusBarItem,
+        killAllButton: vscode.StatusBarItem,
+    ) {
         this.verificationStatus = verificationStatus;
         this.killAllButton = killAllButton;
 
@@ -172,17 +176,23 @@ export class VerificationManager {
                 config.extraPrustiRustcArgs()
             );
         }
+
+        // some environment variables can only be passed if we have at least
+        // prusti version 0.3
+        let versionDependentArgs = semver.lt(dependencies.prustiSemanticVersion, "0.3.0") ? {} : {
+            PRUSTI_SHOW_IDE_INFO: "true",
+            PRUSTI_SKIP_VERIFICATION: skipVerify ? "true" : "false",
+            PRUSTI_SELECTIVE_VERIFY: defPathArg.selectiveVerification,
+            PRUSTI_QUERY_METHOD_SIGNATURE: defPathArg.externalSpecRequest,
+            PRUSTI_REPORT_VIPER_MESSAGES: config.reportViperMessages() ? "true" : "false",
+        };
+
         util.log("passed args:" + prustiArgs.toString());
         const prustiEnv = {
             ...process.env,  // Needed to run Rustup
+            ...versionDependentArgs,
             ...{
                 PRUSTI_SERVER_ADDRESS: serverAddress,
-                PRUSTI_SHOW_IDE_INFO: "true",
-                PRUSTI_SKIP_VERIFICATION: skipVerify ? "true" : "false",
-                //TODO: @cedihegi: the environment was set up differently for rustc and cargo. I took this config. Is this correct?
-                PRUSTI_SELECTIVE_VERIFY: defPathArg.selectiveVerification,
-                PRUSTI_QUERY_METHOD_SIGNATURE: defPathArg.externalSpecRequest,
-                PRUSTI_REPORT_VIPER_MESSAGES: config.reportViperMessages() ? "true" : "false",
                 PRUSTI_QUIET: "true",
                 JAVA_HOME: (await config.javaHome())!.path,
             },
@@ -358,5 +368,15 @@ export class VerificationManager {
     public wasVerifiedBefore(programPath: string): boolean {
         return this.infoCollection.wasVerifiedBefore(programPath);
     }
+
+    // public setVersion(version: string) {
+    //     if (!semver.valid(version)) {
+    //         // just to make sure this would not go unnoticed
+    //         util.userInfo("There was a problem figuring out your version of Prusti");
+    //         this.version = "0.0";
+    //     } else {
+    //         this.version = version;
+    //     }
+    // }
 }
 
