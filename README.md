@@ -47,7 +47,7 @@ If anything fails, check the "Troubleshooting" section below.
 
 This extension provides the following commands:
 
-* `Prusti: verify the current crate or file` to verify a Rust program;
+* `Prusti: verify the current crate or file` to verify a Rust program. Clicking the "Verify with Prusti" button in the status bar runst this command.
 * `Prusti: update verifier` to update Prusti.
 * `Prusti: show version` to show the version of Prusti.
 * `Prusti: restart Prusti server` to restart the Prusti server used by this extension.
@@ -90,3 +90,5 @@ If Prusti fails to run, you can inspect Prusti's log from VS Code (View -> Outpu
 | On macOS running on an M1 chip, the extension doesn't work and the log contains messages such as `incompatible architecture (have (arm64), need (x86_64))`. | We currently don't release precompiled arm64 binaries for macOS. Until we do so, the only option is to [compile Prusti from source code](https://github.com/viperproject/prusti-dev). |
 
 Thanks to @Pointerbender, @michaelpaper, @fcoury, @Gadiguibou, @djc for their help in reporting, debugging and solving many of these issues!
+
+In case you still experience difficulties or encounter bugs while using Prusti Assistant, please [open an issue](https://github.com/viperproject/prusti-assistant/issues) or contact us in the [Zulip chat](https://prusti.zulipchat.com/).
