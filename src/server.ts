@@ -117,6 +117,7 @@ export async function restart(context: vscode.ExtensionContext, verificationStat
     const prustiServerArgs = ["--port=0"].concat(
         config.extraPrustiServerArgs()
     );
+    util.log("Prusti server args: " + prustiServerArgs.toString());
 
     // only set this env variable if prusti has at least version 0.3.0
     const versionDependentArgs = semver.lt(prustiSemanticVersion, "0.3.0") ? {} :
@@ -132,6 +133,7 @@ export async function restart(context: vscode.ExtensionContext, verificationStat
         },
         ...config.extraPrustiEnv(),
     };
+    util.log("Prusti server environment: " + JSON.stringify(prustiServerEnv));
 
     util.log("Starting Prusti server at: " + prusti?.prustiServer);
     server.initiateStart(

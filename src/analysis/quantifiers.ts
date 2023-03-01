@@ -2,6 +2,7 @@ import * as util from "../util";
 import * as vscode from "vscode";
 import * as path from "path";
 import { PrustiMessageConsumer, parseSpanRange, Message, CargoMessage, dummyRange } from "./message"
+import { VerificationArgs, VerificationTarget } from "../verification"
 
 function strToRange(rangeStr: string): vscode.Range {
     const arr = JSON.parse(rangeStr) as vscode.Position[];
@@ -30,7 +31,7 @@ export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, P
             });
     }
 
-    private invalidateDocument(fileName: string) {
+    public invalidateDocument(fileName: string) {
         util.log(`QCTP: invalidate ${fileName}`);
         this.stateMap.set(fileName, new Map());
     }
@@ -89,7 +90,8 @@ export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, P
         this.onDocumentChangeRegister.dispose();
     }
 
-    public processMessage(msg: Message, isCrate: boolean, rootPath: string): void {
+    public processMessage(msg: Message, vArgs: VerificationArgs): void {
+        const isCrate = vArgs.target === VerificationTarget.Crate;
         if (msg.spans.length !== 1) {
             util.log("ERROR: multiple spans for a quantifier.");
         }
@@ -101,11 +103,11 @@ export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, P
         const triggers = parsedMsg["triggers"];
 
         util.log("QuantifierChosenTriggersProvider consumed msg");
-        this.update(isCrate ? path.join(rootPath, fileName) : fileName, viperQuant, triggers, range);
+        this.update(isCrate ? path.join(vArgs.targetPath, fileName) : fileName, viperQuant, triggers, range);
     }
 
-    public processCargoMessage(msg: CargoMessage, isCrate: boolean, rootPath: string): void {
-        this.processMessage(msg.message, isCrate, rootPath);
+    public processCargoMessage(msg: CargoMessage, vArgs: VerificationArgs): void {
+        this.processMessage(msg.message, vArgs);
     }
 }
 
@@ -120,6 +122,7 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
     private hoverRegister: vscode.Disposable;
     private onDocumentChangeRegister: vscode.Disposable;
     private changed: boolean = false;
+    private intervalRegister: ReturnType<typeof setInterval>;
     private token: string = "quantifierInstantiationsMessage";
 
     public constructor() {
@@ -128,7 +131,12 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
         this.hoverRegister = vscode.languages.registerHoverProvider('rust', this);
         this.inlayRegister = vscode.languages.registerInlayHintsProvider('rust', this);
         this.onDocumentChangeRegister = this.registerOnDocumentChange();
-        setInterval(() => this.changed ? this.reregisterInlayHintsProvider() : {}, 1000);
+        this.intervalRegister = setInterval(() => {
+            if (this.changed) {
+                this.changed = false;
+                this.reregisterInlayHintsProvider();
+            }
+        }, 1000);
     }
 
     private reregisterInlayHintsProvider(): void {
@@ -146,7 +154,7 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
             });
     }
 
-    private invalidateDocument(fileName: string) {
+    public invalidateDocument(fileName: string) {
         util.log(`QIP: invalidate ${fileName}`);
         this.stateMap.set(fileName, new Map());
         this.inlayCacheMap.set(fileName, []);
@@ -180,8 +188,6 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
                                                             return hint;
                                                           });
             this.inlayCacheMap.set(document.fileName, hints);
-        } else {
-            this.changed = false;
         }
         const ret = this.inlayCacheMap.get(document.fileName)!;
         return ret;
@@ -240,12 +246,14 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
     }
 
     public dispose() {
+        clearInterval(this.intervalRegister);
         this.inlayRegister.dispose();
         this.hoverRegister.dispose();
         this.onDocumentChangeRegister.dispose();
     }
 
-    public processMessage(msg: Message, isCrate: boolean, rootPath: string): void {
+    public processMessage(msg: Message, vArgs: VerificationArgs): void {
+        const isCrate = vArgs.target === VerificationTarget.Crate;
         if (msg.spans.length !== 1) {
             util.log("ERROR: multiple spans for a quantifier.");
         }
@@ -257,10 +265,10 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
         const instantiations = parsedMsg["instantiations"];
 
         util.log("QuantifierInstantiationsProvider consumed msg");
-        this.update(isCrate ? path.join(rootPath, fileName) : fileName, method, instantiations, range);
+        this.update(isCrate ? path.join(vArgs.targetPath, fileName) : fileName, method, instantiations, range);
     }
 
-    public processCargoMessage(msg: CargoMessage, isCrate: boolean, rootPath: string): void {
-        this.processMessage(msg.message, isCrate, rootPath);
+    public processCargoMessage(msg: CargoMessage, vArgs: VerificationArgs): void {
+        this.processMessage(msg.message, vArgs);
     }
 }

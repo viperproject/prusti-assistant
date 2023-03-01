@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import * as config from "./config";
 import * as util from "./util";
 import * as checks from "./checks";
-import { prusti, installDependencies, prustiVersion, updatePrustiSemVersion } from "./dependencies";
+import { prusti, installDependencies, updatePrustiSemVersion, prustiSemanticVersion } from "./dependencies";
 import * as server from "./server";
 import * as state from "./state";
 import * as verification from "./verification";
@@ -42,7 +42,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Catch server crashes
     server.registerCrashHandler(context, verificationStatus);
 
-    // Download dependencies and start the server
+    // Download dependencies, set prusti version and start the server
     util.log("Checking Prusti dependencies...");
     verificationStatus.text = "$(sync~spin) Checking Prusti dependencies...";
     await installDependencies(context, false, verificationStatus);
@@ -87,7 +87,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Show version on command
     context.subscriptions.push(
         vscode.commands.registerCommand(showVersionCommand, async () => {
-            util.userInfo(await prustiVersion());
+            // take also the semantic version here to avoid confusion on debugging
+            util.userInfo(prustiSemanticVersion);
         })
     );
 
@@ -116,7 +117,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     );
 
     // Verification manager
-    await updatePrustiSemVersion();
     const verificationManager = new verification.VerificationManager(
         verificationStatus,
         killAllButton,
@@ -184,21 +184,27 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             }
 
             await verificationManager.verify(
-                prusti!,
-                server.address || "",
-                document.uri.fsPath,
-                verification.VerificationTarget.StandaloneFile,
-                skipVerify,
-                defPathArg
+                new verification.VerificationArgs(
+                    prusti!,
+                    server.address || "",
+                    document.uri.fsPath,
+                    verification.VerificationTarget.StandaloneFile,
+                    skipVerify,
+                    defPathArg,
+                    0,
+                )
             );
         } else {
             await verificationManager.verify(
-                prusti!,
-                server.address || "",
-                cratePath.path,
-                verification.VerificationTarget.Crate,
-                skipVerify,
-                defPathArg,
+                new verification.VerificationArgs(
+                    prusti!,
+                    server.address || "",
+                    cratePath.path,
+                    verification.VerificationTarget.Crate,
+                    skipVerify,
+                    defPathArg,
+                    0,
+                )
             );
         }
     }

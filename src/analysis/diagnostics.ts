@@ -5,6 +5,7 @@ import * as path from "path";
 import { PrustiMessageConsumer, Message, CargoMessage, isCargoMessage,
          Span, parseSpanRange, parseMultiSpanRange,
          getCallSiteSpan, dummyRange, mapDiagnosticLevel } from "./message";
+import { VerificationArgs } from "../verification"
 
 // ========================================================
 // Diagnostic Parsing
@@ -122,16 +123,22 @@ function parseDiagnostic(msg_raw: CargoMessage|Message, programPath: string, def
 export class VerificationDiagnostics implements PrustiMessageConsumer {
     private diagnostics: Map<string, vscode.Diagnostic[]>;
     private diagnosticCollection: vscode.DiagnosticCollection;
-    private lastRenderedTime: number = 0;
-    private lastDiagnostic: Diagnostic|null = null;
-    public tokens = [""];
+    private changed: boolean = false;
+    private intervalRegister: ReturnType<typeof setInterval>;
 
     constructor() {
         this.diagnostics = new Map<string, vscode.Diagnostic[]>();
         this.diagnosticCollection = vscode.languages.createDiagnosticCollection("prusti");
+        this.intervalRegister = setInterval(() => {
+            if (this.changed) {
+                this.changed = false;
+                this.renderIn();
+            }
+        }, 50);
     }
 
     public dispose() {
+        clearInterval(this.intervalRegister);
         this.diagnosticCollection.dispose();
     }
 
@@ -205,31 +212,13 @@ export class VerificationDiagnostics implements PrustiMessageConsumer {
             } else {
                 this.diagnostics.set(diagnostic.file_path, [diagnostic.diagnostic]);
             }
+            this.changed = true;
         } else {
             util.log(`Ignored diagnostic message: '${diagnostic.diagnostic.message}'`);
         }
     }
 
-    public add_and_render(diagnostic: Diagnostic): void {
-        if (this.reportDiagnostic(diagnostic)) {
-            this.add(diagnostic);
-            const filePath = diagnostic.file_path;
-            const fileDiagnostics = this.diagnostics.get(filePath);
-            const uri = vscode.Uri.file(filePath);
-            this.lastDiagnostic = diagnostic;
-            setTimeout(() => {
-                // thresholding: we render if more than 50ms have passed since the last
-                // time we rendered or when we are the lastDiagnostic
-                if (this.lastDiagnostic === diagnostic || Date.now() - this.lastRenderedTime >= 50) {
-                    this.renderIn();
-                    this.lastRenderedTime = Date.now();
-                }
-            }, Math.max(50 - (Date.now() - this.lastRenderedTime), 0))
-        }
-    }
-
     public renderIn(): void {
-        this.diagnosticCollection.clear();
         for (const [filePath, fileDiagnostics] of this.diagnostics.entries()) {
             const uri = vscode.Uri.file(filePath);
             util.log(`Rendering ${fileDiagnostics.length} diagnostics at ${uri}`);
@@ -255,15 +244,15 @@ export class VerificationDiagnostics implements PrustiMessageConsumer {
         return true;
     }
 
-    public processMessage(msg: Message, isCrate: boolean, rootPath: string): void {
-        let diag = parseDiagnostic(msg, rootPath);
+    public processMessage(msg: Message, vArgs: VerificationArgs): void {
+        let diag = parseDiagnostic(msg, vArgs.targetPath);
         util.log("Consumed rustc message");
-        this.add_and_render(diag);
+        this.add(diag);
     }
 
-    public processCargoMessage(msg: CargoMessage, isCrate: boolean, rootPath: string): void {
-        let diag = parseDiagnostic(msg, rootPath);
+    public processCargoMessage(msg: CargoMessage, vArgs: VerificationArgs): void {
+        let diag = parseDiagnostic(msg, vArgs.targetPath);
         util.log("Consumed cargo message");
-        this.add_and_render(diag);
+        this.add(diag);
     }
 }

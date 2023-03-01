@@ -23,14 +23,29 @@ enum VerificationStatus {
     Killed,
 }
 
+export class VerificationArgs {
+    constructor(
+        public prusti: dependencies.PrustiLocation,
+        public serverAddress: string,
+        public targetPath: string,
+        public target: VerificationTarget,
+        public skipVerify: boolean,
+        public defPathArg: {
+             selectiveVerification?: string,
+             externalSpecRequest?: string,
+        },
+        public currentRun: number,
+    ) {}
+}
+
 /**
  * Removes rust's metadata in the specified project folder. This is a work
  * around for `cargo check` not reissuing warning information for libs.
  *
- * @param rootPath The root path of a rust project.
+ * @param targetPath The root path of a rust project.
  */
-async function removeDiagnosticMetadata(rootPath: string) {
-    const pattern = new vscode.RelativePattern(path.join(rootPath, "target", "debug"), "*.rmeta");
+async function removeDiagnosticMetadata(targetPath: string) {
+    const pattern = new vscode.RelativePattern(path.join(targetPath, "target", "debug"), "*.rmeta");
     const files = await vscode.workspace.findFiles(pattern);
     const promises = files.map(file => {
         return (new vvt.Location(file.fsPath)).remove()
@@ -59,7 +74,7 @@ export class VerificationManager {
 
         this.qip = new QuantifierInstantiationsProvider();
         this.qctp = new QuantifierChosenTriggersProvider();
-        this.infoCollection = new InfoCollection();
+        this.infoCollection = new InfoCollection(this);
         this.verificationDiagnostics = new VerificationDiagnostics();
     }
 
@@ -100,10 +115,13 @@ export class VerificationManager {
         }
     }
 
-    private buildOutputClosure(isCrate: boolean, programPath: string, currentRun: number) {
+    private buildOutputClosure(vArgs: VerificationArgs) {
         let buffer = "";
+        let isCrate = vArgs.target === VerificationTarget.Crate;
         const onOutput = (data: string) => {
-            if (currentRun != this.runCount) {
+            if (vArgs.currentRun != this.runCount) {
+                // there could be race conditions where messages are consumed after
+                // this check. If this becomes a problem, a more sophisticated check is needed
                 return;
             }
             buffer = buffer.concat(data);
@@ -120,7 +138,7 @@ export class VerificationManager {
                     const ind = msg.message.indexOf("{");
                     const token = msg.message.substring(0, ind);
                     const part = this.findConsumer(token);
-                    part.processCargoMessage(cargoMsg, isCrate, programPath)
+                    part.processCargoMessage(cargoMsg, vArgs);
                 } else {
                     const msg = getRustcMessage(line);
                     if (msg === undefined) {
@@ -129,7 +147,7 @@ export class VerificationManager {
                     const ind = msg.message.indexOf("{");
                     const token = msg.message.substring(0, ind);
                     const part = this.findConsumer(token);
-                    part.processMessage(msg, isCrate, programPath)
+                    part.processMessage(msg, vArgs);
                 }
             }
         }
@@ -144,23 +162,13 @@ export class VerificationManager {
     * is for selective verification, the other is when we request a template for
     * an external specification.
     */
-    private async runAndProcessOutput(
-        prusti: dependencies.PrustiLocation,
-        programPath: string,
-        serverAddress: string,
-        skipVerify: boolean,
-        defPathArg: {
-            selectiveVerification?: string,
-            externalSpecRequest?: string,
-        },
-        isCrate: boolean,
-        currentRun: number,
-    ): Promise<[VerificationStatus, util.Duration]> {
+    private async runAndProcessOutput(vArgs: VerificationArgs): Promise<[VerificationStatus, util.Duration]> {
         let prustiArgs: string[] = [];
+        let isCrate = vArgs.target === VerificationTarget.Crate;
         if (isCrate) {
             // FIXME: Workaround for warning generation for libs.
-            if (!skipVerify) {
-                await removeDiagnosticMetadata(programPath);
+            if (!vArgs.skipVerify) {
+                await removeDiagnosticMetadata(vArgs.targetPath);
             }
             // cargo
             prustiArgs = ["--message-format=json"].concat(
@@ -171,7 +179,7 @@ export class VerificationManager {
             prustiArgs = [
                 "--crate-type=lib",
                 "--error-format=json",
-                programPath
+                vArgs.targetPath
             ].concat(
                 config.extraPrustiRustcArgs()
             );
@@ -181,27 +189,28 @@ export class VerificationManager {
         // prusti version 0.3
         let versionDependentArgs = semver.lt(dependencies.prustiSemanticVersion, "0.3.0") ? {} : {
             PRUSTI_SHOW_IDE_INFO: "true",
-            PRUSTI_SKIP_VERIFICATION: skipVerify ? "true" : "false",
-            PRUSTI_SELECTIVE_VERIFY: defPathArg.selectiveVerification,
-            PRUSTI_QUERY_METHOD_SIGNATURE: defPathArg.externalSpecRequest,
+            PRUSTI_SKIP_VERIFICATION: vArgs.skipVerify ? "true" : "false",
+            PRUSTI_SELECTIVE_VERIFY: vArgs.defPathArg.selectiveVerification,
+            PRUSTI_QUERY_METHOD_SIGNATURE: vArgs.defPathArg.externalSpecRequest,
             PRUSTI_REPORT_VIPER_MESSAGES: config.reportViperMessages() ? "true" : "false",
         };
 
-        util.log("passed args:" + prustiArgs.toString());
+        util.log("Prusti client args: " + prustiArgs.toString());
         const prustiEnv = {
             ...process.env,  // Needed to run Rustup
             ...versionDependentArgs,
             ...{
-                PRUSTI_SERVER_ADDRESS: serverAddress,
+                PRUSTI_SERVER_ADDRESS: vArgs.serverAddress,
                 PRUSTI_QUIET: "true",
                 JAVA_HOME: (await config.javaHome())!.path,
             },
             ...config.extraPrustiEnv(),
         };
-        const cwd = isCrate ? programPath : path.dirname(programPath);
-        const onOutput= this.buildOutputClosure(isCrate, programPath, currentRun);
+        util.log("Prusti client environment: " + JSON.stringify(prustiEnv));
+        const cwd = isCrate ? vArgs.targetPath : path.dirname(vArgs.targetPath);
+        const onOutput= this.buildOutputClosure(vArgs);
         const output = await util.spawn(
-            isCrate ? prusti.cargoPrusti : prusti.prustiRustc,
+            isCrate ? vArgs.prusti.cargoPrusti : vArgs.prusti.prustiRustc,
             prustiArgs,
             {
                 options: {
@@ -217,7 +226,7 @@ export class VerificationManager {
         let status = VerificationStatus.Crash;
 
         if (output.code === 0) {
-            if (skipVerify) {
+            if (vArgs.skipVerify) {
                 status = VerificationStatus.SkippedVerification;
             } else {
                 status = VerificationStatus.Verified;
@@ -245,34 +254,24 @@ export class VerificationManager {
         return [status, output.duration];
     }
 
-    public async verify(
-        prusti: dependencies.PrustiLocation,
-        serverAddress: string,
-        targetPath: string,
-        target: VerificationTarget,
-        skipVerification: boolean,
-        defPathArg: {
-            selectiveVerification?: string,
-            externalSpecRequest?: string,
-        }
-    ): Promise<void> {
+    public async verify(vArgs: VerificationArgs): Promise<void> {
         // Prepare verification
         this.runCount += 1;
-        const currentRun = this.runCount;
-        util.log(`Preparing verification run #${currentRun}.`);
+        vArgs.currentRun = this.runCount;
+        util.log(`Preparing verification run #${vArgs.currentRun}.`);
         this.killAll();
         this.killAllButton.show();
 
-        this.clearPreviousVerification(targetPath, target == VerificationTarget.Crate, skipVerification, defPathArg);
+        this.prepareVerification(vArgs);
 
         // Run verification
-        const escapedFileName = path.basename(targetPath).replace("$", "\\$");
+        const escapedFileName = path.basename(vArgs.targetPath).replace("$", "\\$");
         const prevStatus = this.verificationStatus.text;
 
-        if (!skipVerification) {
-            this.verificationStatus.text = `$(sync~spin) Verifying ${target} '${escapedFileName}'...`;
+        if (!vArgs.skipVerify) {
+            this.verificationStatus.text = `$(sync~spin) Verifying ${vArgs.target} '${escapedFileName}'...`;
         } else {
-            this.verificationStatus.text = `$(sync~spin) Analyzing ${target} '${escapedFileName}'...`;
+            this.verificationStatus.text = `$(sync~spin) Analyzing ${vArgs.target} '${escapedFileName}'...`;
         }
 
         let durationSecMsg: string | null = null;
@@ -282,15 +281,7 @@ export class VerificationManager {
         let crashed = false;
         try {
             util.log("Starting verification");
-            let [status, duration] = await this.runAndProcessOutput(
-                    prusti,
-                    targetPath,
-                    serverAddress,
-                    skipVerification,
-                    defPathArg,
-                    target === VerificationTarget.Crate,
-                    currentRun
-            );
+            let [status, duration] = await this.runAndProcessOutput(vArgs);
 
             durationSecMsg = (duration[0] + duration[1] / 1e9).toFixed(1);
             if (status === VerificationStatus.Crash) {
@@ -311,58 +302,57 @@ export class VerificationManager {
             util.userError(crashErrorMsg);
         }
 
-        if (currentRun != this.runCount) {
-            util.log(`Discarding the result of the verification run #${currentRun}, because the latest is #${this.runCount}.`);
+        if (vArgs.currentRun != this.runCount) {
+            util.log(`Discarding the result of the verification run #${vArgs.currentRun}, because the latest is #${this.runCount}.`);
         } else {
             this.killAllButton.hide();
+            this.verificationDiagnostics.renderIn();
             const prustiErrors = this.verificationDiagnostics.countPrustiErrors();
             const counts = this.verificationDiagnostics.countsBySeverity();
             if (crashed) {
-                this.verificationStatus.text = `$(error) Verification of ${target} '${escapedFileName}' failed with an unexpected error`;
+                this.verificationStatus.text = `$(error) Verification of ${vArgs.target} '${escapedFileName}' failed with an unexpected error`;
                 this.verificationStatus.command = "workbench.action.output.toggleOutput";
             } else if (this.verificationDiagnostics.hasErrors() && prustiErrors > 0) {
                 const noun = prustiErrors === 1 ? "error" : "errors";
-                this.verificationStatus.text = `$(error) Verification of ${target} '${escapedFileName}' failed with ${prustiErrors} ${noun} (${durationSecMsg} s)`;
+                this.verificationStatus.text = `$(error) Verification of ${vArgs.target} '${escapedFileName}' failed with ${prustiErrors} ${noun} (${durationSecMsg} s)`;
                 this.verificationStatus.command = "workbench.action.problems.focus";
             } else if (this.verificationDiagnostics.hasErrors() && prustiErrors == 0) {
                 const errors = counts.get(vscode.DiagnosticSeverity.Error);
                 const noun = errors === 1 ? "error" : "errors";
-                this.verificationStatus.text = `$(error) Compilation of ${target} '${escapedFileName}' failed with ${errors} ${noun} (${durationSecMsg} s)`;
+                this.verificationStatus.text = `$(error) Compilation of ${vArgs.target} '${escapedFileName}' failed with ${errors} ${noun} (${durationSecMsg} s)`;
                 this.verificationStatus.command = "workbench.action.problems.focus";
             } else if (this.verificationDiagnostics.hasWarnings()) {
                 const warnings = counts.get(vscode.DiagnosticSeverity.Warning);
                 const noun = warnings === 1 ? "warning" : "warnings";
-                this.verificationStatus.text = `$(warning) Verification of ${target} '${escapedFileName}' succeeded with ${warnings} ${noun} (${durationSecMsg} s)`;
+                this.verificationStatus.text = `$(warning) Verification of ${vArgs.target} '${escapedFileName}' succeeded with ${warnings} ${noun} (${durationSecMsg} s)`;
                 this.verificationStatus.command = "workbench.action.problems.focus";
             } else {
-                this.verificationStatus.text = `$(check) Verification of ${target} '${escapedFileName}' succeeded (${durationSecMsg} s)`;
+                this.verificationStatus.text = `$(check) Verification of ${vArgs.target} '${escapedFileName}' succeeded (${durationSecMsg} s)`;
                 this.verificationStatus.command = undefined;
             }
-            if (skipVerification) {
+            if (vArgs.skipVerify) {
                 this.verificationStatus.text = prevStatus;
             }
         }
     }
 
     /**
+     * This function is called by the infoCollection after parsing a CompilerInfo
+     * so that all files that are affected by the compilation can be reset accordingly.
+     */
+    public prepareFile(fileName: string, vArgs: VerificationArgs): void {
+        this.qip.invalidateDocument(fileName);
+        this.qctp.invalidateDocument(fileName);
+    }
+
+    /**
     * Some data-structures need to be cleaned up between verifications of
     * the same program / crate.
+    * Note that some of this work is also done in the prepareFile method that is called after
     */
-    public clearPreviousVerification(
-        programPath: string,
-        _isCrate: boolean,
-        skipVerification: boolean,
-        _defPathArg: {
-            selectiveVerification?: string,
-            externalSpecRequest?: string,
-        }
-    ) {
+    public prepareVerification(vArgs: VerificationArgs) {
         this.verificationDiagnostics.reset();
-        this.infoCollection.clearPreviousRun(programPath);
-        if (!skipVerification) {
-          this.qip.reset();
-          this.qctp.reset();
-        }
+        this.infoCollection.clearPreviousRun(vArgs.targetPath);
     }
 
     public wasVerifiedBefore(programPath: string): boolean {

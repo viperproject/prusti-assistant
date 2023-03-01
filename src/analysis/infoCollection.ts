@@ -7,6 +7,7 @@ import { failedVerificationDecorationType, successfulVerificationDecorationType 
 import { FunctionRef, parseCompilerInfo, CompilerInfo } from "./compilerInfo";
 import { CallContract, parseCallContracts } from "./encodingInfo"
 import { PrustiMessageConsumer, Message, CargoMessage } from "./message"
+import { VerificationArgs, VerificationTarget, VerificationManager } from "../verification"
 
 function pathKey(rootPath: string, methodIdent: string): string {
     return rootPath + ":" + methodIdent;
@@ -14,10 +15,10 @@ function pathKey(rootPath: string, methodIdent: string): string {
 
 /** A collection of information that is maintained to provide the following
 * features:
-* - selective verification: there is codeLens above each function that can
+* - selective verification: there is a codeLens above each function that can
 *   be verified, and when clicked on will verify that method only.
 * - extern_spec templates: for each function call to a method outside our current
-*   care we provide a CodeAction to generate a extern_spec block for that method.
+*   crate we provide a CodeAction to generate a extern_spec block for that method.
 * - verification results: display within text editor if methods failed or succeeded
 *   verification, how long it took, and whether the result was cached.
 * - Contracts of calls: for each function call, a user can request the specification
@@ -39,8 +40,12 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
     private callContracts: Map<string, CallContract[]>;
     private fileStateMap: Map<string, boolean>;
     private fileStateUpdateEmitter: EventEmitter;
+    // we also have a reference to the VerificationManager so that we can tell it which files are
+    // affected by the current verification so that other providers can clear these
+    // I'm not super happy with this design choice, but for now it is what it is
+    private verificationManager: VerificationManager;
 
-    public constructor() {
+    public constructor(verificationManager: VerificationManager) {
         this.decorations = new Map();
         this.procedureDefs = new Map();
         this.functionCalls = new Map();
@@ -49,6 +54,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
         this.callContracts = new Map();
         this.fileStateMap = new Map();
         this.fileStateUpdateEmitter = new EventEmitter();
+        this.verificationManager = verificationManager;
         this.lensRegister = vscode.languages.registerCodeLensProvider('rust', this);
         this.actionRegister = vscode.languages.registerCodeActionsProvider('rust', this);
         this.definitionRegister = vscode.languages.registerDefinitionProvider('rust', this);
@@ -170,9 +176,10 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
     }
 
     /** To make the results of a verification run more readable, we add
-    * some decorations here. We display a green checkmark or x depending on the
-    * result, and also some greyed out text, containing the duration
-    * for the verification, and whether the result is cached or not
+    * some decorations here. We display a green checkmark or red cross
+    * depending on the result, and also some greyed out text, containing
+    * the duration for the verification, and whether the result is cached
+    * or not
     */
     private displayVerificationResults(): void {
         let activeEditor = vscode.window.activeTextEditor;
@@ -274,7 +281,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
         cancel.dispose();
     }
 
-    public addCompilerInfo(info: CompilerInfo): void {
+    public addCompilerInfo(info: CompilerInfo, vArgs: VerificationArgs): void {
         // if prusti returns an extern_spec template, we move it to the
         // clipboard. This happens independently of whether it was actually
         // requested, so currently there is no error if this fails.
@@ -294,6 +301,8 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
             this.fileStateMap.set(fileName, false);
             // and then notify CodeLensHandlers of the update
             this.fileStateUpdateEmitter.emit('updated' + fileName);
+            // we also call the verification manager so that affected files can be reset
+            this.verificationManager.prepareFile(fileName, vArgs);
         })
         info.procedureDefs.forEach((pd: FunctionRef) => {
             let key: string = pathKey(rootPath, pd.identifier);
@@ -303,7 +312,9 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
         this.forceCodelensUpdate();
     }
 
-    public processMessage(msg: Message, isCrate: boolean, rootPath: string): void {
+    public processMessage(msg: Message, vArgs: VerificationArgs): void {
+        const isCrate = vArgs.target === VerificationTarget.Crate;
+        const rootPath = vArgs.targetPath;
         const ind = msg.message.indexOf("{");
         const token = msg.message.substring(0, ind);
         switch (token) {
@@ -321,7 +332,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
                 let compilerInfo = parseCompilerInfo(msg.message, isCrate, rootPath);
                 if (compilerInfo !== undefined) {
                     util.log("Consumed compilerInfo");
-                    this.addCompilerInfo(compilerInfo);
+                    this.addCompilerInfo(compilerInfo, vArgs);
                 } else {
                     util.log("Invalid compilerInfo");
                 }
@@ -347,7 +358,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
         }
     }
 
-    public processCargoMessage(msg: CargoMessage, isCrate: boolean, rootPath: string): void {
-        this.processMessage(msg.message, isCrate, rootPath);
+    public processCargoMessage(msg: CargoMessage, vArgs: VerificationArgs): void {
+        this.processMessage(msg.message, vArgs);
     }
 }

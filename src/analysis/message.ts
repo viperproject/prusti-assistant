@@ -1,8 +1,9 @@
 import * as vscode from "vscode";
+import { VerificationArgs } from "../verification"
 
 export interface PrustiMessageConsumer extends vscode.Disposable {
-    processMessage(msg: Message, isCrate: boolean, rootPath: string): void,
-    processCargoMessage(msg: CargoMessage, isCrate: boolean, rootPath: string): void,
+    processMessage(msg: Message, vArgs: VerificationArgs): void,
+    processCargoMessage(msg: CargoMessage, vArgs: VerificationArgs): void,
 }
 
 // ========================================================

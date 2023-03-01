@@ -53,6 +53,7 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
         util.userError(`Error installing Prusti: ${err}`, true, verificationStatus);
         throw err;
     } finally {
+        await updatePrustiSemVersion();
         await server.restart(context, verificationStatus);
     }
 }
