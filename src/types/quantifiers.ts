@@ -9,6 +9,10 @@ function strToRange(rangeStr: string): vscode.Range {
     return new vscode.Range(arr[0], arr[1]);
 }
 
+interface QuantifierChosenTrigger {
+    viper_quant: string,
+    triggers: string,
+}
 export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, PrustiMessageConsumer {
     // key1: fileName, key2: stringified range, value: [quantifier string, triggers string]
     private stateMap: Map<string, Map<string, [string, string]>>;
@@ -24,14 +28,14 @@ export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, P
 
     private registerOnDocumentChange(): vscode.Disposable {
         return vscode.workspace.onDidChangeTextDocument(
-            async (event: vscode.TextDocumentChangeEvent) => {
+            (event: vscode.TextDocumentChangeEvent) => {
                 if (event.document.languageId === "rust") {
                     this.invalidateDocument(event.document.fileName);
                 }
             });
     }
 
-    public invalidateDocument(fileName: string) {
+    public invalidateDocument(fileName: string): void {
         util.log(`QCTP: invalidate ${fileName}`);
         this.stateMap.set(fileName, new Map());
     }
@@ -85,7 +89,7 @@ export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, P
         rangeMap.set(strRange, [quantifier, triggers]);
     }
 
-    public dispose() {
+    public dispose(): void {
         this.hoverRegister.dispose();
         this.onDocumentChangeRegister.dispose();
     }
@@ -98,7 +102,7 @@ export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, P
         const span = msg.spans[0];
         const range = parseSpanRange(span);
         const fileName = span.file_name;
-        const parsedMsg = JSON.parse(msg.message.substring(this.token.length));
+        const parsedMsg = JSON.parse(msg.message.substring(this.token.length)) as QuantifierChosenTrigger;
         const viperQuant = parsedMsg["viper_quant"];
         const triggers = parsedMsg["triggers"];
 
@@ -109,6 +113,11 @@ export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, P
     public processCargoMessage(msg: CargoMessage, vArgs: VerificationArgs): void {
         this.processMessage(msg.message, vArgs);
     }
+}
+
+interface QuantifierInstantiation {
+    method: string,
+    instantiations: number,
 }
 
 export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvider, vscode.HoverProvider, PrustiMessageConsumer {
@@ -147,14 +156,14 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
 
     private registerOnDocumentChange(): vscode.Disposable {
         return vscode.workspace.onDidChangeTextDocument(
-            async (event: vscode.TextDocumentChangeEvent) => {
+            (event: vscode.TextDocumentChangeEvent) => {
                 if (event.document.languageId === "rust") {
                     this.invalidateDocument(event.document.fileName);
                 }
             });
     }
 
-    public invalidateDocument(fileName: string) {
+    public invalidateDocument(fileName: string): void {
         util.log(`QIP: invalidate ${fileName}`);
         this.stateMap.set(fileName, new Map());
         this.inlayCacheMap.set(fileName, []);
@@ -245,7 +254,7 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
         this.changed = true;
     }
 
-    public dispose() {
+    public dispose(): void {
         clearInterval(this.intervalRegister);
         this.inlayRegister.dispose();
         this.hoverRegister.dispose();
@@ -260,7 +269,7 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
         const span = msg.spans[0];
         const range = parseSpanRange(span);
         const fileName = span.file_name;
-        const parsedMsg = JSON.parse(msg.message.substring(this.token.length));
+        const parsedMsg = JSON.parse(msg.message.substring(this.token.length)) as QuantifierInstantiation;
         const method = parsedMsg["method"];
         const instantiations = parsedMsg["instantiations"];
 

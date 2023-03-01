@@ -271,7 +271,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
      */
     private forceCodelensUpdate(): void {
         const cancel = vscode.languages.registerCodeLensProvider('rust', {
-            provideCodeLenses(_: vscode.TextDocument, _token: vscode.CancellationToken): vscode.CodeLens[] {
+            provideCodeLenses(_document: vscode.TextDocument, _token: vscode.CancellationToken): vscode.CodeLens[] {
                 const codeLenses: vscode.CodeLens[] = [];
                 return codeLenses;
             }
