@@ -98,7 +98,7 @@ function waitUntilReady(timeout = 10_000): Promise<void> {
 /**
  * Start or restart the server.
  */
-export async function restart(context: vscode.ExtensionContext, verificationStatus: vscode.StatusBarItem): Promise<void> {
+export async function restart(_context: vscode.ExtensionContext, verificationStatus: vscode.StatusBarItem): Promise<void> {
     await stop();
 
     const configAddress = config.serverAddress();

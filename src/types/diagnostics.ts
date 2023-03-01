@@ -3,7 +3,7 @@ import * as config from "../config";
 import * as vscode from "vscode";
 import * as path from "path";
 import { PrustiMessageConsumer, Message, CargoMessage, isCargoMessage,
-         Span, parseSpanRange, parseMultiSpanRange,
+         parseSpanRange, parseMultiSpanRange,
          getCallSiteSpan, dummyRange, mapDiagnosticLevel } from "./message";
 import { VerificationArgs } from "../verification"
 

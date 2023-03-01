@@ -168,7 +168,7 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
         this.reregisterInlayHintsProvider();
     }
 
-    public provideInlayHints(document: vscode.TextDocument, range: vscode.Range, _token: vscode.CancellationToken): vscode.InlayHint[] {
+    public provideInlayHints(document: vscode.TextDocument, _range: vscode.Range, _token: vscode.CancellationToken): vscode.InlayHint[] {
         // we just ignore the range, vscode ignores hints outside of the requested range
         if (!this.inlayCacheMap.has(document.fileName)) {
             // create the cache map

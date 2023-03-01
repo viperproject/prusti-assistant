@@ -1,6 +1,3 @@
-import * as vscode from "vscode";
-import * as path from "path";
-
 interface VerificationResultRaw {
     item_name: string,
     success: boolean,
@@ -25,7 +22,7 @@ function splitName(name: string) : [string, string] {
     return [filename, methodPath]
 }
 
-function transformVerificationResult(rawRes: VerificationResultRaw, isCrate: boolean, rootPath: string) : VerificationResult {
+function transformVerificationResult(rawRes: VerificationResultRaw, _isCrate: boolean, _rootPath: string) : VerificationResult {
     let [_fileName, methodPath] = splitName(rawRes.item_name);
     // we realized this fileName is not useful, for crates it's always main.rs
     let res = {

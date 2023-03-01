@@ -1,13 +1,13 @@
 import * as vscode from "vscode";
-import * as util from "./../util";
-import * as config from "./../config";
+import * as util from "./util";
+import * as config from "./config";
 import { EventEmitter } from "events";
-import { VerificationResult, parseVerificationResult } from "./verificationResult";
-import { failedVerificationDecorationType, successfulVerificationDecorationType } from "./../toolbox/decorations";
-import { FunctionRef, parseCompilerInfo, CompilerInfo } from "./compilerInfo";
-import { CallContract, parseCallContracts } from "./encodingInfo"
-import { PrustiMessageConsumer, Message, CargoMessage } from "./message"
-import { VerificationArgs, VerificationTarget, VerificationManager } from "../verification"
+import { VerificationResult, parseVerificationResult } from "./types/verificationResult";
+import { failedVerificationDecorationType, successfulVerificationDecorationType } from "./toolbox/decorations";
+import { FunctionRef, parseCompilerInfo, CompilerInfo } from "./types/compilerInfo";
+import { CallContract, parseCallContracts } from "./types/encodingInfo"
+import { PrustiMessageConsumer, Message, CargoMessage } from "./types/message"
+import { VerificationArgs, VerificationTarget, VerificationManager } from "./verification"
 
 function pathKey(rootPath: string, methodIdent: string): string {
     return rootPath + ":" + methodIdent;
@@ -145,11 +145,11 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
     * contains a template for creating extern_specs for that function.
     */
     public provideCodeActions(
-            document: vscode.TextDocument,
-            range: vscode.Range,
-            _context: vscode.CodeActionContext,
-            _token: vscode.CancellationToken
-        ): vscode.CodeAction[] {
+        document: vscode.TextDocument,
+        range: vscode.Range,
+        _context: vscode.CodeActionContext,
+        _token: vscode.CancellationToken
+    ): vscode.CodeAction[] {
         const codeActions: vscode.CodeAction[] = [];
 
         let rootPath = util.getRootPath(document.uri.fsPath);
@@ -157,8 +157,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
 
         if (fnCalls !== undefined) {
             fnCalls.forEach((fc: FunctionRef) => {
-                if (fc.fileName === document.fileName && fc.range.contains(range))
-                {
+                if (fc.fileName === document.fileName && fc.range.contains(range)) {
                     const codeAction = new vscode.CodeAction(
                         "create external specification " + fc.identifier,
                         vscode.CodeActionKind.QuickFix
@@ -245,7 +244,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
     * to display, this function makes sure this is happening.
     */
     private registerDecoratorOnTabChange(): vscode.Disposable {
-        return vscode.window.onDidChangeActiveTextEditor(async (editor: vscode.TextEditor | undefined ) => {
+        return vscode.window.onDidChangeActiveTextEditor(async (editor: vscode.TextEditor | undefined) => {
             if (editor && editor.document) {
                 if (editor.document.languageId === "rust") {
                     this.displayVerificationResults();

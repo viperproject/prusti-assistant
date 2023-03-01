@@ -5,10 +5,10 @@ import * as util from "./util";
 import * as config from "./config"
 import * as dependencies from "./dependencies";
 import * as semver from "semver";
-import { VerificationDiagnostics } from "./analysis/diagnostics";
-import { PrustiMessageConsumer, getRustcMessage, getCargoMessage } from "./analysis/message";
-import { QuantifierInstantiationsProvider, QuantifierChosenTriggersProvider } from "./analysis/quantifiers";
-import { InfoCollection} from "./analysis/infoCollection";
+import { VerificationDiagnostics } from "./types/diagnostics";
+import { PrustiMessageConsumer, getRustcMessage, getCargoMessage } from "./types/message";
+import { QuantifierInstantiationsProvider, QuantifierChosenTriggersProvider } from "./types/quantifiers";
+import { InfoCollection} from "./infoCollection";
 
 export enum VerificationTarget {
     StandaloneFile = "file",
@@ -156,11 +156,6 @@ export class VerificationManager {
 
     /** The core function invoking prusti. Not only for verification, but
     * also to collect other information (without verifying anything).
-    *
-    * @param skipVerify: whether or not verification should be skipped
-    * @param defPathArg: there are 2 cases when we pass a defpath to prusti. One
-    * is for selective verification, the other is when we request a template for
-    * an external specification.
     */
     private async runAndProcessOutput(vArgs: VerificationArgs): Promise<[VerificationStatus, util.Duration]> {
         let prustiArgs: string[] = [];
@@ -340,7 +335,7 @@ export class VerificationManager {
      * This function is called by the infoCollection after parsing a CompilerInfo
      * so that all files that are affected by the compilation can be reset accordingly.
      */
-    public prepareFile(fileName: string, vArgs: VerificationArgs): void {
+    public prepareFile(fileName: string, _vArgs: VerificationArgs): void {
         this.qip.invalidateDocument(fileName);
         this.qctp.invalidateDocument(fileName);
     }
