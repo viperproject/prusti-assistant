@@ -88,6 +88,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     context.subscriptions.push(
         vscode.commands.registerCommand(showVersionCommand, async () => {
             // take also the semantic version here to avoid confusion on debugging
+            await updatePrustiSemVersion();
             util.userInfo(prustiSemanticVersion);
         })
     );
@@ -227,7 +228,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         vscode.commands.registerCommand(verifySelectiveCommand, async (name: string) => {
             const activeTextEditor = vscode.window.activeTextEditor;
             util.log("Verify selective received arg: " + name);
-            let defPathArg = {
+            const defPathArg = {
                 selectiveVerification: name,
             }
             if (activeTextEditor !== undefined) {
@@ -241,7 +242,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     context.subscriptions.push(
         vscode.commands.registerCommand(queryMethodSignatureCommand, async (name: string) => {
             const activeTextEditor = vscode.window.activeTextEditor;
-            let defPathArg = {
+            const defPathArg = {
                 externalSpecRequest: name,
             }
             if (activeTextEditor !== undefined) {

@@ -1,9 +1,8 @@
 import * as vscode from "vscode";
-import * as util from "./../util";
 
 export function successfulVerificationDecorationType(time: number, cached: boolean) : vscode.TextEditorDecorationType {
-    let basepath = vscode.Uri.parse(__dirname);
-    let icon = vscode.Uri.joinPath(basepath, "..", "resources", "icons", "check-circle-fat.svg")
+    const basepath = vscode.Uri.parse(__dirname);
+    const icon = vscode.Uri.joinPath(basepath, "..", "resources", "icons", "check-circle-fat.svg")
     return vscode.window.createTextEditorDecorationType({
         gutterIconPath: icon,
         gutterIconSize: '80%',
@@ -11,8 +10,8 @@ export function successfulVerificationDecorationType(time: number, cached: boole
     });
 }
 export function failedVerificationDecorationType(time: number, cached: boolean) : vscode.TextEditorDecorationType {
-    let basepath = vscode.Uri.parse(__dirname);
-    let icon = vscode.Uri.joinPath(basepath, "..", "resources", "icons", "x-circle-fat.svg")
+    const basepath = vscode.Uri.parse(__dirname);
+    const icon = vscode.Uri.joinPath(basepath, "..", "resources", "icons", "x-circle-fat.svg")
     return vscode.window.createTextEditorDecorationType({
         gutterIconPath: icon,
         gutterIconSize: '80%',
@@ -24,8 +23,8 @@ export function failedVerificationDecorationType(time: number, cached: boolean) 
 // but it might be even more clear that nothing was done with an item if
 // we don't display anything.
 export function notVerifiedDecorationType() : vscode.TextEditorDecorationType {
-    let basepath = vscode.Uri.parse(__dirname);
-    let icon = vscode.Uri.joinPath(basepath, "..", "resources", "icons", "check-circle-fat.svg")
+    const basepath = vscode.Uri.parse(__dirname);
+    const icon = vscode.Uri.joinPath(basepath, "..", "resources", "icons", "check-circle-fat.svg")
     return vscode.window.createTextEditorDecorationType({
         gutterIconPath: icon,
         gutterIconSize: '80%',
@@ -33,8 +32,8 @@ export function notVerifiedDecorationType() : vscode.TextEditorDecorationType {
 }
 
 function timeAndCacheDecorator(time: number, cached: boolean) : vscode.ThemableDecorationAttachmentRenderOptions {
-    let cachedStr = cached ? " (cached)":"";
-    let text = `  [Verified in ${time} ms${cachedStr}]`;
+    const cachedStr = cached ? " (cached)":"";
+    const text = `  [Verified in ${time} ms${cachedStr}]`;
     return {
         contentText: text,
         color: "gray",

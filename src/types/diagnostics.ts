@@ -21,7 +21,7 @@ interface Diagnostic {
  */
 function parseDiagnostic(msg_raw: CargoMessage|Message, programPath: string, defaultRange?: vscode.Range): Diagnostic {
     let msg: Message;
-    let isCargo: boolean = isCargoMessage(msg_raw);
+    const isCargo: boolean = isCargoMessage(msg_raw);
     if (isCargo) {
         // this is a CargoMessage
         msg = (msg_raw as CargoMessage).message;
@@ -92,7 +92,7 @@ function parseDiagnostic(msg_raw: CargoMessage|Message, programPath: string, def
                 src_path: primaryFilePath
             },
             message: child
-        } as CargoMessage) : (child as Message);
+        } as CargoMessage) : (child );
         const childDiagnostic = parseDiagnostic(childMsgRaw, programPath, primaryRange);
         const fileUri = vscode.Uri.file(childDiagnostic.file_path);
         relatedInformation.push(
@@ -123,7 +123,7 @@ function parseDiagnostic(msg_raw: CargoMessage|Message, programPath: string, def
 export class VerificationDiagnostics implements PrustiMessageConsumer {
     private diagnostics: Map<string, vscode.Diagnostic[]>;
     private diagnosticCollection: vscode.DiagnosticCollection;
-    private changed: boolean = false;
+    private changed = false;
     private intervalRegister: ReturnType<typeof setInterval>;
 
     constructor() {
@@ -137,12 +137,12 @@ export class VerificationDiagnostics implements PrustiMessageConsumer {
         }, 50);
     }
 
-    public dispose() {
+    public dispose(): void {
         clearInterval(this.intervalRegister);
         this.diagnosticCollection.dispose();
     }
 
-    public reset() {
+    public reset(): void {
         this.diagnostics = new Map<string, vscode.Diagnostic[]>();
         this.diagnosticCollection.clear();
     }
@@ -245,13 +245,13 @@ export class VerificationDiagnostics implements PrustiMessageConsumer {
     }
 
     public processMessage(msg: Message, vArgs: VerificationArgs): void {
-        let diag = parseDiagnostic(msg, vArgs.targetPath);
+        const diag = parseDiagnostic(msg, vArgs.targetPath);
         util.log("Consumed rustc message");
         this.add(diag);
     }
 
     public processCargoMessage(msg: CargoMessage, vArgs: VerificationArgs): void {
-        let diag = parseDiagnostic(msg, vArgs.targetPath);
+        const diag = parseDiagnostic(msg, vArgs.targetPath);
         util.log("Consumed cargo message");
         this.add(diag);
     }

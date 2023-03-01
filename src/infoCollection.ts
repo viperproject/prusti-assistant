@@ -61,7 +61,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
         this.resultOnTabChangeRegister = this.registerDecoratorOnTabChange();
     }
 
-    public dispose() {
+    public dispose(): void {
         this.lensRegister.dispose();
         this.actionRegister.dispose();
         this.definitionRegister.dispose();
@@ -71,10 +71,10 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
     /** what do we need to do before a verification such that the results
     * from previous verifications will be gone.
     */
-    public clearPreviousRun(programPath: string) {
+    public clearPreviousRun(programPath: string): void {
         this.verificationInfo.set(programPath, []);
 
-        let editor = vscode.window.activeTextEditor;
+        const editor = vscode.window.activeTextEditor;
         if (editor !== undefined) {
             this.clearPreviousDecorators(editor.document.uri.fsPath);
         }
@@ -85,7 +85,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
     * was running.
     */
     public wasVerifiedBefore(programPath: string): boolean {
-        let root = util.getRootPath(programPath);
+        const root = util.getRootPath(programPath);
         return (this.verificationInfo.get(root) !== undefined)
     }
 
@@ -94,18 +94,17 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
     * be verified. They are clickable which will result in a selective
     * verification of this method.
     */
-    public provideCodeLenses(document: vscode.TextDocument, token: vscode.CancellationToken): Promise<vscode.CodeLens[]> {
-        return this.codelensPromise(document, token);
+    public provideCodeLenses(document: vscode.TextDocument, _token: vscode.CancellationToken): Promise<vscode.CodeLens[]> {
+        return this.codelensPromise(document);
     }
 
     private async codelensPromise(
         document: vscode.TextDocument,
-        _token: vscode.CancellationToken
     ): Promise<vscode.CodeLens[]> {
         const codeLenses: vscode.CodeLens[] = [];
-        let rootPath = util.getRootPath(document.uri.fsPath);
-        let procDefs = this.procedureDefs.get(rootPath);
-        let fileState = this.fileStateMap.get(document.uri.fsPath);
+        const rootPath = util.getRootPath(document.uri.fsPath);
+        const procDefs = this.procedureDefs.get(rootPath);
+        const fileState = this.fileStateMap.get(document.uri.fsPath);
 
 
         if (fileState === undefined) {
@@ -148,12 +147,12 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
         document: vscode.TextDocument,
         range: vscode.Range,
         _context: vscode.CodeActionContext,
-        _token: vscode.CancellationToken
+        _token: vscode.CancellationToken,
     ): vscode.CodeAction[] {
         const codeActions: vscode.CodeAction[] = [];
 
-        let rootPath = util.getRootPath(document.uri.fsPath);
-        let fnCalls = this.functionCalls.get(rootPath);
+        const rootPath = util.getRootPath(document.uri.fsPath);
+        const fnCalls = this.functionCalls.get(rootPath);
 
         if (fnCalls !== undefined) {
             fnCalls.forEach((fc: FunctionRef) => {
@@ -181,20 +180,20 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
     * or not
     */
     private displayVerificationResults(): void {
-        let activeEditor = vscode.window.activeTextEditor;
-        let editorFilePath = activeEditor?.document.uri.fsPath;
+        const activeEditor = vscode.window.activeTextEditor;
+        const editorFilePath = activeEditor?.document.uri.fsPath;
         if (editorFilePath !== undefined) {
-            let rootPath = util.getRootPath(editorFilePath);
-            let decorators: vscode.TextEditorDecorationType[] = [];
+            const rootPath = util.getRootPath(editorFilePath);
+            const decorators: vscode.TextEditorDecorationType[] = [];
             this.clearPreviousDecorators(editorFilePath);
-            let resultList = this.verificationInfo.get(rootPath);
+            const resultList = this.verificationInfo.get(rootPath);
             resultList?.forEach((res: VerificationResult) => {
-                let location = this.rangeMap.get(pathKey(rootPath, res.methodName));
+                const location = this.rangeMap.get(pathKey(rootPath, res.methodName));
                 if (location) {
-                    let [range, resFilePath] = location;
+                    const [range, resFilePath] = location;
                     if (resFilePath === editorFilePath) {
-                        let range_line = util.fullLineRange(range);
-                        var decoration;
+                        const range_line = util.fullLineRange(range);
+                        let decoration;
                         if (res.success) {
                             decoration = successfulVerificationDecorationType(res.time_ms, res.cached)
                         } else {
@@ -224,15 +223,15 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
         if (!config.contractsAsDefinitions()) {
             return [];
         }
-        let rootPath = util.getRootPath(document.uri.fsPath);
-        let callContracts = this.callContracts.get(rootPath);
+        const rootPath = util.getRootPath(document.uri.fsPath);
+        const callContracts = this.callContracts.get(rootPath);
         if (callContracts === undefined) {
             return [];
         }
 
         for (const contract of callContracts) {
-            let sameFile = contract.callLocation.uri.fsPath === document.uri.fsPath;
-            let containsPos = contract.callLocation.range.contains(position);
+            const sameFile = contract.callLocation.uri.fsPath === document.uri.fsPath;
+            const containsPos = contract.callLocation.range.contains(position);
             if (sameFile && containsPos) {
                 return contract.contractLocations;
             }
@@ -244,7 +243,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
     * to display, this function makes sure this is happening.
     */
     private registerDecoratorOnTabChange(): vscode.Disposable {
-        return vscode.window.onDidChangeActiveTextEditor(async (editor: vscode.TextEditor | undefined) => {
+        return vscode.window.onDidChangeActiveTextEditor((editor: vscode.TextEditor | undefined) => {
             if (editor && editor.document) {
                 if (editor.document.languageId === "rust") {
                     this.displayVerificationResults();
@@ -258,7 +257,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
     * start to appear twice.
     */
     private clearPreviousDecorators(filePath: string): void {
-        let prev = this.decorations.get(filePath);
+        const prev = this.decorations.get(filePath);
         if (prev !== undefined) {
             prev.forEach((dec: vscode.TextEditorDecorationType) => {
                 vscode.window.activeTextEditor?.setDecorations(dec, []);
@@ -272,7 +271,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
      */
     private forceCodelensUpdate(): void {
         const cancel = vscode.languages.registerCodeLensProvider('rust', {
-            provideCodeLenses(_document: vscode.TextDocument, _token: vscode.CancellationToken): vscode.CodeLens[] {
+            provideCodeLenses(_: vscode.TextDocument, _token: vscode.CancellationToken): vscode.CodeLens[] {
                 const codeLenses: vscode.CodeLens[] = [];
                 return codeLenses;
             }
@@ -280,17 +279,18 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
         cancel.dispose();
     }
 
-    public addCompilerInfo(info: CompilerInfo, vArgs: VerificationArgs): void {
+    public addCompilerInfo(info: CompilerInfo): void {
         // if prusti returns an extern_spec template, we move it to the
         // clipboard. This happens independently of whether it was actually
         // requested, so currently there is no error if this fails.
         if (info.queriedSource) {
-            vscode.env.clipboard.writeText(info.queriedSource);
+            void vscode.env.clipboard.writeText(info.queriedSource).then(() => {
             util.userInfoPopup("Template for extern spec. is now on your clipboard.");
+            });
         }
 
         // create all sorts of data structures that will be practical:
-        let rootPath = info.rootPath;
+        const rootPath = info.rootPath;
         util.log(`Adding CompilerInfo to path: ${rootPath}`);
         this.procedureDefs.set(rootPath, info.procedureDefs);
         this.functionCalls.set(rootPath, info.functionCalls);
@@ -301,10 +301,10 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
             // and then notify CodeLensHandlers of the update
             this.fileStateUpdateEmitter.emit('updated' + fileName);
             // we also call the verification manager so that affected files can be reset
-            this.verificationManager.prepareFile(fileName, vArgs);
+            this.verificationManager.prepareFile(fileName);
         })
         info.procedureDefs.forEach((pd: FunctionRef) => {
-            let key: string = pathKey(rootPath, pd.identifier);
+            const key: string = pathKey(rootPath, pd.identifier);
             this.rangeMap.set(key, [pd.range, pd.fileName]);
         });
 
@@ -318,7 +318,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
         const token = msg.message.substring(0, ind);
         switch (token) {
             case "encodingInfo": {
-                let callContracts = parseCallContracts(msg.message, isCrate, rootPath);
+                const callContracts = parseCallContracts(msg.message, isCrate, rootPath);
                 if (callContracts !== undefined) {
                     util.log("Consumed encodingInfo");
                     this.callContracts.set(rootPath, callContracts);
@@ -328,17 +328,17 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
                 break;
             }
             case "compilerInfo": {
-                let compilerInfo = parseCompilerInfo(msg.message, isCrate, rootPath);
+                const compilerInfo = parseCompilerInfo(msg.message, isCrate, rootPath);
                 if (compilerInfo !== undefined) {
                     util.log("Consumed compilerInfo");
-                    this.addCompilerInfo(compilerInfo, vArgs);
+                    this.addCompilerInfo(compilerInfo);
                 } else {
                     util.log("Invalid compilerInfo");
                 }
                 break;
             }
             case "ideVerificationResult": {
-                let verificationResult = parseVerificationResult(msg.message, isCrate, rootPath);
+                const verificationResult = parseVerificationResult(msg.message);
                 if (verificationResult !== undefined) {
                     if (this.verificationInfo.get(rootPath) === undefined) {
                         this.verificationInfo.set(rootPath, []);

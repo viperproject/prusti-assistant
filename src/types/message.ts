@@ -114,7 +114,7 @@ export function isValidCargoMessage(msg: CargoMessage): boolean {
     return (msg.message !== undefined && isValidRustcMessage(msg.message));
 }
 
-export function isValidRustcMessage(msg: Message) {
+export function isValidRustcMessage(msg: Message): boolean {
     // TODO: remove FakeError once fixed
     return (msg.message !== undefined && msg.message !== "[Prusti: FakeError]");
 }

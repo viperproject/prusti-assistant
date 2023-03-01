@@ -135,7 +135,6 @@ export async function restart(_context: vscode.ExtensionContext, verificationSta
     };
     util.log("Prusti server environment: " + JSON.stringify(prustiServerEnv));
 
-    util.log("Starting Prusti server at: " + prusti?.prustiServer);
     server.initiateStart(
         prusti!.prustiServer,
         prustiServerArgs,

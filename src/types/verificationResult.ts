@@ -14,18 +14,18 @@ export interface VerificationResult {
 
 // currently the value given for itemName is "filename_methodpath"
 // should this be done in rust?
-function splitName(name: string) : [string, string] {
+function splitName(name: string) : string {
     // position of the underscore
-    let position = name.search(".rs_") + 3;
-    let filename = name.substring(0, position);
-    let methodPath = name.substring(position+1);
-    return [filename, methodPath]
+    const position = name.search(".rs_") + 3;
+    // const filename = name.substring(0, position);
+    const methodPath = name.substring(position+1);
+    return methodPath;
 }
 
-function transformVerificationResult(rawRes: VerificationResultRaw, _isCrate: boolean, _rootPath: string) : VerificationResult {
-    let [_fileName, methodPath] = splitName(rawRes.item_name);
+function transformVerificationResult(rawRes: VerificationResultRaw) : VerificationResult {
+    const methodPath = splitName(rawRes.item_name);
     // we realized this fileName is not useful, for crates it's always main.rs
-    let res = {
+    const res = {
         methodName: methodPath,
         success: rawRes.success,
         time_ms: rawRes.time_ms,
@@ -34,11 +34,11 @@ function transformVerificationResult(rawRes: VerificationResultRaw, _isCrate: bo
     return res;
 }
 
-export function parseVerificationResult(line: string, isCrate: boolean, rootPath: string): VerificationResult | undefined {
+export function parseVerificationResult(line: string): VerificationResult | undefined {
     const token = "ideVerificationResult";
     if (!line.startsWith(token)) {
         return undefined;
     }
-    let rawResult = JSON.parse(line.substring(token.length)) as VerificationResultRaw;
-    return transformVerificationResult(rawResult, isCrate, rootPath);
+    const rawResult = JSON.parse(line.substring(token.length)) as VerificationResultRaw;
+    return transformVerificationResult(rawResult);
 }

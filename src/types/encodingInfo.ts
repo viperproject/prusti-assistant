@@ -9,13 +9,13 @@ import { Span, parseSpanRange } from "./message";
 */
 interface EncodingInfoRaw {
     call_contract_spans: CallContractRaw[],
-};
+}
 
 interface CallContractRaw {
     defpath: string, // defpath
     call_span: Span,
     contracts_spans: Span[],
-};
+}
 
 /** The defpath and position of a function call and the ranges of all
 * its contract-items that we can get(some are missing at the moment)
@@ -27,18 +27,18 @@ export interface CallContract {
 }
 
 function transformEncodingInfo(info: EncodingInfoRaw, root: string, isCrate: boolean): CallContract[] {
-    let results: CallContract[] = [];
+    const results: CallContract[] = [];
     for (const cRaw of info.call_contract_spans) {
-        let fileName = isCrate ? path.join(root, cRaw.call_span.file_name) : cRaw.call_span.file_name;
-        let fileUri = vscode.Uri.file(fileName);
+        const fileName = isCrate ? path.join(root, cRaw.call_span.file_name) : cRaw.call_span.file_name;
+        const fileUri = vscode.Uri.file(fileName);
         util.log("added Encoding Info for file: " + fileName);
-        let callRange = parseSpanRange(cRaw.call_span);
-        let callLocation = new vscode.Location(fileUri, callRange);
-        let contractLocations = [];
+        const callRange = parseSpanRange(cRaw.call_span);
+        const callLocation = new vscode.Location(fileUri, callRange);
+        const contractLocations = [];
         for (const sp of cRaw.contracts_spans) {
-            let range = parseSpanRange(sp);
+            const range = parseSpanRange(sp);
             // let firstLineRange = util.FullLineRange(range);
-            let fileUri = vscode.Uri.file(isCrate ? path.join(root, sp.file_name) : sp.file_name);
+            const fileUri = vscode.Uri.file(isCrate ? path.join(root, sp.file_name) : sp.file_name);
             contractLocations.push(new vscode.Location(fileUri, range));
         }
         results.push({
@@ -52,7 +52,7 @@ function transformEncodingInfo(info: EncodingInfoRaw, root: string, isCrate: boo
 
 
 export function parseCallContracts(output: string, isCrate: boolean, root: string): CallContract[] | undefined {
-    var result;
+    let result;
     const token = "encodingInfo";
     for (const line of output.split("\n")) {
         if (!line.startsWith(token)) {

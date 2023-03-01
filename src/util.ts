@@ -201,8 +201,8 @@ export function spawn(
  * that are displayed "behind" this range, will not be in the middle of some text
  */
 export function fullLineRange(range: vscode.Range): vscode.Range {
-    let position = new vscode.Position(range.start.line, range.start.character);
-    let position_test = new vscode.Position(range.start.line, Number.MAX_SAFE_INTEGER);
+    const position = new vscode.Position(range.start.line, range.start.character);
+    const position_test = new vscode.Position(range.start.line, Number.MAX_SAFE_INTEGER);
 
     return new vscode.Range(position, position_test)
 }
@@ -213,7 +213,7 @@ export function fullLineRange(range: vscode.Range): vscode.Range {
 */
 export function getRootPath(filePath: string): string {
     let res;
-    let parent = projects.getParent(filePath);
+    const parent = projects.getParent(filePath);
     if (parent !== undefined) {
         res = parent.path;
     } else {

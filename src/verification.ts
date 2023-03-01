@@ -117,7 +117,7 @@ export class VerificationManager {
 
     private buildOutputClosure(vArgs: VerificationArgs) {
         let buffer = "";
-        let isCrate = vArgs.target === VerificationTarget.Crate;
+        const isCrate = vArgs.target === VerificationTarget.Crate;
         const onOutput = (data: string) => {
             if (vArgs.currentRun != this.runCount) {
                 // there could be race conditions where messages are consumed after
@@ -159,7 +159,7 @@ export class VerificationManager {
     */
     private async runAndProcessOutput(vArgs: VerificationArgs): Promise<[VerificationStatus, util.Duration]> {
         let prustiArgs: string[] = [];
-        let isCrate = vArgs.target === VerificationTarget.Crate;
+        const isCrate = vArgs.target === VerificationTarget.Crate;
         if (isCrate) {
             // FIXME: Workaround for warning generation for libs.
             if (!vArgs.skipVerify) {
@@ -182,7 +182,7 @@ export class VerificationManager {
 
         // some environment variables can only be passed if we have at least
         // prusti version 0.3
-        let versionDependentArgs = semver.lt(dependencies.prustiSemanticVersion, "0.3.0") ? {} : {
+        const versionDependentArgs = semver.lt(dependencies.prustiSemanticVersion, "0.3.0") ? {} : {
             PRUSTI_SHOW_IDE_INFO: "true",
             PRUSTI_SKIP_VERIFICATION: vArgs.skipVerify ? "true" : "false",
             PRUSTI_SELECTIVE_VERIFY: vArgs.defPathArg.selectiveVerification,
@@ -276,7 +276,7 @@ export class VerificationManager {
         let crashed = false;
         try {
             util.log("Starting verification");
-            let [status, duration] = await this.runAndProcessOutput(vArgs);
+            const [status, duration] = await this.runAndProcessOutput(vArgs);
 
             durationSecMsg = (duration[0] + duration[1] / 1e9).toFixed(1);
             if (status === VerificationStatus.Crash) {
@@ -335,7 +335,7 @@ export class VerificationManager {
      * This function is called by the infoCollection after parsing a CompilerInfo
      * so that all files that are affected by the compilation can be reset accordingly.
      */
-    public prepareFile(fileName: string, _vArgs: VerificationArgs): void {
+    public prepareFile(fileName: string) : void {
         this.qip.invalidateDocument(fileName);
         this.qctp.invalidateDocument(fileName);
     }
@@ -345,7 +345,7 @@ export class VerificationManager {
     * the same program / crate.
     * Note that some of this work is also done in the prepareFile method that is called after
     */
-    public prepareVerification(vArgs: VerificationArgs) {
+    public prepareVerification(vArgs: VerificationArgs): void {
         this.verificationDiagnostics.reset();
         this.infoCollection.clearPreviousRun(vArgs.targetPath);
     }
@@ -353,15 +353,5 @@ export class VerificationManager {
     public wasVerifiedBefore(programPath: string): boolean {
         return this.infoCollection.wasVerifiedBefore(programPath);
     }
-
-    // public setVersion(version: string) {
-    //     if (!semver.valid(version)) {
-    //         // just to make sure this would not go unnoticed
-    //         util.userInfo("There was a problem figuring out your version of Prusti");
-    //         this.version = "0.0";
-    //     } else {
-    //         this.version = version;
-    //     }
-    // }
 }
 

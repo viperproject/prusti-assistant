@@ -43,7 +43,7 @@ export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, P
         }
         const initRange = dummyRange();
         // get the innermost range by iterating over all ranges.
-        let matchingRange: vscode.Range = Array.from(rangeMap.keys()).reduce((cur, rangeStr) => {
+        const matchingRange: vscode.Range = Array.from(rangeMap.keys()).reduce((cur, rangeStr) => {
             const range = strToRange(rangeStr);
             if (range.contains(position) && (cur.contains(range) || cur.isEqual(initRange))) {
                 return range;
@@ -121,9 +121,9 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
     private inlayRegister: vscode.Disposable;
     private hoverRegister: vscode.Disposable;
     private onDocumentChangeRegister: vscode.Disposable;
-    private changed: boolean = false;
+    private changed = false;
     private intervalRegister: ReturnType<typeof setInterval>;
-    private token: string = "quantifierInstantiationsMessage";
+    private token = "quantifierInstantiationsMessage";
 
     public constructor() {
         this.stateMap = new Map<string, Map<string, Map<string, number>>>();
@@ -204,7 +204,7 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
         }
         const initRange = dummyRange();
         // get the innermost range by iterating over all ranges.
-        let matchingRange: vscode.Range = Array.from(rangeMap.keys()).reduce((cur, rangeStr) => {
+        const matchingRange: vscode.Range = Array.from(rangeMap.keys()).reduce((cur, rangeStr) => {
             const range = strToRange(rangeStr);
             if (range.contains(position) && (cur.contains(range) || cur.isEqual(initRange))) {
                 return range;
@@ -226,7 +226,7 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
         if (text === undefined) {
             return undefined;
         }
-        return new vscode.Hover(text!);
+        return new vscode.Hover(text);
     }
 
     public update(fileName: string, method: string, instantiations: number, range: vscode.Range): void {

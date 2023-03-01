@@ -48,9 +48,9 @@ function transformCompilerInfo(info: CompilerInfoRaw, isCrate: boolean, root: st
         distinctFiles: new Set(),
     };
     for (const proc of info.procedure_defs) {
-        var filename = isCrate ? path.join(root, proc.span.file_name) : proc.span.file_name;
+        const filename = isCrate ? path.join(root, proc.span.file_name) : proc.span.file_name;
         result.distinctFiles.add(filename);
-        let entry: FunctionRef = {
+        const entry: FunctionRef = {
             identifier: proc.name,
             fileName: filename,
             range: parseSpanRange(proc.span),
@@ -59,9 +59,9 @@ function transformCompilerInfo(info: CompilerInfoRaw, isCrate: boolean, root: st
     }
 
     for (const proc of info.function_calls) {
-        let filename = isCrate ? path.join(root, proc.span.file_name) : proc.span.file_name;
+        const filename = isCrate ? path.join(root, proc.span.file_name) : proc.span.file_name;
         result.distinctFiles.add(filename);
-        let entry: FunctionRef = {
+        const entry: FunctionRef = {
             identifier: proc.name,
             fileName: filename,
             range: parseSpanRange(proc.span),
@@ -72,18 +72,17 @@ function transformCompilerInfo(info: CompilerInfoRaw, isCrate: boolean, root: st
 }
 
 export function parseCompilerInfo(line: string, isCrate: boolean, root: string): CompilerInfo | undefined {
-    let result: CompilerInfoRaw;
-    let token = "compilerInfo";
+    const token = "compilerInfo";
     if (!line.startsWith(token)) {
         return undefined;
     }
     // Parse the message into a diagnostic.
-    result = JSON.parse(line.substring(token.length)) as CompilerInfoRaw;
+    const result = JSON.parse(line.substring(token.length)) as CompilerInfoRaw;
     if (result.procedure_defs !== undefined) {
         util.log("Parsed raw CompilerInfo. Found "
-            + result.procedure_defs.length
+            + result.procedure_defs.length.toString()
             + " procedure defs and "
-            + result.function_calls.length
+            + result.function_calls.length.toString()
             + " function calls.");
         return transformCompilerInfo(result, isCrate, root);
     }
