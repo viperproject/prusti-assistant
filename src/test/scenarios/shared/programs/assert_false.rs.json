@@ -2,13 +2,13 @@
     {
         "message": "[Prusti: verification error] the asserted expression might not hold",
         "range": {
-            "_end": {
-                "_character": 18,
-                "_line": 2
+            "end": {
+                "character": 18,
+                "line": 2
             },
-            "_start": {
-                "_character": 4,
-                "_line": 2
+            "start": {
+                "character": 4,
+                "line": 2
             }
         },
         "relatedInformation": [],

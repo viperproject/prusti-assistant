@@ -56,6 +56,62 @@ function evaluateFilter(filter: [string: string], name: string): boolean {
     return true;
 }
 
+// Types that make sure our tests don't rely on the stringification of vscode
+type Position = {
+    line: number,
+    character: number
+}
+type Range = {
+    start: Position,
+    end: Position
+}
+type RelatedInformation = {
+    location: {
+        uri: string,
+        range: Range,
+    },
+    message: string
+}
+type Diagnostic = {
+    range: Range,
+    severity: number,
+    message: string,
+    relatedInformation?: RelatedInformation[],
+}
+
+function rangeToPlainObject(range: vscode.Range): Range {
+    return {
+        start: {
+            line: range.start.line,
+            character: range.start.character
+        },
+        end: {
+            line: range.end.line,
+            character: range.end.character
+        }
+    };
+}
+function diagnosticToPlainObject(diagnostic: vscode.Diagnostic): Diagnostic {
+    const plainDiagnostic: Diagnostic = {
+        range: rangeToPlainObject(diagnostic.range),
+        severity: diagnostic.severity,
+        message: diagnostic.message,
+    };
+    if (diagnostic.relatedInformation) {
+        plainDiagnostic.relatedInformation = diagnostic.relatedInformation.map((relatedInfo) => {
+            const uri = vscode.workspace.asRelativePath(relatedInfo.location.uri);
+            return {
+                location: {
+                    uri: uri,
+                    range: rangeToPlainObject(relatedInfo.location.range)
+                },
+                message: relatedInfo.message,
+            };
+        });
+    }
+    return plainDiagnostic;
+}
+
 // Prepare the workspace
 const PROJECT_ROOT = path.join(__dirname, "..", "..");
 const SCENARIOS_ROOT = path.join(PROJECT_ROOT, "src", "test", "scenarios");
@@ -114,32 +170,20 @@ describe("Extension", () => {
             const document = await openFile(programPath);
             await vscode.commands.executeCommand("prusti-assistant.verify");
             const diagnostics = vscode.languages.getDiagnostics(document.uri);
-            const extectedData = await fs.readFile(programPath + ".json", "utf-8");
-            type Diagnostics = [
-                { relatedInformation: [{ location: { uri: { path: string } } }] }
-            ];
+            const plainDiagnostics = diagnostics.map(diagnosticToPlainObject);
+            const expectedData = await fs.readFile(programPath + ".json", "utf-8");
             type MultiDiagnostics = [
-                { filter?: [string: string], diagnostics: Diagnostics }
+                { filter?: [string: string], diagnostics: Diagnostic[] }
             ];
-            const expected = JSON.parse(extectedData) as Diagnostics | MultiDiagnostics;
+            const expected = JSON.parse(expectedData) as Diagnostic[] | MultiDiagnostics;
             let expectedMultiDiagnostics: MultiDiagnostics;
             if (!expected.length || !("diagnostics" in expected[0])) {
                 expectedMultiDiagnostics = [
-                    { "diagnostics": expected as Diagnostics }
+                    { "diagnostics": expected as Diagnostic[] }
                 ];
             } else {
                 expectedMultiDiagnostics = expected as MultiDiagnostics;
             }
-            // Patch URI
-            expectedMultiDiagnostics.forEach(alternative => {
-                alternative.diagnostics.forEach(d => {
-                    (d.relatedInformation || []).forEach(r => {
-                        r.location.uri = vscode.Uri.file(
-                            path.join(workspacePath(), r.location.uri.path)
-                        );
-                    })
-                });
-            });
             // Different build-channel or OS migh report slightly different diagnostics.
             let expectedDiagnostics = expectedMultiDiagnostics.find((alternative, index) => {
                 if (!alternative.filter) {
@@ -156,11 +200,11 @@ describe("Extension", () => {
                     "Find expected diagnostics: found no matching alternative."
                 );
                 expectedDiagnostics = {
-                    "diagnostics": [] as unknown as Diagnostics
+                    "diagnostics": [] as unknown as Diagnostic[]
                 };
             }
-            // Compare
-            expect(expectedDiagnostics.diagnostics).to.deep.equal(diagnostics);
+
+            expect(expectedDiagnostics.diagnostics).to.deep.equal(plainDiagnostics);
         });
     });
 
