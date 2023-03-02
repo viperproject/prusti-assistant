@@ -204,7 +204,7 @@ describe("Extension", () => {
                 };
             }
 
-            expect(expectedDiagnostics.diagnostics).to.deep.equal(plainDiagnostics);
+            expect(plainDiagnostics).to.deep.equal(expectedDiagnostics.diagnostics);
         });
     });
 
