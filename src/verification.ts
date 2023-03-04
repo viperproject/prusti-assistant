@@ -182,7 +182,8 @@ export class VerificationManager {
 
         // some environment variables can only be passed if we have at least
         // prusti version 0.3
-        const versionDependentArgs = semver.lt(dependencies.prustiSemanticVersion, "0.3.0") ? {} : {
+        const outdatedPrustiVersion = semver.lt(dependencies.prustiSemanticVersion, "0.3.0");
+        const versionDependentArgs =  outdatedPrustiVersion ? {} : {
             PRUSTI_SHOW_IDE_INFO: "true",
             PRUSTI_SKIP_VERIFICATION: vArgs.skipVerify ? "true" : "false",
             PRUSTI_SELECTIVE_VERIFY: vArgs.defPathArg.selectiveVerification,
@@ -190,6 +191,12 @@ export class VerificationManager {
             PRUSTI_REPORT_VIPER_MESSAGES: config.reportViperMessages() ? "true" : "false",
         };
 
+        // with the newer version we can run prusti just to get information
+        // without actually running a verification. With the older versions
+        // this would cause an actual verification so we stop this here.
+        if (outdatedPrustiVersion && vArgs.skipVerify) {
+            return [VerificationStatus.SkippedVerification, [0,0]];
+        }
         util.log("Prusti client args: " + prustiArgs.toString());
         const prustiEnv = {
             ...process.env,  // Needed to run Rustup
