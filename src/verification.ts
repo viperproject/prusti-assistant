@@ -5,7 +5,7 @@ import * as util from "./util";
 import * as config from "./config"
 import * as dependencies from "./dependencies";
 import * as semver from "semver";
-import { Mutex, MutexInterface } from 'async-mutex';
+import { Mutex } from 'async-mutex';
 import { VerificationDiagnostics } from "./types/diagnostics";
 import { PrustiMessageConsumer, getRustcMessage, getCargoMessage } from "./types/message";
 import { QuantifierInstantiationsProvider, QuantifierChosenTriggersProvider } from "./types/quantifiers";
