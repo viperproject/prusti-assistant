@@ -5,6 +5,7 @@ import * as util from "./util";
 import * as config from "./config"
 import * as dependencies from "./dependencies";
 import * as semver from "semver";
+import { Mutex, MutexInterface } from 'async-mutex';
 import { VerificationDiagnostics } from "./types/diagnostics";
 import { PrustiMessageConsumer, getRustcMessage, getCargoMessage } from "./types/message";
 import { QuantifierInstantiationsProvider, QuantifierChosenTriggersProvider } from "./types/quantifiers";
@@ -34,7 +35,7 @@ export class VerificationArgs {
              selectiveVerification?: string,
              externalSpecRequest?: string,
         },
-        public currentRun: number,
+        public runCount: number,
     ) {}
 }
 
@@ -58,7 +59,9 @@ export class VerificationManager {
     private procDestructors: Set<util.KillFunction> = new Set();
     private verificationStatus: vscode.StatusBarItem;
     private killAllButton: vscode.StatusBarItem;
-    private runCount = 0;
+    private currentArgs: undefined|VerificationArgs;
+    private currentVerification: Promise<void>;
+    private verificationMutex: Mutex;
 
     private verificationDiagnostics: VerificationDiagnostics;
     private qip: QuantifierInstantiationsProvider;
@@ -71,6 +74,10 @@ export class VerificationManager {
     ) {
         this.verificationStatus = verificationStatus;
         this.killAllButton = killAllButton;
+        this.currentArgs = undefined;
+        // dummy promise
+        this.currentVerification = new Promise(resolve => resolve());
+        this.verificationMutex = new Mutex();
 
         this.qip = new QuantifierInstantiationsProvider();
         this.qctp = new QuantifierChosenTriggersProvider();
@@ -119,7 +126,7 @@ export class VerificationManager {
         let buffer = "";
         const isCrate = vArgs.target === VerificationTarget.Crate;
         const onOutput = (data: string) => {
-            if (vArgs.currentRun != this.runCount) {
+            if (this.currentArgs !== undefined && vArgs.runCount !== this.currentArgs.runCount) {
                 // there could be race conditions where messages are consumed after
                 // this check. If this becomes a problem, a more sophisticated check is needed
                 return;
@@ -257,13 +264,39 @@ export class VerificationManager {
     }
 
     public async verify(vArgs: VerificationArgs): Promise<void> {
-        // Prepare verification
-        this.runCount += 1;
-        vArgs.currentRun = this.runCount;
-        util.log(`Preparing verification run #${vArgs.currentRun}.`);
-        this.killAll();
-        this.killAllButton.show();
+        return await this.scheduleVerify(vArgs);
+    }
 
+    private async scheduleVerify(vArgs: VerificationArgs): Promise<Promise<void>> {
+        await this.verificationMutex.runExclusive(
+            async () => {
+                // if there is a proper verification running, we do not run one skipping verification
+                if (vArgs.skipVerify
+                    && this.currentArgs !== undefined
+                    && !this.currentArgs.skipVerify) {
+                    return;
+                }
+                this.killAll();
+                this.killAllButton.show();
+                // we wait for the earlier verification to terminate
+                await this.currentVerification;
+                // runCount should be obsolete by now, but I'll leave it here for now
+                if (this.currentArgs === undefined) {
+                    vArgs.runCount = 0;
+                } else {
+                    vArgs.runCount = this.currentArgs.runCount + 1;
+                }
+                this.currentArgs = vArgs;
+                // and here we start the next verification
+                this.currentVerification = this.internalVerify(vArgs);
+                return this.currentVerification;
+            }
+        );
+    }
+
+    private async internalVerify(vArgs: VerificationArgs): Promise<void> {
+        // Prepare verification
+        util.log(`Preparing verification run #${vArgs.runCount}.`);
         this.prepareVerification(vArgs);
 
         // Run verification
@@ -304,8 +337,8 @@ export class VerificationManager {
             util.userError(crashErrorMsg);
         }
 
-        if (vArgs.currentRun != this.runCount) {
-            util.log(`Discarding the result of the verification run #${vArgs.currentRun}, because the latest is #${this.runCount}.`);
+        if (this.currentArgs !== undefined && vArgs.runCount != this.currentArgs.runCount) {
+            util.log(`Discarding the result of the verification run #${vArgs.runCount}, because the latest is #${this.currentArgs.runCount}.`);
         } else {
             this.killAllButton.hide();
             this.verificationDiagnostics.renderIn();
