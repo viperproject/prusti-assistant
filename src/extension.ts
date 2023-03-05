@@ -288,6 +288,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                     await verify(document, false, {});
                 } else {
                     if (!verificationManager.wasVerifiedBefore(document.uri.fsPath)) {
+                        util.log("Running analysis on a file on open");
                         await verify(document, true, {});
                     }
                 }

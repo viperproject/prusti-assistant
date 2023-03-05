@@ -168,6 +168,7 @@ describe("Extension", () => {
         it(`scenario ${SCENARIO} reports expected diagnostics on ${program}`, async () => {
             const programPath = path.join(workspacePath(), program);
             const document = await openFile(programPath);
+            await new Promise(f => setTimeout(f, 1000));
             await vscode.commands.executeCommand("prusti-assistant.verify");
             const diagnostics = vscode.languages.getDiagnostics(document.uri);
             const plainDiagnostics = diagnostics.map(diagnosticToPlainObject);

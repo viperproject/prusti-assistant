@@ -272,6 +272,10 @@ export class VerificationManager {
     private async scheduleVerify(vArgs: VerificationArgs): Promise<Promise<void>> {
         await this.verificationMutex.runExclusive(
               async () => {
+                  util.log("Entering mutually exlusive verification zone");
+                  if (vArgs.skipVerify) {
+                      util.log("and skipping verificaiton");
+                  }
                   // if there is a proper verification running, we do not run one skipping verification
                   if (vArgs.skipVerify
                       && this.currentArgs !== undefined
