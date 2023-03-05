@@ -196,6 +196,8 @@ export class VerificationManager {
             PRUSTI_SELECTIVE_VERIFY: vArgs.defPathArg.selectiveVerification,
             PRUSTI_QUERY_METHOD_SIGNATURE: vArgs.defPathArg.externalSpecRequest,
             PRUSTI_REPORT_VIPER_MESSAGES: config.reportViperMessages() ? "true" : "false",
+            PRUSTI_SMT_QI_PROFILE: "true",
+            PRUSTI_SMT_QI_PROFILE_FREQ: "10000",
         };
 
         // with the newer version we can run prusti just to get information
@@ -269,29 +271,29 @@ export class VerificationManager {
 
     private async scheduleVerify(vArgs: VerificationArgs): Promise<Promise<void>> {
         await this.verificationMutex.runExclusive(
-            async () => {
-                // if there is a proper verification running, we do not run one skipping verification
-                if (vArgs.skipVerify
-                    && this.currentArgs !== undefined
-                    && !this.currentArgs.skipVerify) {
-                    return;
-                }
-                this.killAll();
-                this.killAllButton.show();
-                // we wait for the earlier verification to terminate
-                await this.currentVerification;
-                // runCount should be obsolete by now, but I'll leave it here for now
-                if (this.currentArgs === undefined) {
-                    vArgs.runCount = 0;
-                } else {
-                    vArgs.runCount = this.currentArgs.runCount + 1;
-                }
-                this.currentArgs = vArgs;
-                // and here we start the next verification
-                this.currentVerification = this.internalVerify(vArgs);
-                return this.currentVerification;
-            }
-        );
+              async () => {
+                  // if there is a proper verification running, we do not run one skipping verification
+                  if (vArgs.skipVerify
+                      && this.currentArgs !== undefined
+                      && !this.currentArgs.skipVerify) {
+                      return Promise.resolve();
+                  }
+                  this.killAll();
+                  this.killAllButton.show();
+                  // we wait for the earlier verification to terminate
+                  await this.currentVerification;
+                  // runCount should be obsolete by now, but I'll leave it here for now
+                  if (this.currentArgs === undefined) {
+                      vArgs.runCount = 0;
+                  } else {
+                      vArgs.runCount = this.currentArgs.runCount + 1;
+                  }
+                  this.currentArgs = vArgs;
+                  // and here we start the next verification
+                  this.currentVerification = this.internalVerify(vArgs).then(() => this.currentArgs = undefined);
+                  return this.currentVerification;
+              }
+          );
     }
 
     private async internalVerify(vArgs: VerificationArgs): Promise<void> {
