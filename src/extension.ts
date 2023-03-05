@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import * as config from "./config";
 import * as util from "./util";
 import * as checks from "./checks";
+import * as path from "path";
 import { prusti, installDependencies, updatePrustiSemVersion, prustiSemanticVersion } from "./dependencies";
 import * as server from "./server";
 import * as state from "./state";
@@ -270,7 +271,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Verify on save
     context.subscriptions.push(
         vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {
-            const is_prusti_toml = document.fileName.endsWith("Prusti.toml");
+            const is_prusti_toml = path.basename(document.fileName) === "Prusti.toml";
             if ((is_prusti_toml || document.languageId === "rust") && config.verifyOnSave()) {
                 await verify(document, false, {});
             } else {

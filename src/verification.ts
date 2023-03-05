@@ -193,7 +193,7 @@ export class VerificationManager {
         const versionDependentArgs =  outdatedPrustiVersion ? {} : {
             PRUSTI_SHOW_IDE_INFO: "true",
             PRUSTI_SKIP_VERIFICATION: vArgs.skipVerify ? "true" : "false",
-            PRUSTI_SELECTIVE_VERIFY: vArgs.defPathArg.selectiveVerification,
+            PRUSTI_VERIFY_ONLY_DEFPATH: vArgs.defPathArg.selectiveVerification,
             PRUSTI_QUERY_METHOD_SIGNATURE: vArgs.defPathArg.externalSpecRequest,
             PRUSTI_REPORT_VIPER_MESSAGES: config.reportViperMessages() ? "true" : "false",
             PRUSTI_SMT_QI_PROFILE: "true",
