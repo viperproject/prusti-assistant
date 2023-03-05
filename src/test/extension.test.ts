@@ -203,7 +203,8 @@ describe("Extension", () => {
                     "diagnostics": [] as unknown as Diagnostic[]
                 };
             }
-
+            console.log("Expected: " + JSON.stringify(expectedDiagnostics.diagnostics, null, 4));
+            console.log("Actual: " + JSON.stringify(plainDiagnostics, null, 4));
             expect(plainDiagnostics).to.deep.equal(expectedDiagnostics.diagnostics);
         });
     });

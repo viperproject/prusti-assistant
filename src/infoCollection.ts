@@ -31,7 +31,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
     private resultOnTabChangeRegister: vscode.Disposable;
 
     private decorations: Map<string, vscode.TextEditorDecorationType[]>;
-    // for proc_defs we also have a boolean on whether these values
+    // for procedureDefs we also have a boolean on whether these values
     // were already requested (for codelenses)
     private procedureDefs: Map<string, FunctionRef[]>;
     private functionCalls: Map<string, FunctionRef[]>;

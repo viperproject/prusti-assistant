@@ -143,6 +143,7 @@ export class VerificationDiagnostics implements PrustiMessageConsumer {
     }
 
     public reset(): void {
+        util.log("Resetting verification diagnostics")
         this.diagnostics = new Map<string, vscode.Diagnostic[]>();
         this.diagnosticCollection.clear();
     }
@@ -246,13 +247,13 @@ export class VerificationDiagnostics implements PrustiMessageConsumer {
 
     public processMessage(msg: Message, vArgs: VerificationArgs): void {
         const diag = parseDiagnostic(msg, vArgs.targetPath);
-        util.log("Consumed rustc message");
+        util.log("Consumed rustc message: " + msg.message);
         this.add(diag);
     }
 
     public processCargoMessage(msg: CargoMessage, vArgs: VerificationArgs): void {
         const diag = parseDiagnostic(msg, vArgs.targetPath);
-        util.log("Consumed cargo message");
+        util.log("Consumed cargo message: " + msg.message.message);
         this.add(diag);
     }
 }

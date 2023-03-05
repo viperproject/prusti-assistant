@@ -217,7 +217,7 @@ export class VerificationManager {
             },
             ...config.extraPrustiEnv(),
         };
-        util.log("Prusti client environment: " + JSON.stringify(prustiEnv));
+        util.log("Prusti client environment: " + JSON.stringify({...versionDependentArgs, ...config.extraPrustiEnv}, null, 4));
         const cwd = isCrate ? vArgs.targetPath : path.dirname(vArgs.targetPath);
         const onOutput= this.buildOutputClosure(vArgs);
         const output = await util.spawn(
