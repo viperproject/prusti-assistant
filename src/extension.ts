@@ -165,7 +165,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             selectiveVerification?: string,
             externalSpecRequest?: string,
         },
-        isOnOpen: boolean = false,
+        isOnOpen = false,
     ) {
         util.log(`Run verification on ${document.uri.fsPath}...`);
         await projects.update();

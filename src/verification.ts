@@ -5,7 +5,6 @@ import * as util from "./util";
 import * as config from "./config"
 import * as dependencies from "./dependencies";
 import * as semver from "semver";
-import { Mutex } from 'async-mutex';
 import { VerificationDiagnostics } from "./types/diagnostics";
 import { PrustiMessageConsumer, getRustcMessage, getCargoMessage } from "./types/message";
 import { QuantifierInstantiationsProvider, QuantifierChosenTriggersProvider } from "./types/quantifiers";
@@ -265,7 +264,7 @@ export class VerificationManager {
         return [status, output.duration];
     }
 
-    public async verify(vArgs: VerificationArgs) {
+    public async verify(vArgs: VerificationArgs): Promise<void> {
         // prepare verification:
         if (vArgs.isOnOpen) {
             // onOpen requests are only allowed when they are the first
