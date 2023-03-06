@@ -61,6 +61,8 @@ The main configuration options used by this extension are the following:
 * `prusti-assistant.buildChannel`: Allows to choose between the latest Prusti release version (the default) and a slightly newer but potentially unstable Prusti development version.
 * `prusti-assistant.checkForUpdates`: Specifies if Prusti should check for updates at startup.
 * `prusti-assistant.javaHome`: Specifies the path of the Java home folder (leave empty to auto-detect).
+* `prusti-assistant.contractsAsDefinitions`: If enabled, for every (impure a.t.m.) function call, one can invoke "peek definitions" to see its contracts. But this also means "jump-to-definition" will not work anymore for most functions if turned on.
+* `prusti-assistant.showViperMessages`: If enabled, more information about quantifiers is available.
 
 ### Inline Code Diagnostics
 

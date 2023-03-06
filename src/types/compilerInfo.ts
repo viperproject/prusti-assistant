@@ -3,7 +3,8 @@ import * as vscode from "vscode";
 import * as path from "path";
 import { Span, parseSpanRange } from "./message";
 
-// Additional Schemas for Custom information for IDE:
+/** Additional Schemas for Custom information for IDE:
+ */
 interface CompilerInfoRaw {
     procedure_defs: FunctionRefRaw[]
     function_calls: FunctionRefRaw[]
@@ -37,8 +38,8 @@ export interface FunctionRef {
 }
 
 /** Transform spans to ranges (rust repr. vs vscode representation) and
-* adjust paths of spans (for crates they are relative to root folder)
-*/
+ * adjust paths of spans (for crates they are relative to root folder)
+ */
 function transformCompilerInfo(info: CompilerInfoRaw, isCrate: boolean, root: string): CompilerInfo {
     const result: CompilerInfo = {
         rootPath: root,

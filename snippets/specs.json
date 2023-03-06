@@ -40,5 +40,19 @@
             "#[extern_spec($1)]"
         ],
         "description": "Insert #[extern_spec(...)]"
+    },
+    "beforeExpiry": {
+        "prefix": "before_expiry",
+        "body": [
+            "#[before_expiry($1)]"
+        ],
+        "description": "Insert #[before_expiry(...)]"
+    },
+    "afterExpiry": {
+        "prefix": "after_expiry",
+        "body": [
+            "#[after_expiry($1)]"
+        ],
+        "description": "Insert #[after_expiry(...)]"
     }
 }
