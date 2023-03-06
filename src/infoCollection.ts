@@ -129,7 +129,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
             if (pd.fileName === document.uri.fsPath) {
                 const codeLens = new vscode.CodeLens(pd.range);
                 codeLens.command = {
-                    title: "✓ Verify " + pd.identifier,
+                    title: "✓ Verify",
                     command: "prusti-assistant.verify-selective",
                     arguments: [pd.identifier]
                 };
