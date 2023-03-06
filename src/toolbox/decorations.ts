@@ -6,7 +6,7 @@ export function successfulVerificationDecorationType(time: number, cached: boole
     return vscode.window.createTextEditorDecorationType({
         gutterIconPath: icon,
         gutterIconSize: '80%',
-        after: timeAndCacheDecorator(time, cached),
+        after: timeAndCacheDecorator(time, cached, true),
     });
 }
 export function failedVerificationDecorationType(time: number, cached: boolean) : vscode.TextEditorDecorationType {
@@ -15,7 +15,7 @@ export function failedVerificationDecorationType(time: number, cached: boolean) 
     return vscode.window.createTextEditorDecorationType({
         gutterIconPath: icon,
         gutterIconSize: '80%',
-        after: timeAndCacheDecorator(time, cached),
+        after: timeAndCacheDecorator(time, cached, false),
     });
 }
 
@@ -31,9 +31,14 @@ export function notVerifiedDecorationType() : vscode.TextEditorDecorationType {
     });
 }
 
-function timeAndCacheDecorator(time: number, cached: boolean) : vscode.ThemableDecorationAttachmentRenderOptions {
+function timeAndCacheDecorator(time: number, cached: boolean, success: boolean) : vscode.ThemableDecorationAttachmentRenderOptions {
     const cachedStr = cached ? " (cached)":"";
-    const text = `  [Verified in ${time} ms${cachedStr}]`;
+    let text;
+    if (success) {
+        text = `  [Verified in ${time} ms${cachedStr}]`;
+    } else {
+        text = `  [Failed verification in ${time} ms${cachedStr}]`;
+    }
     return {
         contentText: text,
         color: "gray",
