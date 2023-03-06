@@ -35,7 +35,9 @@ export class VerificationArgs {
              selectiveVerification?: string,
              externalSpecRequest?: string,
         },
-        public runCount: number,
+        // whether this request was sent because of an onOpen event
+        public isOnOpen: boolean,
+        public currentRun: number,
     ) {}
 }
 
@@ -59,14 +61,15 @@ export class VerificationManager {
     private procDestructors: Set<util.KillFunction> = new Set();
     private verificationStatus: vscode.StatusBarItem;
     private killAllButton: vscode.StatusBarItem;
-    private currentArgs: undefined|VerificationArgs;
-    private currentVerification: Promise<void>;
-    private verificationMutex: Mutex;
 
     private verificationDiagnostics: VerificationDiagnostics;
     private qip: QuantifierInstantiationsProvider;
     private qctp: QuantifierChosenTriggersProvider;
     private infoCollection: InfoCollection;
+    // the global runCount
+    private runCount = 0;
+    // whether a file has been opened before
+    public opened: Set<string>;
 
     public constructor(
         verificationStatus: vscode.StatusBarItem,
@@ -74,15 +77,12 @@ export class VerificationManager {
     ) {
         this.verificationStatus = verificationStatus;
         this.killAllButton = killAllButton;
-        this.currentArgs = undefined;
-        // dummy promise
-        this.currentVerification = new Promise(resolve => resolve());
-        this.verificationMutex = new Mutex();
 
         this.qip = new QuantifierInstantiationsProvider();
         this.qctp = new QuantifierChosenTriggersProvider();
         this.infoCollection = new InfoCollection(this);
         this.verificationDiagnostics = new VerificationDiagnostics();
+        this.opened = new Set();
     }
 
     public dispose(): void {
@@ -126,7 +126,7 @@ export class VerificationManager {
         let buffer = "";
         const isCrate = vArgs.target === VerificationTarget.Crate;
         const onOutput = (data: string) => {
-            if (this.currentArgs !== undefined && vArgs.runCount !== this.currentArgs.runCount) {
+            if (vArgs.currentRun !== this.runCount) {
                 // there could be race conditions where messages are consumed after
                 // this check. If this becomes a problem, a more sophisticated check is needed
                 return;
@@ -265,44 +265,27 @@ export class VerificationManager {
         return [status, output.duration];
     }
 
-    public async verify(vArgs: VerificationArgs): Promise<void> {
-        return await this.scheduleVerify(vArgs);
-    }
+    public async verify(vArgs: VerificationArgs) {
+        // prepare verification:
+        if (vArgs.isOnOpen) {
+            // onOpen requests are only allowed when they are the first
+            // verification that is executed on this file / crate.
+            // This was problematic because sometimes (tests mainly) the
+            // verification that was invoked manually happened first, followed
+            // by the OnOpen verification (which would clear the previous results)
+            if (this.opened.has(vArgs.targetPath)) {
+                // this path was verified before
+                return
+            }
+        }
+        this.opened.add(vArgs.targetPath);
+        this.runCount += 1;
+        vArgs.currentRun = this.runCount;
 
-    private async scheduleVerify(vArgs: VerificationArgs): Promise<Promise<void>> {
-        await this.verificationMutex.runExclusive(
-              async () => {
-                  util.log("Entering mutually exlusive verification zone");
-                  if (vArgs.skipVerify) {
-                      util.log("and skipping verificaiton");
-                  }
-                  // if there is a proper verification running, we do not run one skipping verification
-                  if (vArgs.skipVerify
-                      && this.currentArgs !== undefined
-                      && !this.currentArgs.skipVerify) {
-                      return Promise.resolve();
-                  }
-                  this.killAll();
-                  this.killAllButton.show();
-                  // we wait for the earlier verification to terminate
-                  await this.currentVerification;
-                  // runCount should be obsolete by now, but I'll leave it here for now
-                  if (this.currentArgs === undefined) {
-                      vArgs.runCount = 0;
-                  } else {
-                      vArgs.runCount = this.currentArgs.runCount + 1;
-                  }
-                  this.currentArgs = vArgs;
-                  // and here we start the next verification
-                  this.currentVerification = this.internalVerify(vArgs).then(() => this.currentArgs = undefined);
-                  return this.currentVerification;
-              }
-          );
-    }
+        util.log(`Preparing verification run #${vArgs.currentRun}. isOnOpen: ${vArgs.isOnOpen}`);
+        this.killAll(); // kill all current subprocesses
+        this.killAllButton.show();
 
-    private async internalVerify(vArgs: VerificationArgs): Promise<void> {
-        // Prepare verification
-        util.log(`Preparing verification run #${vArgs.runCount}.`);
         this.prepareVerification(vArgs);
 
         // Run verification
@@ -343,8 +326,10 @@ export class VerificationManager {
             util.userError(crashErrorMsg);
         }
 
-        if (this.currentArgs !== undefined && vArgs.runCount != this.currentArgs.runCount) {
-            util.log(`Discarding the result of the verification run #${vArgs.runCount}, because the latest is #${this.currentArgs.runCount}.`);
+        // here the "global" runCount is important, not per file, because
+        // the verificationStatus is displayed independant of the open editor
+        if (vArgs.currentRun != this.runCount) {
+            util.log(`Discarding the result of the verification run #${vArgs.currentRun}, because the latest is #${this.runCount}.`);
         } else {
             this.killAllButton.hide();
             this.verificationDiagnostics.renderIn();

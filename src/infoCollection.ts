@@ -81,8 +81,8 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
     }
 
     /** When opening a new file, check whether it is part of a crate that
-    * has been verified before. Before in this context means while vscode
-    * was running.
+    * has been verified before. Before in this context means "during this
+    * run"
     */
     public wasVerifiedBefore(programPath: string): boolean {
         const root = util.getRootPath(programPath);

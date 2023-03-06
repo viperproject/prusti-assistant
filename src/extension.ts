@@ -164,7 +164,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         defPathArg: {
             selectiveVerification?: string,
             externalSpecRequest?: string,
-        }
+        },
+        isOnOpen: boolean = false,
     ) {
         util.log(`Run verification on ${document.uri.fsPath}...`);
         await projects.update();
@@ -193,6 +194,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                     verification.VerificationTarget.StandaloneFile,
                     skipVerify,
                     defPathArg,
+                    isOnOpen,
                     0,
                 )
             );
@@ -205,6 +207,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                     verification.VerificationTarget.Crate,
                     skipVerify,
                     defPathArg,
+                    isOnOpen,
                     0,
                 )
             );
@@ -284,12 +287,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     context.subscriptions.push(
         vscode.workspace.onDidOpenTextDocument(async (document: vscode.TextDocument) => {
             if (document.languageId === "rust") {
+                // the only two cases where we pass the onOpen boolean as true
                 if (config.verifyOnOpen()) {
-                    await verify(document, false, {});
+                    await verify(document, false, {}, true);
                 } else {
                     if (!verificationManager.wasVerifiedBefore(document.uri.fsPath)) {
                         util.log("Running analysis on a file on open");
-                        await verify(document, true, {});
+                        await verify(document, true, {}, true);
                     }
                 }
             }
