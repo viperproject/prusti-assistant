@@ -124,7 +124,7 @@ export async function restart(_context: vscode.ExtensionContext, verificationSta
         {
             PRUSTI_REPORT_VIPER_MESSAGES: config.reportViperMessages() ? "true" : "false",
             PRUSTI_SMT_QI_PROFILE: "true",
-            PRUSTI_SMT_QI_PROFILE_FREQ: "10000",
+            PRUSTI_SMT_QI_PROFILE_FREQ: "100",
 
         };
 
