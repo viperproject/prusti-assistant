@@ -40,7 +40,7 @@ export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, P
         this.stateMap.set(fileName, new Map());
     }
 
-    private getHoverText(document: vscode.TextDocument, position: vscode.Position): string|undefined {
+    private getHoverText(document: vscode.TextDocument, position: vscode.Position): vscode.MarkdownString|undefined {
         const rangeMap = this.stateMap.get(document.fileName);
         if (rangeMap === undefined) {
             return undefined;
@@ -60,8 +60,12 @@ export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, P
         }
         const rangeStr = JSON.stringify(matchingRange);
         const [quantifier, triggers] = rangeMap.get(rangeStr)!;
-        const text = `Viper quantifier: ${quantifier}\nViper triggers: ${triggers}`
-        return text;
+        const md_text = new vscode.MarkdownString();
+        md_text.appendMarkdown("**Viper quantifier:**");
+        md_text.appendText(`\n${quantifier}\n`);
+        md_text.appendMarkdown("**Viper triggers:**");
+        md_text.appendText(`\n${triggers}`);
+        return md_text;
     }
 
     public provideHover(document: vscode.TextDocument, position: vscode.Position, _token: vscode.CancellationToken): vscode.Hover|undefined {
@@ -69,9 +73,7 @@ export class QuantifierChosenTriggersProvider implements vscode.HoverProvider, P
         if (text === undefined) {
             return undefined;
         }
-        const md_text = new vscode.MarkdownString();
-        md_text.appendText(text);
-        return new vscode.Hover(md_text);
+        return new vscode.Hover(text);
     }
 
     public reset(): void {
@@ -206,7 +208,7 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
         return hint;
     }
 
-    private getHoverText(document: vscode.TextDocument, position: vscode.Position): string|undefined {
+    private getHoverText(document: vscode.TextDocument, position: vscode.Position): vscode.MarkdownString|undefined {
         const rangeMap = this.stateMap.get(document.fileName);
         if (rangeMap === undefined) {
             return undefined;
@@ -226,8 +228,9 @@ export class QuantifierInstantiationsProvider implements vscode.InlayHintsProvid
         }
         const rangeStr = JSON.stringify(matchingRange);
         const methodMapEntries = Array.from(rangeMap.get(rangeStr)!.entries());
-        const text = methodMapEntries.reduce((str, entry) => {return str.concat(`${entry[0]}: ${entry[1]}, `)}, "Quantifier instantiations per method: ").slice(0, -2);
-        return text;
+        const md_text = new vscode.MarkdownString("**Quantifier instantiations per method:**");
+        md_text.appendText(methodMapEntries.reduce((str, entry) => {return str.concat(`${entry[0]}: ${entry[1]}, `)}, "\n").slice(0, -2));
+        return md_text;
     }
 
     public provideHover(document: vscode.TextDocument, position: vscode.Position, _token: vscode.CancellationToken): vscode.Hover|undefined {
