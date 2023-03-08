@@ -122,10 +122,9 @@ export async function restart(_context: vscode.ExtensionContext, verificationSta
     // only set this env variable if prusti has at least version 0.3.0
     const versionDependentArgs = semver.lt(prustiSemanticVersion, "0.3.0") ? {} :
         {
-            PRUSTI_REPORT_VIPER_MESSAGES: config.reportViperMessages() ? "true" : "false",
-            PRUSTI_SMT_QI_PROFILE: "true",
-            PRUSTI_SMT_QI_PROFILE_FREQ: "100",
-
+            PRUSTI_REPORT_VIPER_MESSAGES: config.reportViperMessages().toString(),
+            PRUSTI_SMT_QI_PROFILE: config.reportViperMessages().toString(),
+            PRUSTI_SMT_QI_PROFILE_FREQ: config.reportViperMessages() ? config.z3QiProfileFreq().toString() : "",
         };
 
     const prustiServerEnv = {

@@ -108,3 +108,7 @@ export function contractsAsDefinitions(): boolean {
 export function reportViperMessages(): boolean {
     return config().get("reportViperMessages", true);
 }
+
+export function z3QiProfileFreq(): number {
+    return config().get("z3QiProfileFreq", 100);
+}

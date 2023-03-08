@@ -184,10 +184,15 @@
                     "default": false,
                     "description": "If enabled you can use 'goto definition' to view contracts of function calls."
                 },
-                "prusti-assistant.showViperMessages": {
+                "prusti-assistant.reportViperMessages": {
                     "type": "boolean",
                     "default": true,
                     "description": "If enabled more information about quantifiers is available. This feature has to be enabled also server-side (done by this extension)."
+                },
+                "prusti-assistant.z3QiProfileFreq": {
+                    "type": "number",
+                    "default": 100,
+                    "description": "The frequency in which Z3 should report quantifier instantiations. The lower this value, the slower Z3 becomes. Used to display quantifier information. Only considered when reportViperMessages is set."
                 }
             }
         }
