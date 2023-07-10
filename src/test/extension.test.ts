@@ -31,7 +31,7 @@ function openFile(filePath: string): Promise<vscode.TextDocument> {
 }
 
 /**
- * Evaluate tje filter used in the `.rs.json` expected diagnostics.
+ * Evaluate the filter used in the `.rs.json` expected diagnostics.
  * @param filter The filter dictionary.
  * @param name The name of the filter.
  * @returns True if the filter is fully satisfied, otherwise false.
@@ -168,6 +168,7 @@ describe("Extension", () => {
         it(`scenario ${SCENARIO} reports expected diagnostics on ${program}`, async () => {
             const programPath = path.join(workspacePath(), program);
             const document = await openFile(programPath);
+            // await new Promise(f => setTimeout(f, 1000));
             await vscode.commands.executeCommand("prusti-assistant.verify");
             const diagnostics = vscode.languages.getDiagnostics(document.uri);
             const plainDiagnostics = diagnostics.map(diagnosticToPlainObject);
@@ -203,7 +204,8 @@ describe("Extension", () => {
                     "diagnostics": [] as unknown as Diagnostic[]
                 };
             }
-
+            console.log("Expected: " + JSON.stringify(expectedDiagnostics.diagnostics, null, 4));
+            console.log("Actual: " + JSON.stringify(plainDiagnostics, null, 4));
             expect(plainDiagnostics).to.deep.equal(expectedDiagnostics.diagnostics);
         });
     });

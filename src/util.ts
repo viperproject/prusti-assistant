@@ -1,8 +1,7 @@
 import * as childProcess from "child_process";
 import * as vscode from "vscode";
-import * as fs from "fs";
-import * as path from "path";
 import * as treeKill from "tree-kill";
+import { projects } from "./projects";
 
 export function userInfo(message: string, statusBar?: vscode.StatusBarItem): void {
     log(message);
@@ -61,18 +60,27 @@ export function userErrorPopup(message: string, actionLabel: string, action: () 
         .then(undefined, err => log(`Error: ${err}`));
 }
 
-export function userInfoPopup(message: string, actionLabel: string, action: () => void, statusBar?: vscode.StatusBarItem): void {
+export function userInfoPopup(message: string, actionLabel?: string, action?: () => void, statusBar?: vscode.StatusBarItem): void {
     log(message);
     if (statusBar) {
         statusBar.text = message;
     }
-    vscode.window.showInformationMessage(message, actionLabel)
-        .then(selection => {
-            if (selection === actionLabel) {
-                action();
-            }
-        })
-        .then(undefined, err => log(`Error: ${err}`));
+    if (action != undefined && actionLabel != undefined) {
+        vscode.window.showInformationMessage(message, actionLabel)
+            .then(selection => {
+                if (selection === actionLabel) {
+                    action();
+                }
+            })
+            .then(undefined, err => log(`Error: ${err}`));
+    } else {
+        void vscode.window.showInformationMessage(message);
+    }
+}
+
+const subProcessLogChannel = vscode.window.createOutputChannel("Prusti Assistant Subprocesses")
+function logSubProcess(message: string): void {
+    subProcessLogChannel.appendLine(message);
 }
 
 const logChannel = vscode.window.createOutputChannel("Prusti Assistant");
@@ -156,14 +164,14 @@ export function spawn(
 
     function printOutput(duration: Duration, code: number | null, signal: NodeJS.Signals | null) {
         const durationSecMsg = (duration[0] + duration[1] / 1e9).toFixed(1);
-        log(`Output from '${description}' (${durationSecMsg}s):`);
-        log("┌──── Begin stdout ────┐");
-        log(stdout);
-        log("└──── End stdout ──────┘");
-        log("┌──── Begin stderr ────┐");
-        log(stderr);
-        log("└──── End stderr ──────┘");
-        log(`Exit code ${code}, signal ${signal}.`);
+        logSubProcess(`Output from '${description}' (${durationSecMsg}s):`);
+        logSubProcess("┌──── Begin stdout ────┐");
+        logSubProcess(stdout);
+        logSubProcess("└──── End stdout ──────┘");
+        logSubProcess("┌──── Begin stderr ────┐");
+        logSubProcess(stderr);
+        logSubProcess("└──── End stderr ──────┘");
+        logSubProcess(`Exit code ${code}, signal ${signal}.`);
     }
 
     return new Promise((resolve, reject) => {
@@ -187,54 +195,29 @@ export function spawn(
     });
 }
 
-export class Project {
-    readonly path;
-
-    public constructor(_path: string) {
-        this.path = _path;
-    }
-
-    public hasRootFile(fileName: string): Promise<boolean> {
-        const filePath = path.join(this.path, fileName);
-        return new Promise(resolve => {
-            fs.access(filePath, fs.constants.F_OK, (err) => resolve(err === null));
-        });
-    }
-}
-
-export class ProjectList {
-    public constructor(readonly projects: Project[]) {}
-
-    public isEmpty(): boolean {
-        return this.projects.length === 0;
-    }
-
-    public getParent(file: string): Project | undefined {
-        let result: Project | undefined;
-        // Find the last (innermost) project that contains the file.
-        for (const project of this.projects) {
-            if (file.startsWith(project.path)) {
-                result = project;
-            }
-        }
-        return result;
-    }
-}
-
 /**
- * Find all projects in the workspace that contain a Cargo.toml file.
- *
- * @returns A project list.
+ * Given a range, possibly spanning multiple lines this function will return a range
+ * that includes all of the first line. The purpose of this is that decorators
+ * that are displayed "behind" this range, will not be in the middle of some text
  */
-export async function findProjects(): Promise<ProjectList> {
-    const projects: Project[] = [];
-    (await vscode.workspace.findFiles("**/Cargo.toml")).forEach((uri: vscode.Uri) => {
-        projects.push(new Project(uri.fsPath.replace(/[/\\]?Cargo\.toml$/, "")));
-    });
-    projects.sort((a, b) => {
-        if (a.path > b.path) { return 1; }
-        if (a.path < b.path) { return -1; }
-        return 0;
-    });
-    return new ProjectList(projects);
+export function fullLineRange(range: vscode.Range): vscode.Range {
+    const position = new vscode.Position(range.start.line, range.start.character);
+    const position_test = new vscode.Position(range.start.line, Number.MAX_SAFE_INTEGER);
+
+    return new vscode.Range(position, position_test)
+}
+
+/** Either returns the path to the root of the crate containing
+* the file (at filePath), or just filePath itself, if it's
+* a standalone file
+*/
+export function getRootPath(filePath: string): string {
+    let res;
+    const parent = projects.getParent(filePath);
+    if (parent !== undefined) {
+        res = parent.path;
+    } else {
+        res = filePath;
+    }
+    return res;
 }

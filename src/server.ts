@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import * as util from "./util";
-import { prusti } from "./dependencies";
+import * as semver from "semver";
+import { prusti, prustiSemanticVersion } from "./dependencies";
 import * as config from "./config";
 import { ServerManager } from "./toolbox/serverManager";
 
@@ -97,7 +98,7 @@ function waitUntilReady(timeout = 10_000): Promise<void> {
 /**
  * Start or restart the server.
  */
-export async function restart(context: vscode.ExtensionContext, verificationStatus: vscode.StatusBarItem): Promise<void> {
+export async function restart(_context: vscode.ExtensionContext, verificationStatus: vscode.StatusBarItem): Promise<void> {
     await stop();
 
     const configAddress = config.serverAddress();
@@ -116,13 +117,25 @@ export async function restart(context: vscode.ExtensionContext, verificationStat
     const prustiServerArgs = ["--port=0"].concat(
         config.extraPrustiServerArgs()
     );
+    util.log("Prusti server args: " + prustiServerArgs.toString());
+
+    // only set this env variable if prusti has at least version 0.3.0
+    const versionDependentArgs = semver.lt(prustiSemanticVersion, "0.3.0") ? {} :
+        {
+            PRUSTI_REPORT_VIPER_MESSAGES: config.reportViperMessages().toString(),
+            PRUSTI_SMT_QI_PROFILE: config.reportViperMessages().toString(),
+            PRUSTI_SMT_QI_PROFILE_FREQ: config.reportViperMessages() ? config.z3QiProfileFreq().toString() : "",
+        };
+
     const prustiServerEnv = {
         ...process.env,  // Needed to run Rustup
+        ...versionDependentArgs,
         ...{
             JAVA_HOME: (await config.javaHome())!.path,
         },
         ...config.extraPrustiEnv(),
     };
+    util.log("Prusti server environment: " + JSON.stringify(prustiServerEnv));
 
     server.initiateStart(
         prusti!.prustiServer,

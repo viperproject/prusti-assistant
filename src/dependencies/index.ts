@@ -9,6 +9,7 @@ import { PrustiLocation } from "./PrustiLocation";
 import { prustiTools } from "./prustiTools";
 
 export let prusti: PrustiLocation | undefined;
+export let prustiSemanticVersion = "0.0.0";
 export async function installDependencies(context: vscode.ExtensionContext, shouldUpdate: boolean, verificationStatus: vscode.StatusBarItem): Promise<void> {
     try {
         util.log(`${shouldUpdate ? "Updating" : "Installing"} Prusti dependencies...`);
@@ -49,12 +50,10 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
             prusti.rustToolchainFile(),
         );
     } catch (err) {
-        util.userError(
-            `Error installing Prusti. Please restart the IDE to retry. Details: ${err}`,
-            true, verificationStatus
-        );
+        util.userError(`Error installing Prusti: ${err}`, true, verificationStatus);
         throw err;
     } finally {
+        await updatePrustiSemVersion();
         await server.restart(context, verificationStatus);
     }
 }
@@ -72,3 +71,12 @@ export async function prustiVersion(): Promise<string> {
     }
     return version;
 }
+
+export async function updatePrustiSemVersion(): Promise<void> {
+    const version = await prustiVersion();
+    // version will have the form Prusti version: 0.x.x, commit 234..hash..
+    const result = version.split(" ")[2].slice(0, -1);
+    util.log("Setting prustiVersion to " + result);
+    prustiSemanticVersion = result;
+}
+

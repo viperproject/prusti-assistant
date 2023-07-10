@@ -12,7 +12,7 @@ type ResolveReject = { resolve: () => void, reject: (err: Error) => void };
 
 interface WaitingForState {
     [details: string]: ResolveReject[];
-} 
+}
 
 export class StateMachine {
     private readonly name: string;
@@ -22,7 +22,7 @@ export class StateMachine {
 
     /**
      * Construct a new state machine.
-     * 
+     *
      * @throw Will throw an error if `currentState` is not among the \
      *        `validStates`.
      */
@@ -69,7 +69,7 @@ export class StateMachine {
         }
 
         this.currentState = newState;
-    
+
         const callbacks: ResolveReject[] = this.waitingForState[newState]
 
         let badCallback = undefined;
@@ -99,7 +99,7 @@ export class StateMachine {
      * Return a promise that will resolve when the state becomes `targetState`.
      * Only one promise - the last one - is allowed to modify the state.
      * If a promise modifies the state any further promise will be rejected.
-     * 
+     *
      * @throw Will throw an error if `targetState` is not a valid state.
      */
     public waitForState(targetState: string): Promise<void> {

@@ -100,3 +100,15 @@ export function extraCargoPrustiArgs(): string[] {
 export function extraPrustiServerArgs(): string[] {
     return config().get("extraPrustiServerArgs", []);
 }
+
+export function contractsAsDefinitions(): boolean {
+    return config().get("contractsAsDefinitions", false);
+}
+
+export function reportViperMessages(): boolean {
+    return config().get("reportViperMessages", true);
+}
+
+export function z3QiProfileFreq(): number {
+    return config().get("z3QiProfileFreq", 100);
+}
