@@ -80,6 +80,9 @@ export function log(message: string): void {
     console.log(message);
     logChannel.appendLine(message);
 }
+export function showLogs(): void {
+    logChannel.show();
+}
 
 export type Duration = [seconds: number, nanoseconds: number];
 export type KillFunction = () => void;

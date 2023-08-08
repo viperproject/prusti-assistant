@@ -10,6 +10,10 @@ const server = new ServerManager(
     util.log
 );
 
+export function showLogs(): void {
+    serverChannel.show();
+}
+
 server.waitForUnrecoverable().then(() => {
     util.log(`Prusti server is unrecorevable.`);
     address = undefined;
@@ -31,8 +35,8 @@ export function registerCrashHandler(context: vscode.ExtensionContext, verificat
         // Ask the user to restart the server
         util.userErrorPopup(
             "Prusti server stopped working. " +
-            "We would appreciate a [bug report](https://github.com/viperproject/prusti-dev/issues/new). " +
-            "See the log (View -> Output -> Prusti Assistant Server) for more details.",
+            "If the issue persists, please open a [bug report](https://github.com/viperproject/prusti-dev/issues/new). " +
+            "See [the server logs](command:prusti-assistant.openServerLogs) for more details.",
             "Restart Server",
             () => {
                 restart(context, verificationStatus).then(
