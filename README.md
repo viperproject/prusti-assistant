@@ -58,7 +58,7 @@ The main configuration options used by this extension are the following:
 
 * `prusti-assistant.verifyOnSave`: Specifies if programs should be verified on save.
 * `prusti-assistant.verifyOnOpen`: Specifies if programs should be verified when opened.
-* `prusti-assistant.buildChannel`: Allows to choose between the latest Prusti release version (the default) and a slightly newer but potentially unstable Prusti development version.
+* `prusti-assistant.prustiVersion`: Allows to choose between the latest Prusti release (the default), a fixed release specified as a GitHub tag, or a local build of Prusti.
 * `prusti-assistant.checkForUpdates`: Specifies if Prusti should check for updates at startup.
 * `prusti-assistant.javaHome`: Specifies the path of the Java home folder (leave empty to auto-detect).
 

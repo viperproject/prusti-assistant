@@ -112,14 +112,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Update dependencies on config change
     context.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration(async event => {
-            const hasChangedChannel = event.affectsConfiguration(config.buildChannelPath);
+            const hasChangedVersion = event.affectsConfiguration(config.prustiVersionPath);
             const hasChangedLocation = (
-                config.buildChannel() === config.BuildChannel.Local
+                config.prustiVersion() === config.PrustiVersion.Local
                 && event.affectsConfiguration(config.localPrustiPathPath)
             );
-            if (hasChangedChannel || hasChangedLocation) {
+            const hasChangedTag = (
+                config.prustiVersion() === config.PrustiVersion.Tag
+                && event.affectsConfiguration(config.prustiTagPath)
+            );
+            if (hasChangedVersion || hasChangedLocation || hasChangedTag) {
                 util.log("Install the dependencies because the configuration has changed...");
-                await installDependencies(context, false, verificationStatus);
+                const reDownload = config.prustiVersion() === config.PrustiVersion.Tag;
+                await installDependencies(context, reDownload, verificationStatus);
             }
             const hasChangedServer = event.affectsConfiguration(config.serverAddressPath);
             if (hasChangedServer) {

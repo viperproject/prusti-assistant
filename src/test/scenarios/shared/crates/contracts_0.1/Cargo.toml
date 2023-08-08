@@ -4,4 +4,4 @@ version = "0.1.0"
 edition = "2018"
 
 [dependencies]
-prusti-contracts = "0.1.2"
+prusti-contracts = "*"

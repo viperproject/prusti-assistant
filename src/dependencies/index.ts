@@ -21,7 +21,7 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
         const deps = await prustiTools(tools.currentPlatform!, context);
         const { result, didReportProgress } = await tools.withProgressInWindow(
             `${shouldUpdate ? "Updating" : "Installing"} Prusti`,
-            listener => deps.install(config.buildChannel(), shouldUpdate, listener)
+            listener => deps.install(config.prustiVersion(), shouldUpdate, listener)
         );
         if (!(result instanceof tools.Success)) {
             util.userError(

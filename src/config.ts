@@ -9,31 +9,31 @@ export function config(): vscode.WorkspaceConfiguration {
     return vscode.workspace.getConfiguration(namespace);
 }
 
-export enum BuildChannel {
-    LatestRelease = "LatestRelease",
-    LatestDev = "LatestDev",
+export enum PrustiVersion {
+    Latest = "Latest",
+    Tag = "Tag",
     Local = "Local"
 }
 
-export const buildChannelKey = "buildChannel";
-export const buildChannelPath = `${namespace}.${buildChannelKey}`;
+export const prustiVersionKey = "prustiVersion";
+export const prustiVersionPath = `${namespace}.${prustiVersionKey}`;
 
-export function buildChannel(): BuildChannel {
-    const defaultChannel = BuildChannel.LatestRelease;
-    const channelName = config().get(buildChannelKey, defaultChannel as string);
-    const channel = BuildChannel[
+export function prustiVersion(): PrustiVersion {
+    const defaultVersion = PrustiVersion.Latest;
+    const versionName = config().get(prustiVersionKey, defaultVersion as string);
+    const version = PrustiVersion[
         // Convert string to enum. See https://stackoverflow.com/a/17381004/2491528
-        channelName as keyof typeof BuildChannel
+        versionName as keyof typeof PrustiVersion
     ];
-    if (channel !== undefined) {
-        return channel;
+    if (version !== undefined) {
+        return version;
     } else {
         util.userError(
-            `Prusti has no build channel named ${channelName}; defaulting to ${defaultChannel}. ` +
+            `Prusti has no version named ${versionName}; defaulting to ${defaultVersion}. ` +
             "This has been probably caused by an update of the extension. " +
-            "To fix this error, please choose a valid build channel in the settings."
+            "To fix this error, please choose a valid version in the settings."
         );
-        return defaultChannel;
+        return defaultVersion;
     }
 }
 
@@ -42,6 +42,13 @@ export const localPrustiPathPath = `${namespace}.${localPrustiPathKey}`;
 
 export function localPrustiPath(): string {
     return config().get(localPrustiPathKey, "");
+}
+
+const prustiTagKey = "prustiTag";
+export const prustiTagPath = `${namespace}.${prustiTagKey}`;
+
+export function prustiTag(): string {
+    return config().get(prustiTagKey, "").trim();
 }
 
 export function checkForUpdates(): boolean {

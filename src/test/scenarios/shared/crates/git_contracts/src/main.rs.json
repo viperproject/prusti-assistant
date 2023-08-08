@@ -24,7 +24,7 @@
                             "line": 3
                         }
                     },
-                    "uri": "crates/published_contracts/src/main.rs"
+                    "uri": "crates/git_contracts/src/main.rs"
                 },
                 "message": "`#[warn(unused_variables)]` on by default"
             },
@@ -40,7 +40,7 @@
                             "line": 3
                         }
                     },
-                    "uri": "crates/published_contracts/src/main.rs"
+                    "uri": "crates/git_contracts/src/main.rs"
                 },
                 "message": "if this is intentional, prefix it with an underscore"
             }
@@ -72,7 +72,7 @@
                             "line": 2
                         }
                     },
-                    "uri": "crates/published_contracts/src/main.rs"
+                    "uri": "crates/git_contracts/src/main.rs"
                 },
                 "message": "the failing assertion is here"
             }

@@ -12,7 +12,7 @@ The structure of this folder is:
 * `<scenario_case>/crates/<crate_name>/...` — A crate test case of the scenario.
     * Each `.rs` file is expected to have a corresponding `.rs.json` file containing the expected diagnostics.
 
-The special "shared" scenario does not contain `settings.json` and implicitly part of all other scenarios.
+The special "shared" scenario does not contain `settings.json` and is implicitly inherited by all other scenarios.
 
 ## Expected diagnostics
 

@@ -1,0 +1,82 @@
+[
+    {
+        "message": "[unused_variables] unused variable: `unused`.",
+        "range": {
+            "end": {
+                "character": 22,
+                "line": 3
+            },
+            "start": {
+                "character": 16,
+                "line": 3
+            }
+        },
+        "relatedInformation": [
+            {
+                "location": {
+                    "range": {
+                        "end": {
+                            "character": 22,
+                            "line": 3
+                        },
+                        "start": {
+                            "character": 16,
+                            "line": 3
+                        }
+                    },
+                    "uri": "crates/contracts_0.1/src/main.rs"
+                },
+                "message": "`#[warn(unused_variables)]` on by default"
+            },
+            {
+                "location": {
+                    "range": {
+                        "end": {
+                            "character": 22,
+                            "line": 3
+                        },
+                        "start": {
+                            "character": 16,
+                            "line": 3
+                        }
+                    },
+                    "uri": "crates/contracts_0.1/src/main.rs"
+                },
+                "message": "if this is intentional, prefix it with an underscore"
+            }
+        ],
+        "severity": 1
+    },
+    {
+        "message": "[Prusti: verification error] precondition might not hold.",
+        "range": {
+            "end": {
+                "character": 14,
+                "line": 8
+            },
+            "start": {
+                "character": 4,
+                "line": 8
+            }
+        },
+        "relatedInformation": [
+            {
+                "location": {
+                    "range": {
+                        "end": {
+                            "character": 18,
+                            "line": 2
+                        },
+                        "start": {
+                            "character": 11,
+                            "line": 2
+                        }
+                    },
+                    "uri": "crates/contracts_0.1/src/main.rs"
+                },
+                "message": "the failing assertion is here"
+            }
+        ],
+        "severity": 0
+    }
+]

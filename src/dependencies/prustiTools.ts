@@ -8,9 +8,9 @@ import * as config from "../config";
 export async function prustiTools(
     platform: vvt.Platform,
     context: vscode.ExtensionContext
-): Promise<vvt.Dependency<config.BuildChannel>> {
+): Promise<vvt.Dependency<config.PrustiVersion>> {
     const id = identifier(platform);
-    const channel = config.BuildChannel;
+    const version = config.PrustiVersion;
 
     // Token used to avoid rate limits while testing
     const authorization_token = process.env.GITHUB_TOKEN
@@ -18,34 +18,40 @@ export async function prustiTools(
         console.info("Using authorization token");
     }
 
-    const getReleaseUrl = (): Promise<string> => {
+    // Get the latest among releases and pre-releases
+    const getLatestReleaseUrl = (): Promise<string> => {
         return vvt.GitHubReleaseAsset.getLatestAssetUrl(
-            "viperproject", "prusti-dev", `prusti-release-${id}.zip`,
-            false,
-            authorization_token,
-        );
-    }
-    const getDevUrl = (): Promise<string> => {
-        return vvt.GitHubReleaseAsset.getLatestAssetUrl(
-            "viperproject", "prusti-dev", `prusti-release-${id}.zip`,
-            true,
-            authorization_token,
+            "viperproject", "prusti-dev", `prusti-release-${id}.zip`, true, authorization_token,
         );
     }
 
-    if (config.buildChannel() == config.BuildChannel.Local
+    const getTaggedReleaseUrl = (): Promise<string> => {
+        const tag = config.prustiTag();
+        return vvt.GitHubReleaseAsset.getTaggedAssetUrl(
+            "viperproject", "prusti-dev", `prusti-release-${id}.zip`, tag, authorization_token,
+        );
+    }
+
+    if (config.prustiVersion() == config.PrustiVersion.Local
           && !await fs.pathExists(config.localPrustiPath())) {
         throw new Error(
-            "In the settings the Prusti channel is local, but the specified local path "
-            + `'${config.localPrustiPath()}' does not exist.`
+            `In the settings the Prusti version is ${config.PrustiVersion.Local}, but the `
+            + `specified local path '${config.localPrustiPath()}' does not exist.`
+        );
+    }
+
+    if (config.prustiVersion() == config.PrustiVersion.Tag && !config.prustiTag()) {
+        throw new Error(
+            `In the settings the Prusti version is ${config.PrustiVersion.Tag}, but `
+            + `no tag has been provided. Please specify it in the prustiTag field.`
         );
     }
 
     return new vvt.Dependency(
         path.join(context.globalStoragePath, "prustiTools"),
-        [channel.LatestRelease, new vvt.GitHubZipExtractor(getReleaseUrl, "prusti", authorization_token)],
-        [channel.LatestDev, new vvt.GitHubZipExtractor(getDevUrl, "prusti", authorization_token)],
-        [channel.Local, new vvt.LocalReference(config.localPrustiPath())],
+        [version.Latest, new vvt.GitHubZipExtractor(getLatestReleaseUrl, "prusti", authorization_token)],
+        [version.Tag, new vvt.GitHubZipExtractor(getTaggedReleaseUrl, "prusti", authorization_token)],
+        [version.Local, new vvt.LocalReference(config.localPrustiPath())],
     );
 }
 
