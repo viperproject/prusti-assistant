@@ -24,10 +24,6 @@ jobs:
         with:
           node-version: '16'
 
-      - name: Set up Rustup
-        run: rustup self update # Windows needs to update rustup
-        continue-on-error: true # MacOS doesn't allow to update rustup
-
       - name: Set up Java
         uses: actions/setup-java@v3
         with:
