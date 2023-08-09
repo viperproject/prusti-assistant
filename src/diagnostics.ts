@@ -583,6 +583,19 @@ export class DiagnosticsManager {
         this.procDestructors.forEach((kill) => kill());
     }
 
+    public clearDiagnostics(uri?: vscode.Uri): void {
+        if (uri) {
+            util.log(`Clear diagnostics on ${uri}`);
+            this.target.delete(uri);
+        } else {
+            util.log("Clear all diagnostics");
+            this.target.clear();
+        }
+        this.verificationStatus.text = ""
+        this.verificationStatus.tooltip = undefined;
+        this.verificationStatus.command = undefined;
+    }
+
     public async verify(prusti: dependencies.PrustiLocation, serverAddress: string, targetPath: string, target: VerificationTarget): Promise<void> {
         // Prepare verification
         this.runCount += 1;

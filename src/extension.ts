@@ -16,6 +16,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const openServerLogsCommand = "prusti-assistant.openServerLogs";
     const updateCommand = "prusti-assistant.update";
     const restartServerCommand = "prusti-assistant.restart-server";
+    const clearDiagnosticsCommand = "prusti-assistant.clear-diagnostics";
 
     // Open logs on command
     context.subscriptions.push(
@@ -102,13 +103,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     prustiButton.command = verifyProgramCommand;
     prustiButton.text = "$(play) Prusti";
     prustiButton.tooltip = new vscode.MarkdownString(
-        "Run the [Prusti verifier](http://prusti.org) on the current file.\n\n" +
+        "Run the [Prusti verifier](https://github.com/viperproject/prusti-dev) on the current file.\n\n" +
         "---\n\n" +
         "$(link) [User guide](https://viperproject.github.io/prusti-dev/user-guide/)\n\n" +
         "$(link) [Zulip chat](https://prusti.zulipchat.com/)\n\n" +
         `[Show version](command:${showVersionCommand})\n\n` +
         `[Update Prusti](command:${updateCommand})\n\n` +
-        `[Restart server](command:${restartServerCommand})`,
+        `[Restart server](command:${restartServerCommand})\n\n` +
+        `[Clear diagnostics](command:${clearDiagnosticsCommand})`,
         true,
     );
     prustiButton.tooltip.isTrusted = true;
@@ -158,6 +160,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         verificationStatus,
     );
     context.subscriptions.push(verificationManager);
+
+    // Clear all diagnostics on command
+    context.subscriptions.push(
+        vscode.commands.registerCommand(clearDiagnosticsCommand, () => verificationManager.clearDiagnostics())
+    );
 
     // Kill-all on command
     context.subscriptions.push(

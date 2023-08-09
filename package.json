@@ -57,6 +57,11 @@
 				"command": "prusti-assistant.restart-server",
 				"title": "restart Prusti server",
 				"category": "Prusti"
+			},
+			{
+				"command": "prusti-assistant.clear-diagnostics",
+				"title": "clear diagnostics",
+				"category": "Prusti"
 			}
 		],
 		"configuration": {
