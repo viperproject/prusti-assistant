@@ -562,13 +562,11 @@ export class DiagnosticsManager {
     private target: vscode.DiagnosticCollection;
     private procDestructors: Set<util.KillFunction> = new Set();
     private verificationStatus: vscode.StatusBarItem;
-    private killAllButton: vscode.StatusBarItem;
     private runCount = 0;
 
-    public constructor(target: vscode.DiagnosticCollection, verificationStatus: vscode.StatusBarItem, killAllButton: vscode.StatusBarItem) {
+    public constructor(target: vscode.DiagnosticCollection, verificationStatus: vscode.StatusBarItem) {
         this.target = target;
         this.verificationStatus = verificationStatus;
-        this.killAllButton = killAllButton;
     }
 
     public dispose(): void {
@@ -585,23 +583,37 @@ export class DiagnosticsManager {
         this.procDestructors.forEach((kill) => kill());
     }
 
+    public clearDiagnostics(uri?: vscode.Uri): void {
+        if (uri) {
+            util.log(`Clear diagnostics on ${uri}`);
+            this.target.delete(uri);
+        } else {
+            util.log("Clear all diagnostics");
+            this.target.clear();
+        }
+        this.verificationStatus.text = ""
+        this.verificationStatus.tooltip = undefined;
+        this.verificationStatus.command = undefined;
+    }
+
     public async verify(prusti: dependencies.PrustiLocation, serverAddress: string, targetPath: string, target: VerificationTarget): Promise<void> {
         // Prepare verification
         this.runCount += 1;
         const currentRun = this.runCount;
         util.log(`Preparing verification run #${currentRun}.`);
         this.killAll();
-        this.killAllButton.show();
 
         // Run verification
         const escapedFileName = path.basename(targetPath).replace("$", "\\$");
         this.verificationStatus.text = `$(sync~spin) Verifying ${target} '${escapedFileName}'...`;
+        this.verificationStatus.tooltip = "Status of the Prusti verification. Click to stop Prusti.";
+        this.verificationStatus.command = "prusti-assistant.killAll";
 
         const verificationDiagnostics = new VerificationDiagnostics();
         let durationSecMsg: string | null = null;
         const crashErrorMsg = "Prusti encountered an unexpected error. " +
-            "We would appreciate a [bug report](https://github.com/viperproject/prusti-dev/issues/new). " +
-            "See the log (View -> Output -> Prusti Assistant) for more details.";
+            "If the issue persists, please open a [bug report](https://github.com/viperproject/prusti-dev/issues/new). " +
+            "See [the logs](command:prusti-assistant.openLogs) for more details.";
         let crashed = false;
         try {
             let diagnostics: Diagnostic[], status: VerificationStatus, duration: util.Duration;
@@ -633,11 +645,10 @@ export class DiagnosticsManager {
             util.log(`Discarding the result of the verification run #${currentRun}, because the latest is #${this.runCount}.`);
         } else {
             // Render diagnostics
-            this.killAllButton.hide();
             verificationDiagnostics.renderIn(this.target);
             if (crashed) {
                 this.verificationStatus.text = `$(error) Verification of ${target} '${escapedFileName}' failed with an unexpected error`;
-                this.verificationStatus.command = "workbench.action.output.toggleOutput";
+                this.verificationStatus.command = "prusti-assistant.openLogs";
             } else if (verificationDiagnostics.hasErrors()) {
                 const counts = verificationDiagnostics.countsBySeverity();
                 const errors = counts.get(vscode.DiagnosticSeverity.Error);
@@ -654,6 +665,7 @@ export class DiagnosticsManager {
                 this.verificationStatus.text = `$(check) Verification of ${target} '${escapedFileName}' succeeded (${durationSecMsg} s)`;
                 this.verificationStatus.command = undefined;
             }
+            this.verificationStatus.tooltip = "Status of the Prusti verification.";
         }
     }
 }

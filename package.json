@@ -2,7 +2,7 @@
 	"name": "prusti-assistant",
 	"displayName": "Prusti Assistant",
 	"description": "Verify Rust programs with the Prusti verifier.",
-	"version": "0.11.2",
+	"version": "0.12.1",
 	"publisher": "viper-admin",
 	"repository": {
 		"type": "git",
@@ -57,25 +57,30 @@
 				"command": "prusti-assistant.restart-server",
 				"title": "restart Prusti server",
 				"category": "Prusti"
+			},
+			{
+				"command": "prusti-assistant.clear-diagnostics",
+				"title": "clear diagnostics",
+				"category": "Prusti"
 			}
 		],
 		"configuration": {
 			"title": "Prusti Assistant",
 			"properties": {
-				"prusti-assistant.buildChannel": {
+				"prusti-assistant.prustiVersion": {
 					"type": "string",
-					"default": "LatestRelease",
+					"default": "Latest",
 					"enum": [
-						"LatestRelease",
-						"LatestDev",
+						"Latest",
+						"Tag",
 						"Local"
 					],
 					"enumDescriptions": [
 						"The latest release of Prusti.",
-						"A version with frequent updates that might be unstable or have other issues.",
+						"A fixed version of Prusti, specified via prustiTag.",
 						"A local build of Prusti, specified via localPrustiPath."
 					],
-					"description": "Specifies from which channel Prusti builds are downloaded."
+					"description": "Specifies from which version of Prusti should be used."
 				},
 				"prusti-assistant.checkForUpdates": {
 					"type": "boolean",
@@ -85,7 +90,12 @@
 				"prusti-assistant.localPrustiPath": {
 					"type": "string",
 					"default": "",
-					"description": "Specifies the path to the local Prusti installation (has no effect if buildChannel is not set to Local)."
+					"description": "Specifies the path to the local Prusti installation. This setting is only used if prustiVersion is set to Local."
+				},
+				"prusti-assistant.prustiTag": {
+					"type": "string",
+					"default": "",
+					"description": "Specifies the GitHub tag of the Prusti release to be used. Visit https://github.com/viperproject/prusti-dev/releases to see all the available tags. This setting is only used if prustiVersion is set to Tag."
 				},
 				"prusti-assistant.verifyOnSave": {
 					"type": "boolean",

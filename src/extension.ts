@@ -12,7 +12,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const showVersionCommand = "prusti-assistant.show-version";
     const verifyProgramCommand = "prusti-assistant.verify";
     const killAllCommand = "prusti-assistant.killAll";
+    const openLogsCommand = "prusti-assistant.openLogs";
+    const openServerLogsCommand = "prusti-assistant.openServerLogs";
     const updateCommand = "prusti-assistant.update";
+    const restartServerCommand = "prusti-assistant.restart-server";
+    const clearDiagnosticsCommand = "prusti-assistant.clear-diagnostics";
+
+    // Open logs on command
+    context.subscriptions.push(
+        vscode.commands.registerCommand(openLogsCommand, () => util.showLogs())
+    );
+    context.subscriptions.push(
+        vscode.commands.registerCommand(openServerLogsCommand, () => server.showLogs())
+    );
 
     // Verification status
     const verificationStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
@@ -87,24 +99,27 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     );
 
     // Verify on click
-    const verifyProgramButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 12);
-    verifyProgramButton.command = verifyProgramCommand;
-    verifyProgramButton.text = "$(play) Verify with Prusti";
-    verifyProgramButton.tooltip = "Run the Prusti verifier on this file.";
-    verifyProgramButton.show();
-    context.subscriptions.push(verifyProgramButton);
-
-    // Kill-all on click
-    const killAllButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 11);
-    killAllButton.command = killAllCommand;
-    killAllButton.text = "$(close) Stop Prusti";
-    killAllButton.tooltip = "Kill all Prusti processes.";
-    killAllButton.command = killAllCommand;
-    context.subscriptions.push(killAllButton);
+    const prustiButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 11);
+    prustiButton.command = verifyProgramCommand;
+    prustiButton.text = "$(play) Prusti";
+    prustiButton.tooltip = new vscode.MarkdownString(
+        "Run the [Prusti verifier](https://github.com/viperproject/prusti-dev) on the current file.\n\n" +
+        "---\n\n" +
+        "$(link) [User guide](https://viperproject.github.io/prusti-dev/user-guide/)\n\n" +
+        "$(link) [Zulip chat](https://prusti.zulipchat.com/)\n\n" +
+        `[Show version](command:${showVersionCommand})\n\n` +
+        `[Update Prusti](command:${updateCommand})\n\n` +
+        `[Restart server](command:${restartServerCommand})\n\n` +
+        `[Clear diagnostics](command:${clearDiagnosticsCommand})`,
+        true,
+    );
+    prustiButton.tooltip.isTrusted = true;
+    prustiButton.show();
+    context.subscriptions.push(prustiButton);
 
     // Restart the server on command
     context.subscriptions.push(
-        vscode.commands.registerCommand("prusti-assistant.restart-server", async () => {
+        vscode.commands.registerCommand(restartServerCommand, async () => {
             await server.restart(context, verificationStatus);
         })
     );
@@ -112,14 +127,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Update dependencies on config change
     context.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration(async event => {
-            const hasChangedChannel = event.affectsConfiguration(config.buildChannelPath);
+            const hasChangedVersion = event.affectsConfiguration(config.prustiVersionPath);
             const hasChangedLocation = (
-                config.buildChannel() === config.BuildChannel.Local
+                config.prustiVersion() === config.PrustiVersion.Local
                 && event.affectsConfiguration(config.localPrustiPathPath)
             );
-            if (hasChangedChannel || hasChangedLocation) {
+            const hasChangedTag = (
+                config.prustiVersion() === config.PrustiVersion.Tag
+                && event.affectsConfiguration(config.prustiTagPath)
+            );
+            if (hasChangedVersion || hasChangedLocation || hasChangedTag) {
                 util.log("Install the dependencies because the configuration has changed...");
-                await installDependencies(context, false, verificationStatus);
+                const reDownload = config.prustiVersion() === config.PrustiVersion.Tag;
+                await installDependencies(context, reDownload, verificationStatus);
             }
             const hasChangedServer = event.affectsConfiguration(config.serverAddressPath);
             if (hasChangedServer) {
@@ -138,9 +158,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const verificationManager = new diagnostics.DiagnosticsManager(
         verificationDiagnostics,
         verificationStatus,
-        killAllButton
     );
     context.subscriptions.push(verificationManager);
+
+    // Clear all diagnostics on command
+    context.subscriptions.push(
+        vscode.commands.registerCommand(clearDiagnosticsCommand, () => verificationManager.clearDiagnostics())
+    );
 
     // Kill-all on command
     context.subscriptions.push(
