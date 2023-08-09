@@ -90,8 +90,7 @@ function waitUntilReady(timeout = 10_000): Promise<void> {
             if (!done) {
                 done = true;
                 reject(
-                    `Prusti server took more than ${timeout / 1000} seconds ` +
-                    `to start.`
+                    new Error(`Prusti server took more than ${timeout / 1000} seconds to start.`)
                 );
             }
         }, timeout);
