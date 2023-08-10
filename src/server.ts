@@ -35,7 +35,7 @@ export function registerCrashHandler(context: vscode.ExtensionContext, verificat
         // Ask the user to restart the server
         util.userErrorPopup(
             "Prusti server stopped working. " +
-            "If the issue persists, please open a [bug report](https://github.com/viperproject/prusti-dev/issues/new). " +
+            "If the issue persists, please open a [bug report](https://github.com/viperproject/prusti-dev/issues/new) or contact us on the [Zulip chat](https://prusti.zulipchat.com/). " +
             "See [the server logs](command:prusti-assistant.openServerLogs) for more details.",
             "Restart Server",
             () => {

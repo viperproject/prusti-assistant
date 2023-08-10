@@ -612,7 +612,7 @@ export class DiagnosticsManager {
         const verificationDiagnostics = new VerificationDiagnostics();
         let durationSecMsg: string | null = null;
         const crashErrorMsg = "Prusti encountered an unexpected error. " +
-            "If the issue persists, please open a [bug report](https://github.com/viperproject/prusti-dev/issues/new). " +
+            "If the issue persists, please open a [bug report](https://github.com/viperproject/prusti-dev/issues/new) or contact us on the [Zulip chat](https://prusti.zulipchat.com/). " +
             "See [the logs](command:prusti-assistant.openLogs) for more details.";
         let crashed = false;
         try {
