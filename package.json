@@ -14,7 +14,7 @@
 	},
 	"homepage": "https://github.com/viperproject/prusti-assistant",
 	"engines": {
-		"vscode": "^1.43.0",
+		"vscode": "^1.60.0",
 		"node": "*"
 	},
 	"categories": [
@@ -183,7 +183,7 @@
 		"@types/mocha": "^10.0.1",
 		"@types/node": "^20.5.7",
 		"@types/tmp": "^0.2.3",
-		"@types/vscode": "^1.81.0",
+		"@types/vscode": "^1.60.0",
 		"@typescript-eslint/eslint-plugin": "^6.5.0",
 		"@typescript-eslint/parser": "^6.5.0",
 		"@vscode/test-electron": "^2.3.4",
