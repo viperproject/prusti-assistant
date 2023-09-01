@@ -194,14 +194,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
             await verificationManager.verify(
                 prusti!,
-                server.address || "",
+                server.address ?? "",
                 document.uri.fsPath,
                 diagnostics.VerificationTarget.StandaloneFile
             );
         } else {
             await verificationManager.verify(
                 prusti!,
-                server.address || "",
+                server.address ?? "",
                 cratePath.path,
                 diagnostics.VerificationTarget.Crate
             );

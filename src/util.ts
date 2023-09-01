@@ -121,12 +121,16 @@ export function spawn(
         if (!status.killed) {
             status.killed = true;
             // TODO: Try with SIGTERM before.
+            if (proc.pid === undefined) {
+                log("The process id is undefined.");
+                return;
+            }
             treeKill(proc.pid, "SIGKILL", (err) => {
                 if (err) {
                     log(`Failed to kill process tree of ${proc.pid}: ${err}`);
                     const succeeded = proc.kill("SIGKILL");
                     if (!succeeded) {
-                        log(`Failed to kill process ${proc}.`);
+                        log(`Failed to kill process ${proc.pid}.`);
                     }
                 } else {
                     log(`Process ${proc.pid} has been killed successfully.`);
@@ -140,7 +144,7 @@ export function spawn(
         destructors.add(killProc);
     }
 
-    proc.stdout.on("data", (data) => {
+    proc.stdout.on("data", (data: string) => {
         stdout += data;
         try {
             onStdout?.(data);
@@ -148,7 +152,7 @@ export function spawn(
             log(`error in stdout handler for '${description}': ${e}`);
         }
     });
-    proc.stderr.on("data", (data) => {
+    proc.stderr.on("data", (data: string) => {
         stderr += data;
         try {
             onStderr?.(data);

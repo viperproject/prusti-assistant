@@ -18,8 +18,6 @@ enum State {
     Unrecoverable = "Unrecoverable",
 }
 
-const stateKeys: string[] = Object.keys(State);
-
 export interface StartOptions {
     readonly cwd?: string;
     readonly env?: NodeJS.ProcessEnv;
@@ -38,7 +36,7 @@ export class ServerError extends Error {
 
 export class ServerManager {
     private readonly name: string;
-    private readonly state: StateMachine;
+    private readonly state: StateMachine<State>;
     private readonly log: (data: string) => void;
     private readonly procExitCallback: (code: unknown) => void;
     private proc?: childProcess.ChildProcessWithoutNullStreams;
@@ -50,12 +48,8 @@ export class ServerManager {
      */
     public constructor(name: string, log?: (data: string) => void) {
         this.name = name;
-        this.log = (data) => (log || console.log)(`[${this.name}] ${data}`);
-        this.state =  new StateMachine(
-            `${name} state`,
-            State[State.Stopped],
-            stateKeys,
-        )
+        this.log = (data) => (log ?? console.log)(`[${this.name}] ${data}`);
+        this.state =  new StateMachine(`${name} state`, State.Stopped);
         this.procExitCallback = (code: unknown) => {
             this.log(`Server process unexpected terminated with exit code ${code}`);
             this.proc = undefined;
@@ -171,12 +165,16 @@ export class ServerManager {
             this.log(`Kill server process ${this.proc?.pid}.`);
             const proc = this.proc as childProcess.ChildProcessWithoutNullStreams;
             proc.removeListener("exit", this.procExitCallback);
+            if (proc.pid === undefined) {
+                this.log("The process id is undefined.");
+                return;
+            }
             treeKill(proc.pid, "SIGKILL", (err) => {
                 if (err) {
                     this.log(`Failed to kill process tree of ${proc.pid}: ${err}`);
                     const succeeded = proc.kill("SIGKILL");
                     if (!succeeded) {
-                        this.log(`Failed to kill process ${proc}.`);
+                        this.log(`Failed to kill process ${proc.pid}.`);
                     }
                     this.log("This is an unrecorevable error.");
                     this.setState(State.Unrecoverable);
