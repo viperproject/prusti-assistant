@@ -121,21 +121,21 @@ export function spawn(
         if (!status.killed) {
             status.killed = true;
             // TODO: Try with SIGTERM before.
-            if (proc.pid !== undefined) {
-                treeKill(proc.pid, "SIGKILL", (err) => {
-                    if (err) {
-                        log(`Failed to kill process tree of ${proc.pid}: ${err}`);
-                        const succeeded = proc.kill("SIGKILL");
-                        if (!succeeded) {
-                            log(`Failed to kill process ${proc.pid}.`);
-                        }
-                    } else {
-                        log(`Process ${proc.pid} has been killed successfully.`);
-                    }
-                });
-            } else {
-                log(`The process id is undefined.`);
+            if (proc.pid === undefined) {
+                log("The process id is undefined.");
+                return;
             }
+            treeKill(proc.pid, "SIGKILL", (err) => {
+                if (err) {
+                    log(`Failed to kill process tree of ${proc.pid}: ${err}`);
+                    const succeeded = proc.kill("SIGKILL");
+                    if (!succeeded) {
+                        log(`Failed to kill process ${proc.pid}.`);
+                    }
+                } else {
+                    log(`Process ${proc.pid} has been killed successfully.`);
+                }
+            });
         } else {
             log(`Process ${proc.pid} has already been killed.`);
         }

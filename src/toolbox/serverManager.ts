@@ -165,25 +165,25 @@ export class ServerManager {
             this.log(`Kill server process ${this.proc?.pid}.`);
             const proc = this.proc as childProcess.ChildProcessWithoutNullStreams;
             proc.removeListener("exit", this.procExitCallback);
-            if (proc.pid !== undefined) {
-                treeKill(proc.pid, "SIGKILL", (err) => {
-                    if (err) {
-                        this.log(`Failed to kill process tree of ${proc.pid}: ${err}`);
-                        const succeeded = proc.kill("SIGKILL");
-                        if (!succeeded) {
-                            this.log(`Failed to kill process ${proc.pid}.`);
-                        }
-                        this.log("This is an unrecorevable error.");
-                        this.setState(State.Unrecoverable);
-                    } else {
-                        // Success
-                        this.proc = undefined;
-                        this.setState(State.Stopped);
-                    }
-                });
-            } else {
+            if (proc.pid === undefined) {
                 this.log("The process id is undefined.");
+                return;
             }
+            treeKill(proc.pid, "SIGKILL", (err) => {
+                if (err) {
+                    this.log(`Failed to kill process tree of ${proc.pid}: ${err}`);
+                    const succeeded = proc.kill("SIGKILL");
+                    if (!succeeded) {
+                        this.log(`Failed to kill process ${proc.pid}.`);
+                    }
+                    this.log("This is an unrecorevable error.");
+                    this.setState(State.Unrecoverable);
+                } else {
+                    // Success
+                    this.proc = undefined;
+                    this.setState(State.Stopped);
+                }
+            });
         } else {
             this.proc = undefined;
             this.setState(State.Stopped);
