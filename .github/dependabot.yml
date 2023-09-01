@@ -6,4 +6,6 @@ updates:
     schedule:
       interval: monthly
     groups:
-      all-dependencies: null
+      all:
+        patterns:
+          - '*'
