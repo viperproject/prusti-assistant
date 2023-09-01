@@ -35,16 +35,17 @@ async function main() {
             // closing an old one.
             await new Promise(resolve => setTimeout(resolve, 5000));
         }
-        console.info("")
+        console.info("");
         console.info(`========== Testing scenario '${scenario}' ==========`);
-        console.info("")
+        console.info(`::group::${scenario}`); // For GitHub's output
+        console.info("");
         const tmpWorkspace = tmp.dirSync({ unsafeCleanup: true });
         try {
             // Prepare the workspace with the settings
             console.info(`Using temporary workspace '${tmpWorkspace.name}'`);
             const settingsPath = path.join(SCENARIOS_ROOT, scenario, "settings.json");
-            const workspaceVSCodePath = path.join(tmpWorkspace.name, ".vscode")
-            const workspaceSettingsPath = path.join(workspaceVSCodePath, "settings.json")
+            const workspaceVSCodePath = path.join(tmpWorkspace.name, ".vscode");
+            const workspaceSettingsPath = path.join(workspaceVSCodePath, "settings.json");
             fs.mkdirSync(workspaceVSCodePath);
             fs.copyFileSync(settingsPath, workspaceSettingsPath);
 
@@ -60,8 +61,10 @@ async function main() {
         } finally {
             // Delete folder even in case of errors
             tmpWorkspace.removeCallback();
+            // Reming which scenario was being tested
+            console.info(`End of testing scenario '${scenario}'.`);
+            console.info("::endgroup::"); // For GitHub's output
         }
-        console.info(`End of testing scenario '${scenario}'.`);
         firstIteration = false;
     }
 }

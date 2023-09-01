@@ -167,9 +167,10 @@ describe("Extension", () => {
     programs.forEach(program => {
         it(`scenario ${SCENARIO} reports expected diagnostics on ${program}`, async () => {
             const programPath = path.join(workspacePath(), program);
-            const document = await openFile(programPath);
+            await openFile(programPath);
+            await vscode.commands.executeCommand("prusti-assistant.clear-diagnostics");
             await vscode.commands.executeCommand("prusti-assistant.verify");
-            const diagnostics = vscode.languages.getDiagnostics(document.uri);
+            const diagnostics = vscode.languages.getDiagnostics().flatMap((pair) => pair[1]);
             const plainDiagnostics = diagnostics.map(diagnosticToPlainObject);
             const expectedData = await fs.readFile(programPath + ".json", "utf-8");
             type MultiDiagnostics = [
