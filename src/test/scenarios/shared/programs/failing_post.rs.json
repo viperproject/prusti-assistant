@@ -1,34 +1,78 @@
 [
     {
-        "message": "[Prusti: verification error] postcondition might not hold.",
-        "range": {
-            "end": {
-                "character": 35,
-                "line": 9
-            },
-            "start": {
-                "character": 10,
-                "line": 9
-            }
+        "filter": {
+            "prustiVersion": "Tag",
+            "prustiTag": "v-2023-08-22-1715"
         },
-        "relatedInformation": [
+        "diagnostics": [
             {
-                "location": {
-                    "range": {
-                        "end": {
-                            "character": 20,
-                            "line": 10
-                        },
-                        "start": {
-                            "character": 0,
-                            "line": 10
-                        }
+                "message": "[Prusti: verification error] postcondition might not hold.",
+                "range": {
+                    "end": {
+                        "character": 35,
+                        "line": 9
                     },
-                    "uri": "programs/failing_post.rs"
+                    "start": {
+                        "character": 10,
+                        "line": 9
+                    }
                 },
-                "message": "the error originates here"
+                "relatedInformation": [
+                    {
+                        "location": {
+                            "range": {
+                                "end": {
+                                    "character": 20,
+                                    "line": 10
+                                },
+                                "start": {
+                                    "character": 0,
+                                    "line": 10
+                                }
+                            },
+                            "uri": "programs/failing_post.rs"
+                        },
+                        "message": "the error originates here"
+                    }
+                ],
+                "severity": 0
             }
-        ],
-        "severity": 0
+        ]
+    },
+    {
+        "diagnostics": [
+            {
+                "message": "[Prusti: verification error] postcondition might not hold.",
+                "range": {
+                    "end": {
+                        "character": 35,
+                        "line": 9
+                    },
+                    "start": {
+                        "character": 30,
+                        "line": 9
+                    }
+                },
+                "relatedInformation": [
+                    {
+                        "location": {
+                            "range": {
+                                "end": {
+                                    "character": 20,
+                                    "line": 10
+                                },
+                                "start": {
+                                    "character": 0,
+                                    "line": 10
+                                }
+                            },
+                            "uri": "programs/failing_post.rs"
+                        },
+                        "message": "the error originates here"
+                    }
+                ],
+                "severity": 0
+            }
+        ]
     }
 ]
