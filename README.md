@@ -7,9 +7,15 @@ Prusti Assistant
 [![Test coverage status](https://codecov.io/gh/viperproject/prusti-assistant/branch/master/graph/badge.svg?token=D4HOAD0KRU)](https://codecov.io/gh/viperproject/prusti-assistant)
 [![Sonarcloud quality gate status](https://sonarcloud.io/api/project_badges/measure?project=viperproject_prusti-assistant&metric=alert_status)](https://sonarcloud.io/dashboard?id=viperproject_prusti-assistant)
 
-This Visual Studio Code extension provides interactive IDE features for verifying Rusti programs with the [Prusti verifier](https://github.com/viperproject/prusti-dev).
+This Visual Studio Code extension provides interactive IDE features for verifying Rust programs with the [Prusti verifier](https://github.com/viperproject/prusti-dev).
 
 For advanced use cases, consider switching to the [command-line version of Prusti](https://github.com/viperproject/prusti-dev).
+
+## Screenshot
+
+An example of how verification errors are reported by the extension:
+
+![Screenshot](screenshot.png)
 
 ## Requirements
 
