@@ -81,6 +81,17 @@ Basic code-completion snippets are provided for Prusti annotations.
 
 By default, Prusti transparently caches verification requests. To clear the cache, it's enough to restart the Prusti server with the commands described above.
 
+## Prusti verification flags
+
+The verification flags of Prusti can be configured in a `Prusti.toml` file. Its location should be the following:
+
+* When verifying a standalone Rust file, `Prusti.toml` should be placed in the same folder of the verified file.
+* When verifying a Rust crate, `Prusti.toml` should be placed in the innermost folder that (1) contains a `Cargo.toml` file and (2) transitively contains the current active file in the IDE.
+
+In addition, due to a technical limitation the Prusti server reads its configuration flags from the `Prusti.toml` placed in the root of the IDE workspace (i.e. the navigation panel on the left). When modifying this file, it is necessary to manually restart the server. The server uses only a few of Prusti's flags, mainly to configure the verification cache and to decide whether to dump Viper files for debugging.
+
+The list of the supported Prusti flags is available [here](https://viperproject.github.io/prusti-dev/dev-guide/config/flags.html), in Prusti's developer guide. Note that by setting these flags in the wrong way it is possible to get incorrect verification results. Many flags only exist of debugging reasons and to provide workarounds in selected cases.
+
 ## Troubleshooting
 
 If Prusti fails to run, you can inspect Prusti's log from VS Code (View -> Output -> Prusti Assistant) and see if one of the following solutions applies to you.
