@@ -90,6 +90,8 @@ The verification flags of Prusti can be configured in a `Prusti.toml` file. Its 
 
 In addition, due to a technical limitation the Prusti server reads its configuration flags from the `Prusti.toml` placed in the root of the IDE workspace (i.e. the navigation panel on the left). When modifying this file, it is necessary to manually restart the server. The server uses only a few of Prusti's flags, mainly to configure the verification cache and to decide whether to dump Viper files for debugging.
 
+To check whether Prusti picked up the `Prusti.toml` that you wrote, try writing `make_prusti_crash=true` in it (or any other nonexistent configuration flag). When doing so, the IDE should report that Prusti crashed.
+
 The list of the supported Prusti flags is available [here](https://viperproject.github.io/prusti-dev/dev-guide/config/flags.html), in Prusti's developer guide. Note that by setting these flags in the wrong way it is possible to get incorrect verification results. Many flags only exist of debugging reasons and to provide workarounds in selected cases.
 
 ## Troubleshooting
