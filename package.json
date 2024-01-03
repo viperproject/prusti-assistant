@@ -187,7 +187,7 @@
 		"@typescript-eslint/eslint-plugin": "^6.16.0",
 		"@typescript-eslint/parser": "^6.16.0",
 		"@vscode/test-electron": "^2.3.8",
-		"chai": "^5.0.0",
+		"chai": "^4.3.10",
 		"eslint": "^8.56.0",
 		"eslint-plugin-import": "^2.29.1",
 		"eslint-plugin-jsdoc": "^47.0.1",
