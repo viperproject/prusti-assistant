@@ -1,10 +1,10 @@
 import * as path from "path";
 import * as Mocha from "mocha";
 import * as glob from "glob";
-import NYC = require("nyc");
 
 export async function run(): Promise<void> {
-    const nyc: NYC = new NYC({
+    const NYC = await import("nyc");
+    const nyc = new NYC({
         cwd: path.join(__dirname, "..", ".."),
         instrument: true,
         extension: [
