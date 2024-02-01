@@ -12,3 +12,7 @@ updates:
       all:
         patterns:
           - "*"
+        # Do not update to Chai v5 because it cannot be used from vscode
+        exclude-patterns:
+          - "chai"
+          - "@types/chai"
