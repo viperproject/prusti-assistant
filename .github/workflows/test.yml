@@ -105,22 +105,11 @@ jobs:
           packagePath: ''
 
       - name: Create a release for the published version
-        id: create_release
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v1
         if: env.CURRENT_VERSION != env.LAST_PUBLISHED_VERSION
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          name: Release v${{ env.CURRENT_VERSION }}
           tag_name: v${{ env.CURRENT_VERSION }}
-          release_name: Release v${{ env.CURRENT_VERSION }}
-
-      - name: Upload release asset
-        uses: actions/upload-release-asset@v1
-        if: env.CURRENT_VERSION != env.LAST_PUBLISHED_VERSION
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: prusti-assistant-${{ env.CURRENT_VERSION }}.vsix
-          asset_name: prusti-assistant-${{ env.CURRENT_VERSION }}.vsix
-          asset_content_type: application/zip
+          files: prusti-assistant-${{ env.CURRENT_VERSION }}.vsix
