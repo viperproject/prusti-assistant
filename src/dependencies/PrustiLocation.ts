@@ -3,7 +3,9 @@ import * as fs from "fs-extra";
 
 export class PrustiLocation {
     constructor(
-        private readonly location: Location
+        private readonly prustiLocation: Location,
+        private readonly viperToolsLocation: Location,
+        public readonly rustToolchainFile: Location
     ) {
         // Set execution flags (ignored on Windows)
         fs.chmodSync(this.prustiDriver, 0o775);
@@ -15,37 +17,33 @@ export class PrustiLocation {
         fs.chmodSync(this.prustiServer, 0o775);
     }
 
-    public rustToolchainFile(): Location {
-        return this.location.child("rust-toolchain");
-    }
-
     public get prustiDriver(): string {
-        return this.location.executable("prusti-driver");
+        return this.prustiLocation.executable("prusti-driver");
     }
 
     public get prustiRustc(): string {
-        return this.location.executable("prusti-rustc");
+        return this.prustiLocation.executable("prusti-rustc");
     }
 
     public get cargoPrusti(): string {
-        return this.location.executable("cargo-prusti");
+        return this.prustiLocation.executable("cargo-prusti");
     }
 
     public get prustiServerDriver(): string {
-        return this.location.executable("prusti-server-driver");
+        return this.prustiLocation.executable("prusti-server-driver");
     }
 
     public get prustiServer(): string {
-        return this.location.executable("prusti-server");
+        return this.prustiLocation.executable("prusti-server");
     }
 
     public get z3(): string {
-        return this.location.child("viper_tools").child("z3").child("bin")
+        return this.viperToolsLocation.child("z3").child("bin")
             .executable("z3");
     }
 
     public get boogie(): string {
-        return this.location.child("viper_tools").child("boogie")
+        return this.viperToolsLocation.child("boogie")
             .child("Binaries").executable("Boogie");
     }
 }
