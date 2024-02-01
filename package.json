@@ -13,6 +13,7 @@
 		"url": "https://github.com/viperproject/prusti-assistant/issues"
 	},
 	"homepage": "https://github.com/viperproject/prusti-assistant",
+	"main": "./out/extension",
 	"engines": {
 		"vscode": "^1.60.0",
 		"node": "*"
@@ -29,7 +30,6 @@
 	"activationEvents": [
 		"onLanguage:rust"
 	],
-	"main": "./out/extension",
 	"contributes": {
 		"snippets": [
 			{
@@ -187,7 +187,7 @@
 		"@typescript-eslint/eslint-plugin": "^6.20.0",
 		"@typescript-eslint/parser": "^6.20.0",
 		"@vscode/test-electron": "^2.3.9",
-		"chai": "^5.0.3",
+		"chai": "^4.4.1",
 		"eslint": "^8.56.0",
 		"eslint-plugin-import": "^2.29.1",
 		"eslint-plugin-jsdoc": "^48.0.4",
