@@ -78,7 +78,7 @@ export async function isOutdated(prusti: PrustiLocation, numDays = 30): Promise<
     }
 
     // TODO: Lookup on GitHub if there actually is a more recent version to download.
-    const prustiDownloadDate = (await fs.stat(prusti.rustToolchainFile().path())).ctime.getTime();
+    const prustiDownloadDate = (await fs.stat(prusti.rustToolchainFile.path())).ctime.getTime();
     const pastNumDays = new Date(new Date().setDate(new Date().getDate() - numDays)).getTime();
     const olderThanNumDays = prustiDownloadDate < pastNumDays;
     const extensionDownloadDate = (await fs.stat(__filename)).ctime.getTime();
