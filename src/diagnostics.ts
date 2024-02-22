@@ -174,7 +174,10 @@ function parseCargoMessage(msgDiag: CargoMessage, rootPath: string, defaultRange
     let primaryRange = defaultRange ?? dummyRange();
     if (primaryCallSiteSpans.length > 0) {
         primaryRange = parseMultiSpanRange(primaryCallSiteSpans);
-        primaryFilePath = path.join(rootPath, primaryCallSiteSpans[0].file_name);
+        primaryFilePath = primaryCallSiteSpans[0].file_name;
+        if (!path.isAbsolute(primaryFilePath)) {
+            primaryFilePath = path.join(rootPath, primaryFilePath);
+        }
     }
     const diagnostic = new vscode.Diagnostic(
         primaryRange,
