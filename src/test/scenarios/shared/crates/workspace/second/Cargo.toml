@@ -1,0 +1,8 @@
+[package]
+name = "second"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+prusti-contracts = "*"
+first = { path = "../first" }
