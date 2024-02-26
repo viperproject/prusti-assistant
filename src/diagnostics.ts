@@ -4,6 +4,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as vvt from "vs-verification-toolbox";
 import * as dependencies from "./dependencies";
+import { queryCrateMetadata, CrateMetadataStatus } from "./crateMetadata";
 
 // ========================================================
 // JSON Schemas
@@ -142,12 +143,13 @@ function getCallSiteSpan(span: Span): Span {
 
 /**
  * Parses a message into a diagnostic.
- * 
- * @param msg The message to parse.
- * @param rootPath The root path of the rust project the message was generated
- * for.
+ *
+ * @param msgDiag The message to parse.
+ * @param basePath The base path to resolve the relative paths in the diagnostics.
+ * @param defaultRange The default range to use if no span is found in the message.
+ * @returns The parsed diagnostic.
  */
-function parseCargoMessage(msgDiag: CargoMessage, rootPath: string, defaultRange?: vscode.Range): Diagnostic {
+function parseCargoMessage(msgDiag: CargoMessage, basePath: string, defaultRange?: vscode.Range): Diagnostic {
     const msg = msgDiag.message;
     const level = parseMessageLevel(msg.level);
 
@@ -174,7 +176,10 @@ function parseCargoMessage(msgDiag: CargoMessage, rootPath: string, defaultRange
     let primaryRange = defaultRange ?? dummyRange();
     if (primaryCallSiteSpans.length > 0) {
         primaryRange = parseMultiSpanRange(primaryCallSiteSpans);
-        primaryFilePath = path.join(rootPath, primaryCallSiteSpans[0].file_name);
+        primaryFilePath = primaryCallSiteSpans[0].file_name;
+        if (!path.isAbsolute(primaryFilePath)) {
+            primaryFilePath = path.join(basePath, primaryFilePath);
+        }
     }
     const diagnostic = new vscode.Diagnostic(
         primaryRange,
@@ -192,7 +197,7 @@ function parseCargoMessage(msgDiag: CargoMessage, rootPath: string, defaultRange
         const message = `[Note] ${span.label ?? ""}`;
         const callSiteSpan = getCallSiteSpan(span);
         const range = parseSpanRange(callSiteSpan);
-        const filePath = path.join(rootPath, callSiteSpan.file_name);
+        const filePath = path.join(basePath, callSiteSpan.file_name);
         const fileUri = vscode.Uri.file(filePath);
 
         relatedInformation.push(
@@ -211,7 +216,7 @@ function parseCargoMessage(msgDiag: CargoMessage, rootPath: string, defaultRange
             },
             message: child
         };
-        const childDiagnostic = parseCargoMessage(childMsgDiag, rootPath, primaryRange);
+        const childDiagnostic = parseCargoMessage(childMsgDiag, basePath, primaryRange);
         const fileUri = vscode.Uri.file(childDiagnostic.file_path);
         relatedInformation.push(
             new vscode.DiagnosticRelatedInformation(
@@ -235,12 +240,11 @@ function parseCargoMessage(msgDiag: CargoMessage, rootPath: string, defaultRange
 
 /**
  * Parses a message into diagnostics.
- * 
+ *
  * @param msg The message to parse.
- * @param rootPath The root path of the rust project the message was generated
- * for.
+ * @param filePath The path of the file that was being compiled.
  */
-function parseRustcMessage(msg: Message, mainFilePath: string, defaultRange?: vscode.Range): Diagnostic {
+function parseRustcMessage(msg: Message, filePath: string, defaultRange?: vscode.Range): Diagnostic {
     const level = parseMessageLevel(msg.level);
 
     // Read primary message
@@ -262,7 +266,7 @@ function parseRustcMessage(msg: Message, mainFilePath: string, defaultRange?: vs
     }
 
     // Convert MultiSpans to Range and Diagnostic
-    let primaryFilePath = mainFilePath;
+    let primaryFilePath = filePath;
     let primaryRange = defaultRange ?? dummyRange();
     if (primaryCallSiteSpans.length > 0) {
         primaryRange = parseMultiSpanRange(primaryCallSiteSpans);
@@ -297,7 +301,7 @@ function parseRustcMessage(msg: Message, mainFilePath: string, defaultRange?: vs
 
     // Recursively parse child messages.
     for (const child of msg.children) {
-        const childDiagnostic = parseRustcMessage(child, mainFilePath, primaryRange);
+        const childDiagnostic = parseRustcMessage(child, filePath, primaryRange);
         const fileUri = vscode.Uri.file(childDiagnostic.file_path);
         relatedInformation.push(
             new vscode.DiagnosticRelatedInformation(
@@ -320,13 +324,13 @@ function parseRustcMessage(msg: Message, mainFilePath: string, defaultRange?: vs
 }
 
 /**
- * Removes rust's metadata in the specified project folder. This is a work
+ * Removes Rust's metadata in the specified project folder. This is a work
  * around for `cargo check` not reissuing warning information for libs.
- * 
- * @param rootPath The root path of a rust project.
+ *
+ * @param targetPath The target path of a rust project.
  */
-async function removeDiagnosticMetadata(rootPath: string) {
-    const pattern = new vscode.RelativePattern(path.join(rootPath, "target", "debug"), "*.rmeta");
+async function removeDiagnosticMetadata(targetPath: string) {
+    const pattern = new vscode.RelativePattern(path.join(targetPath, "debug"), "*.rmeta");
     const files = await vscode.workspace.findFiles(pattern);
     const promises = files.map(file => {
         return (new vvt.Location(file.fsPath)).remove()
@@ -341,14 +345,27 @@ enum VerificationStatus {
 }
 
 /**
- * Queries for the diagnostics of a rust project using cargo-prusti.
- * 
- * @param rootPath The root path of a rust project.
- * @returns An array of diagnostics for the given rust project.
+ * Queries for the diagnostics of a rust crate using cargo-prusti.
+ *
+ * @param prusti The location of Prusti files.
+ * @param cratePath The path of a Rust crate.
+ * @param destructors Where to store the destructors of the spawned processes.
+ * @returns A tuple containing the diagnostics, status and duration of the verification.
  */
-async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation, rootPath: string, serverAddress: string, destructors: Set<util.KillFunction>): Promise<[Diagnostic[], VerificationStatus, util.Duration]> {
+async function queryCrateDiagnostics(
+    prusti: dependencies.PrustiLocation,
+    cratePath: string,
+    serverAddress: string,
+    destructors: Set<util.KillFunction>,
+): Promise<[Diagnostic[], VerificationStatus, util.Duration]> {
+    const [metadata, metadataStatus, metadataDuration] = await queryCrateMetadata(prusti, cratePath, destructors);
+    if (metadataStatus !== CrateMetadataStatus.Ok) {
+        return [[], VerificationStatus.Crash, metadataDuration];
+    }
+
     // FIXME: Workaround for warning generation for libs.
-    await removeDiagnosticMetadata(rootPath);
+    await removeDiagnosticMetadata(metadata.target_directory);
+
     const cargoPrustiArgs = ["--message-format=json"].concat(
         config.extraCargoPrustiArgs()
     );
@@ -366,7 +383,7 @@ async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation, rootPa
         cargoPrustiArgs,
         {
             options: {
-                cwd: rootPath,
+                cwd: cratePath,
                 env: cargoPrustiEnv,
             }
         },
@@ -388,26 +405,34 @@ async function queryCrateDiagnostics(prusti: dependencies.PrustiLocation, rootPa
     if (/^thread '.*' panicked at/.exec(output.stderr) !== null) {
         status = VerificationStatus.Crash;
     }
+    const basePath = metadata.workspace_root ?? cratePath;
     const diagnostics: Diagnostic[] = [];
     for (const messages of parseCargoOutput(output.stdout)) {
         diagnostics.push(
-            parseCargoMessage(messages, rootPath)
+            parseCargoMessage(messages, basePath)
         );
     }
     return [diagnostics, status, output.duration];
 }
 
 /**
- * Queries for the diagnostics of a rust program using prusti-rustc.
- * 
- * @param programPath The root path of a rust program.
- * @returns An array of diagnostics for the given rust project.
+ * Queries for the diagnostics of a rust crate using prusti-rustc.
+ *
+ * @param prusti The location of Prusti files.
+ * @param filePath The path of a Rust program.
+ * @param destructors Where to store the destructors of the spawned processes.
+ * @returns A tuple containing the diagnostics, status and duration of the verification.
  */
-async function queryProgramDiagnostics(prusti: dependencies.PrustiLocation, programPath: string, serverAddress: string, destructors: Set<util.KillFunction>): Promise<[Diagnostic[], VerificationStatus, util.Duration]> {
+async function queryProgramDiagnostics(
+    prusti: dependencies.PrustiLocation,
+    filePath: string,
+    serverAddress: string,
+    destructors: Set<util.KillFunction>,
+): Promise<[Diagnostic[], VerificationStatus, util.Duration]> {
     const prustiRustcArgs = [
         "--crate-type=lib",
         "--error-format=json",
-        programPath
+        filePath
     ].concat(
         config.extraPrustiRustcArgs()
     );
@@ -425,7 +450,7 @@ async function queryProgramDiagnostics(prusti: dependencies.PrustiLocation, prog
         prustiRustcArgs,
         {
             options: {
-                cwd: path.dirname(programPath),
+                cwd: path.dirname(filePath),
                 env: prustiRustcEnv,
             }
         },
@@ -450,7 +475,7 @@ async function queryProgramDiagnostics(prusti: dependencies.PrustiLocation, prog
     const diagnostics: Diagnostic[] = [];
     for (const messages of parseRustcOutput(output.stderr)) {
         diagnostics.push(
-            parseRustcMessage(messages, programPath)
+            parseRustcMessage(messages, filePath)
         );
     }
     return [diagnostics, status, output.duration];

@@ -12,6 +12,7 @@
             }
         },
         "relatedInformation": [],
-        "severity": 0
+        "severity": 0,
+        "uri": "programs/assert_false.rs"
     }
 ]

@@ -9,9 +9,28 @@ import * as config from "../config";
 import * as state from "../state";
 import * as extension from "../extension"
 
+/**
+ * Get the path of the workspace.
+ *
+ * @returns The path of the workspace.
+ */
 function workspacePath(): string {
     assert.ok(vscode.workspace.workspaceFolders?.length);
     return vscode.workspace.workspaceFolders[0].uri.fsPath;
+}
+
+/**
+ * Convert a URI to a relative workspace path with forward slashes.
+ *
+ * @param uri The URI to convert.
+ * @returns The computed relative path.
+ */
+function asRelativeWorkspacePath(target: vscode.Uri): string {
+    // Resolve symlinks (e.g., in MacOS, `/var` is a symlink to `/private/var`).
+    // We do this manually becase `vscode.workspace.asRelativePath` does not resolve symlinks.
+    const normalizedTarget = fs.realpathSync(target.fsPath);
+    const normalizedWorkspace = fs.realpathSync(workspacePath());
+    return path.relative(normalizedWorkspace, normalizedTarget).replace(/\\/g, "/");
 }
 
 /**
@@ -31,7 +50,7 @@ function openFile(filePath: string): Promise<vscode.TextDocument> {
 }
 
 /**
- * Evaluate tje filter used in the `.rs.json` expected diagnostics.
+ * Evaluate one of the filters contained in the `.rs.json` expected diagnostics.
  * @param filter The filter dictionary.
  * @param name The name of the filter.
  * @returns True if the filter is fully satisfied, otherwise false.
@@ -56,15 +75,17 @@ function evaluateFilter(filter: [string: string], name: string): boolean {
     return true;
 }
 
-// Types that make sure our tests don't rely on the stringification of vscode
+// JSON-like types used to normalize the diagnostics
 type Position = {
     line: number,
     character: number
 }
+
 type Range = {
     start: Position,
     end: Position
 }
+
 type RelatedInformation = {
     location: {
         uri: string,
@@ -72,7 +93,10 @@ type RelatedInformation = {
     },
     message: string
 }
+
 type Diagnostic = {
+    // This path is relative to VSCode's workspace
+    uri: string,
     range: Range,
     severity: number,
     message: string,
@@ -91,18 +115,26 @@ function rangeToPlainObject(range: vscode.Range): Range {
         }
     };
 }
-function diagnosticToPlainObject(diagnostic: vscode.Diagnostic): Diagnostic {
+
+/**
+ * Normalize a diagnostic, converting it to a plain object.
+ *
+ * @param uri The URI of the file containing the diagnostic.
+ * @param diagnostic The diagnostic to convert.
+ * @returns The normalized diagnostic.
+ */
+function diagnosticToPlainObject(uri: vscode.Uri, diagnostic: vscode.Diagnostic): Diagnostic {
     const plainDiagnostic: Diagnostic = {
+        uri: asRelativeWorkspacePath(uri),
         range: rangeToPlainObject(diagnostic.range),
         severity: diagnostic.severity,
         message: diagnostic.message,
     };
     if (diagnostic.relatedInformation) {
         plainDiagnostic.relatedInformation = diagnostic.relatedInformation.map((relatedInfo) => {
-            const uri = vscode.workspace.asRelativePath(relatedInfo.location.uri);
             return {
                 location: {
-                    uri: uri,
+                    uri: asRelativeWorkspacePath(relatedInfo.location.uri),
                     range: rangeToPlainObject(relatedInfo.location.range)
                 },
                 message: relatedInfo.message,
@@ -112,7 +144,7 @@ function diagnosticToPlainObject(diagnostic: vscode.Diagnostic): Diagnostic {
     return plainDiagnostic;
 }
 
-// Prepare the workspace
+// Constants used in the tests
 const PROJECT_ROOT = path.join(__dirname, "..", "..");
 const SCENARIOS_ROOT = path.join(PROJECT_ROOT, "src", "test", "scenarios");
 const SCENARIO = process.env.SCENARIO;
@@ -153,12 +185,12 @@ describe("Extension", () => {
     })
 
     it(`scenario ${SCENARIO} can update Prusti`, async () => {
-        // tests are run serially, so nothing will run & break while we're updating
+        // Tests are run serially, so nothing will run & break while we're updating
         await openFile(path.join(workspacePath(), "programs", "assert_true.rs"));
         await vscode.commands.executeCommand("prusti-assistant.update");
     });
 
-    // Test every Rust program in the workspace
+    // Generate a test for every Rust program with expected diagnostics in the test suite.
     const programs: Array<string> = [SCENARIO_PATH, SHARED_SCENARIO_PATH].flatMap(cwd =>
         glob.sync("**/*.rs.json", { cwd: cwd }).map(filePath => filePath.replace(/\.json$/, ""))
     );
@@ -166,12 +198,19 @@ describe("Extension", () => {
     assert.ok(programs.length >= 3, `There are not enough programs to test (${programs.length})`);
     programs.forEach(program => {
         it(`scenario ${SCENARIO} reports expected diagnostics on ${program}`, async () => {
+            // Verify the program
             const programPath = path.join(workspacePath(), program);
             await openFile(programPath);
             await vscode.commands.executeCommand("prusti-assistant.clear-diagnostics");
             await vscode.commands.executeCommand("prusti-assistant.verify");
-            const diagnostics = vscode.languages.getDiagnostics().flatMap((pair) => pair[1]);
-            const plainDiagnostics = diagnostics.map(diagnosticToPlainObject);
+
+            // Collect and normalize the diagnostics
+            const plainDiagnostics = vscode.languages.getDiagnostics().flatMap(pair => {
+                const [uri, diagnostics] = pair;
+                return diagnostics.map(diagnostic => diagnosticToPlainObject(uri, diagnostic));
+            });
+
+            // Load the expected diagnostics. A single JSON file can contain multiple alternatives.
             const expectedData = await fs.readFile(programPath + ".json", "utf-8");
             type MultiDiagnostics = [
                 { filter?: [string: string], diagnostics: Diagnostic[] }
@@ -185,7 +224,8 @@ describe("Extension", () => {
             } else {
                 expectedMultiDiagnostics = expected as MultiDiagnostics;
             }
-            // Different Prusti versions or OSs migh report slightly different diagnostics.
+
+            // Select the expected diagnostics to be used for the current environment
             let expectedDiagnostics = expectedMultiDiagnostics.find((alternative, index) => {
                 if (!alternative.filter) {
                     console.log(
@@ -205,6 +245,7 @@ describe("Extension", () => {
                 };
             }
 
+            // Compare the actual with the expected diagnostics
             expect(plainDiagnostics).to.deep.equal(expectedDiagnostics.diagnostics);
         });
     });

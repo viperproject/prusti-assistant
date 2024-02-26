@@ -45,7 +45,8 @@
                 "message": "if this is intentional, prefix it with an underscore"
             }
         ],
-        "severity": 1
+        "severity": 1,
+        "uri": "crates/latest_contracts/src/main.rs"
     },
     {
         "message": "[Prusti: verification error] precondition might not hold.",
@@ -77,6 +78,7 @@
                 "message": "the failing assertion is here"
             }
         ],
-        "severity": 0
+        "severity": 0,
+        "uri": "crates/latest_contracts/src/main.rs"
     }
 ]

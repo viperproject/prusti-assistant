@@ -1,0 +1,18 @@
+[
+  {
+    "message": "[Prusti: verification error] the asserted expression might not hold",
+    "range": {
+      "end": {
+        "character": 18,
+        "line": 8
+      },
+      "start": {
+        "character": 4,
+        "line": 8
+      }
+    },
+    "relatedInformation": [],
+    "severity": 0,
+    "uri": "crates/workspace/first/src/lib.rs"
+  }
+]
