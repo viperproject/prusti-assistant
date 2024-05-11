@@ -104,6 +104,8 @@ export class VerificationManager {
 
     private findConsumer(token: string): PrustiMessageConsumer {
         switch (token) {
+            case "blockReachedMessage":
+            case "pathProcessedMessage":
             case "ideVerificationResult":
             case "compilerInfo":
             case "encodingInfo": {
@@ -197,6 +199,7 @@ export class VerificationManager {
             PRUSTI_REPORT_VIPER_MESSAGES: config.reportViperMessages().toString(),
             PRUSTI_SMT_QI_PROFILE: config.reportViperMessages().toString(),
             PRUSTI_SMT_QI_PROFILE_FREQ: config.reportViperMessages() ? config.z3QiProfileFreq().toString() : "",
+            PRUSTI_GENERATE_BLOCK_MESSAGES: config.reportViperMessages() ? config.generateBlockMessages()!.toString() : "false",
         };
 
         // with the newer version we can run prusti just to get information
@@ -210,6 +213,7 @@ export class VerificationManager {
             ...process.env,  // Needed to run Rustup
             ...versionDependentArgs,
             ...{
+                PRUSTI_CHECK_OVERFLOWS: "false",
                 PRUSTI_SERVER_ADDRESS: vArgs.serverAddress,
                 PRUSTI_QUIET: "true",
                 JAVA_HOME: (await config.javaHome())!.path,

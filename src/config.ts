@@ -112,3 +112,11 @@ export function reportViperMessages(): boolean {
 export function z3QiProfileFreq(): number {
     return config().get("z3QiProfileFreq", 100);
 }
+
+export function generateBlockMessages(): boolean {
+  return config().get("generateBlockMessages", true)
+}
+
+export function blockUpdateInterval(): number {
+  return config().get("generateBlockMessages", 200)
+}

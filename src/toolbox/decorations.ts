@@ -46,5 +46,94 @@ function timeAndCacheDecorator(time: number, cached: boolean, success: boolean) 
     }
 }
 
+export function successfulVerificationTextDecorationType(time: number, cached: boolean) : vscode.TextEditorDecorationType {
+    return vscode.window.createTextEditorDecorationType({
+        after: timeAndCacheDecorator(time, cached, true),
+    });
+}
+export function failedVerificationTextDecorationType(time: number, cached: boolean) : vscode.TextEditorDecorationType {
+    return vscode.window.createTextEditorDecorationType({
+        after: timeAndCacheDecorator(time, cached, false),
+    });
+}
 
+// Decorations for different partial verification states
+function successfulCompleteVerificationDecorationType() : vscode.TextEditorDecorationType {
+    const basepath = vscode.Uri.parse(__dirname);
+    const icon = vscode.Uri.joinPath(basepath, "..", "resources", "icons", "green-bars.svg")
+    return vscode.window.createTextEditorDecorationType({
+        gutterIconPath: icon,
+        gutterIconSize: '100%',
+    });
+}
+export const _successfulCompleteVerificationDecorationType = successfulCompleteVerificationDecorationType();
 
+function successfulCompleteVerificationStartDecorationType() : vscode.TextEditorDecorationType {
+    const basepath = vscode.Uri.parse(__dirname);
+    const icon = vscode.Uri.joinPath(basepath, "..", "resources", "icons", "top-half-circle-green.svg")
+    return vscode.window.createTextEditorDecorationType({
+        gutterIconPath: icon,
+        gutterIconSize: '100%',
+    });
+}
+export const _successfulCompleteVerificationStartDecorationType = successfulCompleteVerificationStartDecorationType();
+
+function successfulCompleteVerificationEndDecorationType() : vscode.TextEditorDecorationType {
+    const basepath = vscode.Uri.parse(__dirname);
+    const icon = vscode.Uri.joinPath(basepath, "..", "resources", "icons", "bottom-half-circle-green.svg")
+    return vscode.window.createTextEditorDecorationType({
+        gutterIconPath: icon,
+        gutterIconSize: '100%',
+    });
+}
+export const _successfulCompleteVerificationEndDecorationType = successfulCompleteVerificationEndDecorationType();
+
+function successfulPartialVerificationDecorationType() : vscode.TextEditorDecorationType {
+    const basepath = vscode.Uri.parse(__dirname);
+    const icon = vscode.Uri.joinPath(basepath, "..", "resources", "icons", "green-stripes-between-bars.svg")
+    return vscode.window.createTextEditorDecorationType({
+        gutterIconPath: icon,
+        gutterIconSize: '100%',
+    });
+}
+export const _successfulPartialVerificationDecorationType = successfulPartialVerificationDecorationType();
+
+function failedPartialVerificationDecorationType() : vscode.TextEditorDecorationType {
+  const basepath = vscode.Uri.parse(__dirname);
+  const icon = vscode.Uri.joinPath(basepath, "..", "resources", "icons", "red-between-bars.svg")
+  return vscode.window.createTextEditorDecorationType({
+    gutterIconPath: icon,
+    gutterIconSize: '100%',
+  });
+}
+export const _failedPartialVerificationDecorationType = failedPartialVerificationDecorationType();
+
+function declarationRangeDecorationType() : vscode.TextEditorDecorationType {
+    const basepath = vscode.Uri.parse(__dirname);
+    const icon = vscode.Uri.joinPath(basepath, "..", "resources", "icons", "orange-bars.svg")
+    return vscode.window.createTextEditorDecorationType({
+        gutterIconPath: icon,
+        gutterIconSize: '100%',
+    });
+}
+export const _declarationRangeDecorationType = declarationRangeDecorationType();
+
+function declarationRangeStartVerificationDecorationType() : vscode.TextEditorDecorationType {
+    const basepath = vscode.Uri.parse(__dirname);
+    const icon = vscode.Uri.joinPath(basepath, "..", "resources", "icons", "top-closed-orange-bars.svg")
+    return vscode.window.createTextEditorDecorationType({
+        gutterIconPath: icon,
+        gutterIconSize: '100%',
+    });
+}
+export const _declarationRangeStartVerificationDecorationType = declarationRangeStartVerificationDecorationType();
+
+function declarationRangeEndlVerificationDecorationType() : vscode.TextEditorDecorationType {
+    const basepath = vscode.Uri.parse(__dirname);
+    const icon = vscode.Uri.joinPath(basepath, "..", "resources", "icons", "bottom-closed-orange-bars.svg")
+    return vscode.window.createTextEditorDecorationType({
+        gutterIconPath: icon,
+        gutterIconSize: '100%',
+    });
+}
+export const _declarationRangeEndlVerificationDecorationType = declarationRangeEndlVerificationDecorationType();
