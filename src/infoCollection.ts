@@ -146,7 +146,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
                 codeLens.command = {
                     title: "✓ Verify",
                     command: "prusti-assistant.verify-selective",
-                    arguments: [pd.identifier]
+                    arguments: [[pd.identifier]]
                 };
                 codeLenses.push(codeLens);
             }

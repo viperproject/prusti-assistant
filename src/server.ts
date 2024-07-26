@@ -125,7 +125,7 @@ export async function restart(_context: vscode.ExtensionContext, verificationSta
             PRUSTI_REPORT_VIPER_MESSAGES: config.reportViperMessages().toString(),
             PRUSTI_SMT_QI_PROFILE: config.reportViperMessages().toString(),
             PRUSTI_SMT_QI_PROFILE_FREQ: config.reportViperMessages() ? config.z3QiProfileFreq().toString() : "",
-            PRUSTI_GENERATE_BLOCK_MESSAGES: config.reportViperMessages() ? config.generateBlockMessages()!.toString() : "false",
+            PRUSTI_REPORT_BLOCK_MESSAGES: config.reportViperMessages() ? config.generateBlockMessages()!.toString() : "false",
         };
 
     const prustiServerEnv = {

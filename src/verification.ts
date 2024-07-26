@@ -194,12 +194,12 @@ export class VerificationManager {
         const versionDependentArgs =  outdatedPrustiVersion ? {} : {
             PRUSTI_SHOW_IDE_INFO: "true",
             PRUSTI_SKIP_VERIFICATION: vArgs.skipVerify.toString(),
-            PRUSTI_VERIFY_ONLY_DEFPATH: vArgs.defPathArg.selectiveVerification,
+            PRUSTI_VERIFY_ONLY_DEFPATHS: vArgs.defPathArg.selectiveVerification,
             PRUSTI_QUERY_METHOD_SIGNATURE: vArgs.defPathArg.externalSpecRequest,
             PRUSTI_REPORT_VIPER_MESSAGES: config.reportViperMessages().toString(),
             PRUSTI_SMT_QI_PROFILE: config.reportViperMessages().toString(),
             PRUSTI_SMT_QI_PROFILE_FREQ: config.reportViperMessages() ? config.z3QiProfileFreq().toString() : "",
-            PRUSTI_GENERATE_BLOCK_MESSAGES: config.reportViperMessages() ? config.generateBlockMessages()!.toString() : "false",
+            PRUSTI_REPORT_BLOCK_MESSAGES: config.reportViperMessages() ? config.generateBlockMessages()!.toString() : "false",
         };
 
         // with the newer version we can run prusti just to get information
