@@ -118,5 +118,5 @@ export function generateBlockMessages(): boolean {
 }
 
 export function blockUpdateInterval(): number {
-  return config().get("generateBlockMessages", 200)
+  return config().get("blockUpdateInterval", 200)
 }

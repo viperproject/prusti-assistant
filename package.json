@@ -189,6 +189,16 @@
                     "default": true,
                     "description": "If enabled more information about quantifiers is available. This feature has to be enabled also server-side (done by this extension)."
                 },
+                "prusti-assistant.reportBlockMessages": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "If viper messages and this option are enabled more small-grained verification. This feature has to be enabled also server-side (done by this extension)."
+                },
+                "prusti-assistant.blockUpdateInterval": {
+                    "type": "number",
+                    "default": 200,
+                    "description": "If block data is reported, this setting regulates how frequently the UI is updated. If it acts unstably or flickers, increasing this number might help."
+                },
                 "prusti-assistant.z3QiProfileFreq": {
                     "type": "number",
                     "default": 100,

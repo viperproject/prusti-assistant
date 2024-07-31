@@ -233,7 +233,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             const activeTextEditor = vscode.window.activeTextEditor;
             util.log("Verify selective received arg: " + names.join(", "));
             const defPathArg = {
-                selectiveVerification: "[\"" + names.join("\",\"") + "\"]",
+                selectiveVerification: names.join(" "),
             }
             if (activeTextEditor !== undefined) {
                 await activeTextEditor.document.save().then(
