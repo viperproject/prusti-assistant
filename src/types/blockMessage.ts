@@ -16,14 +16,6 @@ export interface BlockResult {
     range: vscode.Range,
     file: string,
     result: boolean,
-    rangeId: string,
-}
-
-function getRangeId(file: string, range: vscode.Range): string {
-  // only the line numbers matter for the gutter
-  // different blocks mapping to the same (line) ranges should overwrite one-another
-    return `${file}[${range.start.line},${range.end.line}]`;
-  // return `${file}[${range.start.line},${range.start.character}][${range.end.line},${range.end.character}]`
 }
 
 /** Parses both blockReachedMessage and pathProcessedMessage. blockReachedMessage results are considered a success. */
@@ -56,6 +48,5 @@ export function parseBlockMessage(msg: Message, token: string) : BlockResult | u
         "range": vscRange,
         "file": span.file_name,
         "result": boolResult,
-        "rangeId": getRangeId(span.file_name, vscRange),
     } as BlockResult;
 }

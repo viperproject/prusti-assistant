@@ -2,12 +2,13 @@ import * as vscode from "vscode";
 import * as util from "./util";
 import * as config from "./config";
 import { EventEmitter } from "events";
-import { VerificationResult, parseVerificationResult } from "./types/verificationResult";
+import { parseVerificationResult } from "./types/verificationResult";
 import { BlockResult, parseBlockMessage } from "./types/blockMessage";
-import { _successfulCompleteVerificationStartDecorationType, _declarationRangeDecorationType, _declarationRangeEndlVerificationDecorationType, _declarationRangeStartVerificationDecorationType, _failedPartialVerificationDecorationType, failedVerificationDecorationType, failedVerificationTextDecorationType, _successfulCompleteVerificationDecorationType, _successfulCompleteVerificationEndDecorationType, _successfulPartialVerificationDecorationType, successfulVerificationDecorationType, successfulVerificationTextDecorationType } from "./toolbox/decorations";
+import { _successfulCompleteVerificationStartDecorationType, _declarationRangeDecorationType, _declarationRangeEndlVerificationDecorationType, _declarationRangeStartVerificationDecorationType, _failedPartialVerificationDecorationType, _successfulCompleteVerificationDecorationType, _successfulCompleteVerificationEndDecorationType, _successfulPartialVerificationDecorationType } from "./toolbox/decorations";
 import { FunctionRef, parseCompilerInfo, CompilerInfo } from "./types/compilerInfo";
 import { CallContract, parseCallContracts } from "./types/encodingInfo"
 import { PrustiMessageConsumer, Message, CargoMessage } from "./types/message"
+import { MethodVerificationData } from "./types/methodVerificationData"
 import { VerificationArgs, VerificationTarget, VerificationManager } from "./verification"
 
 function pathKey(rootPath: string, methodIdent: string): string {
@@ -31,21 +32,24 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
     private definitionRegister: vscode.Disposable;
     private resultOnTabChangeRegister: vscode.Disposable;
 
-    private decorations: Map<string, vscode.TextEditorDecorationType[]>;
+    // key: file name, method identifier
+    private decoratorMaps: Map<string, Map<vscode.TextEditorDecorationType, vscode.Range[]>>;
     private lastUpdateTime: number;
     private blockUpdateInterval: number;
     private pathTraversal: Map<number, BlockResult>;
-    private rangeVerificationInfo: Map<string, BlockResult>;
+    // TODO: use these for partial decorator wipes
     private methodStatusChanged: Set<string>;
-    private partialVerificactionDecorationRanges: Map<vscode.TextEditorDecorationType, vscode.Range[]>;
-    // private inverseRangeMap: Map<vscode.Range, string>;
+    private selectedMethods: Set<string> | undefined;
     // for procedureDefs we also have a boolean on whether these values
     // were already requested (for codelenses)
     private procedureDefs: Map<string, FunctionRef[]>;
     private functionCalls: Map<string, FunctionRef[]>;
-    private verificationInfo: Map<string, VerificationResult[]>;
-    private rangeMap: Map<string, [vscode.Range, string]>;
+    // key: pathKey
+    private methodMap: Map<string, MethodVerificationData>;
+    // key: rootpath, value: method defpath list 
+    private crateMethods: Map<string, string[]>;
     private callContracts: Map<string, CallContract[]>;
+    // key: file name
     private fileStateMap: Map<string, boolean>;
     private fileStateUpdateEmitter: EventEmitter;
     // we also have a reference to the VerificationManager so that we can tell it which files are
@@ -53,19 +57,17 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
     // I'm not super happy with this design choice, but for now it is what it is
     private verificationManager: VerificationManager;
 
-    public constructor(verificationManager: VerificationManager) {
-        this.decorations = new Map();
+    public constructor(verificationManager: VerificationManager, selectedMethods: Set<string> | undefined = undefined) {
+        this.decoratorMaps = new Map();
         this.lastUpdateTime = Date.now();
         this.blockUpdateInterval = config.blockUpdateInterval();
         this.pathTraversal = new Map();
-        this.rangeVerificationInfo = new Map();
         this.methodStatusChanged = new Set();
-        this.partialVerificactionDecorationRanges = new Map();
-        // this.inverseRangeMap = new Map();
+        this.selectedMethods = selectedMethods
         this.procedureDefs = new Map();
         this.functionCalls = new Map();
-        this.verificationInfo = new Map();
-        this.rangeMap = new Map();
+        this.methodMap = new Map();
+        this.crateMethods = new Map();
         this.callContracts = new Map();
         this.fileStateMap = new Map();
         this.fileStateUpdateEmitter = new EventEmitter();
@@ -87,9 +89,10 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
     * from previous verifications will be gone.
     */
     public clearPreviousRun(programPath: string): void {
-        this.verificationInfo.set(programPath, []);
-        this.rangeVerificationInfo = new Map();
+        this.crateMethods.set(programPath, []);
+        // TODO maybe clean out this.methodMap too?
         this.pathTraversal = new Map();
+
 
         const editor = vscode.window.activeTextEditor;
         if (editor !== undefined) {
@@ -103,7 +106,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
     */
     public wasVerifiedBefore(programPath: string): boolean {
         const root = util.getRootPath(programPath);
-        return (this.verificationInfo.get(root) !== undefined)
+        return (this.crateMethods.get(root) !== undefined)
     }
 
 
@@ -196,98 +199,44 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
     * the duration for the verification, and whether the result is cached
     * or not
     */
-   // TODO:
-   //       clear decorations only for methods where the partial or complete result changed?
-   //       if a method reports a failure just leave the partial results. (maybe change bars to red?)
-   //       make sure blockMessage.method actually matches in format with the method names in this.rangeMap
     private displayVerificationResults(): void {
         const activeEditor = vscode.window.activeTextEditor;
         const editorFilePath = activeEditor?.document.uri.fsPath;
         if (editorFilePath !== undefined) {
-            const methodsVerified: Set<string> = new Set();
             const rootPath = util.getRootPath(editorFilePath);
-            const decorators: vscode.TextEditorDecorationType[] = [];
+            const decoratorMap: Map<vscode.TextEditorDecorationType, vscode.Range[]> = new Map();
             this.clearPreviousDecorators(editorFilePath);
-            const resultList = this.verificationInfo.get(rootPath);
-            resultList?.forEach((res: VerificationResult) => {
-                const location = this.rangeMap.get(pathKey(rootPath, res.methodName));
-                if (location) {
-                    const [range, resFilePath] = location;
-                    if (resFilePath === editorFilePath) {
-                        const range_line = util.fullLineRange(range);
-                        let decoration;
-                        if (res.success) {
-                            // green out the gutter and only display the time and cached text if generating block messages.
-                            // unless the method has only one line, then behave as before
-                            if (config.generateBlockMessages()){
-                                methodsVerified.add(res.methodName);
-                                if (range.end.line - range.start.line < 2) {
-                                    decoration = successfulVerificationDecorationType(res.time_ms, res.cached);
-                                } else {
-                                    const rangeStart = new vscode.Range(range.start, range.start);
-                                    const rangeEnd = new vscode.Range(range.end, range.end);
-                                    const rangeBody = new vscode.Range(range.start.translate(1), range.end.translate(-1));
-                                    this.partialVerificactionDecorationRanges.get(_successfulCompleteVerificationStartDecorationType)!.push(rangeStart);
-                                    this.partialVerificactionDecorationRanges.get(_successfulCompleteVerificationDecorationType)!.push(rangeBody);
-                                    this.partialVerificactionDecorationRanges.get(_successfulCompleteVerificationEndDecorationType)!.push(rangeEnd);
-                                    decoration = successfulVerificationTextDecorationType(res.time_ms, res.cached);
-                                }
-                            } else {
-                                decoration = successfulVerificationDecorationType(res.time_ms, res.cached);
-                            }
-                        } else {
-                            // also only display the fail icon if the method is very short if generating block messages.
-                            if (config.generateBlockMessages()) {
-                                if (range.end.line - range.start.line < 2) {
-                                    methodsVerified.add(res.methodName); // no block information needed in this case
-                                    decoration = failedVerificationDecorationType(res.time_ms, res.cached);
-                                } else {
-                                    decoration = failedVerificationTextDecorationType(res.time_ms, res.cached);
-                                }
-                            } else {
-                              decoration = failedVerificationDecorationType(res.time_ms, res.cached);
-                            }
+            const methods = this.crateMethods.get(rootPath);
+            methods?.forEach((methodName) => {
+                const method = this.methodMap.get(pathKey(rootPath, methodName));
+                if (method) {
+                    if (method.filePath === editorFilePath) {
+                        if (this.methodStatusChanged.has(methodName)) {
+                            method.generateDecorators();
                         }
-                        activeEditor?.setDecorations(decoration, [range_line]);
-                        decorators.push(decoration);
+                        const [overallDecorator, blockDecorators] = method.getDecorators();
+
+                        if (overallDecorator) {
+                            decoratorMap.set(overallDecorator[0], [overallDecorator[1]]);
+                        }
+                        blockDecorators.forEach((ranges, dec) => {
+                            const prevRanges = decoratorMap.get(dec);
+                            if (prevRanges) {
+                                decoratorMap.set(dec, prevRanges.concat(ranges));
+                            } else {
+                                decoratorMap.set(dec, ranges);
+                            }
+                        })
                     }
                 } else {
-                    util.log(`Couldn't find location for method ${res.methodName} in ${rootPath}`);
+                    util.log(`Couldn't find method named ${methodName} in ${rootPath}`);
                 }
             });
 
-            this.rangeVerificationInfo.forEach((blockResult: BlockResult, _) => {
-                    if (editorFilePath === blockResult.file){
-                        const location = this.rangeMap.get(pathKey(rootPath, blockResult.method));
-                        if (location){
-                            // require at least one line of code in the method to display anything
-                            const range = location[0];
-                            if (range.end.line - range.start.line < 2) return;
-                            if (!methodsVerified.has(blockResult.method)){
-                                methodsVerified.add(blockResult.method);
-                                    const rangeStart = new vscode.Range(range.start, range.start);
-                                    const rangeEnd = new vscode.Range(range.end, range.end);
-                                    const rangeBody = new vscode.Range(range.start.translate(1), range.end.translate(-1));
-                                    this.partialVerificactionDecorationRanges.get(_declarationRangeStartVerificationDecorationType)!.push(rangeStart);
-                                    this.partialVerificactionDecorationRanges.get(_declarationRangeDecorationType)!.push(rangeBody);
-                                    this.partialVerificactionDecorationRanges.get(_declarationRangeEndlVerificationDecorationType)!.push(rangeEnd);
-                            }
-                            if (blockResult.result) {
-                                this.partialVerificactionDecorationRanges.get(_successfulPartialVerificationDecorationType)!.push(blockResult.range)
-                            } else {
-                                this.partialVerificactionDecorationRanges.get(_failedPartialVerificationDecorationType)!.push(blockResult.range)
-                            }
-                        } else {
-                            util.log(`Couldn't find location for method ${blockResult.method} in ${rootPath}`);
-                        }
-                    }
-                }
-            );
-            this.partialVerificactionDecorationRanges.forEach((ranges, dec) => {
+            this.decoratorMaps.set(editorFilePath, decoratorMap);
+            decoratorMap.forEach((ranges, dec) => {
                 activeEditor?.setDecorations(dec, ranges);
             });
-
-            this.decorations.set(editorFilePath, decorators);
             this.methodStatusChanged.clear();
             this.lastUpdateTime = Date.now();
         }
@@ -340,44 +289,26 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
     * start to appear twice.
     */
     private clearPreviousDecorators(filePath: string): void {
-        const prev = this.decorations.get(filePath);
+        const prev = this.decoratorMaps.get(filePath);
         if (prev !== undefined) {
-            prev.forEach((dec: vscode.TextEditorDecorationType) => {
+            prev.forEach((_, dec: vscode.TextEditorDecorationType) => {
                 vscode.window.activeTextEditor?.setDecorations(dec, []);
             });
         }
-
-        this.partialVerificactionDecorationRanges = new Map([
-            [_successfulPartialVerificationDecorationType, []],
-            [_successfulCompleteVerificationStartDecorationType, []],
-            [_successfulCompleteVerificationDecorationType, []],
-            [_successfulCompleteVerificationEndDecorationType, []],
-            [_failedPartialVerificationDecorationType, []],
-            [_declarationRangeStartVerificationDecorationType, []],
-            [_declarationRangeDecorationType, []],
-            [_declarationRangeEndlVerificationDecorationType, []]
-        ])
-        this.partialVerificactionDecorationRanges.forEach((_, dec) => {
-                vscode.window.activeTextEditor?.setDecorations(dec, []);
-            });
+        this.decoratorMaps.set(
+            filePath,
+            new Map([
+                [_successfulPartialVerificationDecorationType, []],
+                [_successfulCompleteVerificationStartDecorationType, []],
+                [_successfulCompleteVerificationDecorationType, []],
+                [_successfulCompleteVerificationEndDecorationType, []],
+                [_failedPartialVerificationDecorationType, []],
+                [_declarationRangeStartVerificationDecorationType, []],
+                [_declarationRangeDecorationType, []],
+                [_declarationRangeEndlVerificationDecorationType, []]
+            ])
+        );
     }
-
-    // private clearPreviousDecoratorsInRange(filePath: string, eraseRange: vscode.Range): void {
-    //   this.decorationRanges.forEach((ranges: vscode.Range[], decoration: vscode.TextEditorDecorationType) =>
-    //     {
-    //       const newRanges = ranges.filter((range: vscode.Range) => !eraseRange.contains(range));
-    //       this.decorationRanges.set(decoration, newRanges);
-    //       vscode.window.activeTextEditor?.setDecorations(decoration, newRanges);
-    //     }
-    //   );
-    //   const prev = this.decorations.get(filePath);
-    //   prev?.forEach((dec: vscode.TextEditorDecorationType) => 
-    //       {
-    //         const newRanges = ranges.filter((range: vscode.Range) => !eraseRange.contains(range));
-    //         vscode.window.activeTextEditor?.setDecorations(dec, []);
-    //       }
-    //   );
-    // }
 
     /** Very primitive way of causing a re-rendering of the Codelenses in the
      * current file. This was needed because in some cases it took quite a few
@@ -400,33 +331,22 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
      * `pathProcessedMessage`. As such, the {@link BlockResult.result | result} of
      * a {@link BlockResult} is interpreted as the result of the preceeding message.
      */
-    private updatePath(blockResult: BlockResult): void {
-        // TODO: currently assuming that blockResult.method eludes which file the range belongs to,
-        // which is probably not the case
+    private updatePath(blockResult: BlockResult, rootPath: string): void {
+        // util.log(`block result: ${JSON.stringify(blockResult)}`);
         // path ids are assumed to be unique across methods
+        const key = pathKey(rootPath, blockResult.method);
         const previousPathResult = this.pathTraversal.get(blockResult.pathId);
+        // util.log(`previous path result: ${JSON.stringify(previousPathResult)}`);
         if (previousPathResult !== undefined) {
-            const rangeResult = this.rangeVerificationInfo.get(previousPathResult.rangeId);
-            if (rangeResult === undefined) {
-                // no results for this range yet
-                previousPathResult.result = blockResult.result;
-                this.rangeVerificationInfo.set(previousPathResult.rangeId, previousPathResult);
-                this.methodStatusChanged.add(previousPathResult.method);
-            } else {
-                rangeResult.pathId = previousPathResult.pathId;
-                // no need to update the result if the result did not change
-                // sufficient xor check since the result should never go from false to true
-                if (!blockResult.result && rangeResult.result) {
-                    rangeResult.result = false;
-                    this.methodStatusChanged.add(blockResult.method);
-                }
-            }
+            this.methodMap
+                .get(key)
+                ?.updatePartialResult(previousPathResult.range, blockResult.result);
         }
         // if this is the first block of a path, no need to actually update the results yet
         this.pathTraversal.set(blockResult.pathId, blockResult);
     }
 
-    public addCompilerInfo(info: CompilerInfo): void {
+    public addCompilerInfo(info: CompilerInfo, selectiveVerification: string | undefined): void {
         // if prusti returns an extern_spec template, we move it to the
         // clipboard. This happens independently of whether it was actually
         // requested, so currently there is no error if this fails.
@@ -450,10 +370,26 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
             // we also call the verification manager so that affected files can be reset
             this.verificationManager.prepareFile(fileName);
         })
+        util.log(`selective verification: ${selectiveVerification}`);
+        if (selectiveVerification) {
+            this.selectedMethods = new Set(selectiveVerification.split(" "));
+        }
+        const methodNames: string[] = [];
         info.procedureDefs.forEach((pd: FunctionRef) => {
             const key: string = pathKey(rootPath, pd.identifier);
-            this.rangeMap.set(key, [pd.range, pd.fileName]);
+            let method = this.methodMap.get(key);
+            if (this.selectedMethods && !this.selectedMethods.has(pd.identifier)) {
+                // if not selected in a selective verification run, retain results and
+                // immediately regenerate decorations for the current range
+                method = new MethodVerificationData(pd, method);
+                method.generateDecorators();
+            } else {
+                method = new MethodVerificationData(pd);
+            }
+            this.methodMap.set(key, method);
+            methodNames.push(pd.identifier);
         });
+        this.crateMethods.set(rootPath, methodNames);
 
         this.forceCodelensUpdate();
     }
@@ -478,7 +414,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
                 const compilerInfo = parseCompilerInfo(msg.message, isCrate, rootPath);
                 if (compilerInfo !== undefined) {
                     util.log("Consumed compilerInfo");
-                    this.addCompilerInfo(compilerInfo);
+                    this.addCompilerInfo(compilerInfo, vArgs.defPathArg.selectiveVerification);
                 } else {
                     util.log("Invalid compilerInfo");
                 }
@@ -487,13 +423,16 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
             case "ideVerificationResult": {
                 const verificationResult = parseVerificationResult(msg.message);
                 if (verificationResult !== undefined) {
-                    if (this.verificationInfo.get(rootPath) === undefined) {
-                        this.verificationInfo.set(rootPath, []);
+                    const key = pathKey(rootPath, verificationResult?.methodName);
+                    const method = this.methodMap.get(key);
+                    if (method !== undefined) {
+                        method.verificationResult = verificationResult;
+                        util.log("Consumed ideVerificationResult");
+                        this.methodStatusChanged.add(verificationResult.methodName);
+                        this.displayVerificationResults();
+                    } else {
+                        util.log(`Invalid method name of ideVerificationResult (${verificationResult.methodName})`);
                     }
-                    this.verificationInfo.get(rootPath)!.push(verificationResult);
-                    util.log("Consumed ideVerificationResult");
-                    this.methodStatusChanged.add(verificationResult.methodName);
-                    this.displayVerificationResults();
                 } else {
                     util.log("Invalid ideVerificationResult");
                 }
@@ -505,16 +444,16 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
               if (blockResult !== undefined){
                 // mark current block of path as verified (mark block as verified overall if there hasn't been a failures yet)
                 // and advance current block of path to blockResult.span (should be span of a label/block)
-                this.updatePath(blockResult);
+                this.updatePath(blockResult, rootPath);
                 const time = Date.now()
-                if (time - this.lastUpdateTime > this.blockUpdateInterval){
+                if (time - this.lastUpdateTime > this.blockUpdateInterval) {
                     // there should always be an ideVerificationResult at the end which calls displayVerificationResults
                     // unconditionally, so there is no need to make sure the last of these messages is displayed.
                     this.displayVerificationResults();
                 }
                 util.log(`Consumed ${token}`);
               } else {
-                util.log(`Invalid ${token}: ${msg.message}`)
+                util.log(`Invalid ${token}: ${msg.message}`);
               }
               break;
             }
