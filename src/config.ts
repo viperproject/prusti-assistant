@@ -86,7 +86,12 @@ export function serverAddress(): string {
 }
 
 export function extraPrustiEnv(): Record<string, string> {
-    return config().get("extraPrustiEnv", {});
+    const extraVerifierArgs = extraSiliconArgs();
+    if (extraVerifierArgs.length > 0) {
+        return {"PRUSTI_EXTRA_VERIFIER_ARGS": extraVerifierArgs, ...config().get("extraPrustiEnv", {})};
+    } else {
+        return config().get("extraPrustiEnv", {});
+    }
 }
 
 export function extraPrustiRustcArgs(): string[] {
@@ -119,4 +124,28 @@ export function generateBlockMessages(): boolean {
 
 export function blockUpdateInterval(): number {
   return config().get("blockUpdateInterval", 200)
+}
+
+export function forceBlockUpdateInterval(): number {
+    return config().get("forceBlockUpdateInterval", 1000)
+}
+
+// TODO actually look up how to do this
+export function extraSiliconArgs(): string {
+    let extraArgs: {[key: string]: any} = config().get("extraSiliconArgs", {});
+    if (!("--numberOfErrorsToReport" in extraArgs) && generateBlockMessages()) {
+        extraArgs = {"--numberOfErrorsToReport": 0, ...extraArgs};
+    }
+    const args = []
+    for (const [key, val] of Object.entries(extraArgs)) {
+        if (typeof val === "boolean" || val === undefined) {
+            if (val || val === undefined) {
+                args.push(key);
+            }
+        } else if (typeof val === "number" || typeof val === "string") {
+            args.push(key, val.toString());
+        }
+    }
+    
+    return args.join(' ');
 }

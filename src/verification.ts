@@ -233,6 +233,9 @@ export class VerificationManager {
                 },
                 onStdout: isCrate ? onOutput : undefined,
                 onStderr: isCrate ? undefined : onOutput,
+                onInactivity:   config.generateBlockMessages()
+                                ? () => {this.infoCollection.displayVerificationResults();}
+                                : undefined
             },
             this.procDestructors,
         );

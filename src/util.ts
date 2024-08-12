@@ -2,6 +2,7 @@ import * as childProcess from "child_process";
 import * as vscode from "vscode";
 import * as treeKill from "tree-kill";
 import { projects } from "./projects";
+import * as config from "./config";
 
 export function userInfo(message: string, statusBar?: vscode.StatusBarItem): void {
     log(message);
@@ -103,10 +104,11 @@ export interface Output {
 export function spawn(
     cmd: string,
     args?: string[] | undefined,
-    { options, onStdout, onStderr }: {
+    { options, onStdout, onStderr, onInactivity }: {
         options?: childProcess.SpawnOptionsWithoutStdio;
         onStdout?: ((data: string) => void);
         onStderr?: ((data: string) => void);
+        onInactivity?: (() => void);
     } = {},
     destructors?: Set<KillFunction>,
 ): Promise<Output> {
@@ -145,20 +147,37 @@ export function spawn(
         destructors.add(killProc);
     }
 
+    const interval = config.forceBlockUpdateInterval();
+    let lastDataTime = Date.now();
+    const inactivityCheckInterval = setInterval(() => {
+        if (onInactivity) {
+            const now = Date.now();
+            if (now - lastDataTime > interval) {
+                log("detected inactivity, forcing update");
+                onInactivity();
+            }
+        }
+    }, interval);
+    
+
     proc.stdout.on("data", (data) => {
+        lastDataTime = Date.now();
         stdout += data;
         try {
             onStdout?.(data);
         } catch (e) {
             log(`error in stdout handler for '${description}': ${e}`);
+            log(`data was: '${data}'`);
         }
     });
     proc.stderr.on("data", (data) => {
+        lastDataTime = Date.now();
         stderr += data;
         try {
             onStderr?.(data);
         } catch (e) {
             log(`error in stderr handler for '${description}': ${e}`);
+            log(`data was: '${data}'`);
         }
     });
 
@@ -176,6 +195,7 @@ export function spawn(
 
     return new Promise((resolve, reject) => {
         proc.on("close", (code, signal) => {
+            clearInterval(inactivityCheckInterval);
             const duration = process.hrtime(start);
             printOutput(duration, code, signal);
             if (destructors) {
@@ -184,6 +204,7 @@ export function spawn(
             resolve({ stdout, stderr, code, signal, duration });
         });
         proc.on("error", (err) => {
+            clearInterval(inactivityCheckInterval);
             const duration = process.hrtime(start);
             printOutput(duration, null, null);
             log(`Error: ${err}`);

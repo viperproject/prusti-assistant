@@ -192,17 +192,29 @@
                 "prusti-assistant.reportBlockMessages": {
                     "type": "boolean",
                     "default": true,
-                    "description": "If viper messages and this option are enabled more small-grained verification. This feature has to be enabled also server-side (done by this extension)."
+                    "markdownDescription": "If viper messages and this option are enabled more small-grained verification. This feature has to be enabled also server-side (done by this extension). This requires `#prusti-assistant.reportViperMessages#` to be set too."
                 },
                 "prusti-assistant.blockUpdateInterval": {
                     "type": "number",
                     "default": 200,
                     "description": "If block data is reported, this setting regulates how frequently the UI is updated. If it acts unstably or flickers, increasing this number might help."
                 },
+                "prusti-assistant.forceBlockUpdateInterval": {
+                    "type": "number",
+                    "default": 1000,
+                    "markdownDescription": "When blocks hang, the currently displayed state may be out of date. This can happen, when no new messages arrive after reaching a hanging block (i.e. no other paths are active anymore) and the hanging block message arrived between `#prusti-assistant.blockUpdateInterval#`. This setting regulates forced updates after the specified amount of ms."
+                },
                 "prusti-assistant.z3QiProfileFreq": {
                     "type": "number",
                     "default": 100,
                     "description": "The frequency in which Z3 should report quantifier instantiations. The lower this value, the slower Z3 becomes. Used to display quantifier information. Only considered when reportViperMessages is set."
+                },
+                "prusti-assistant.extraSiliconArgs": {
+                    "type": "object",
+                    "default": {
+                        "--parallelizeBranches": false
+                    },
+                    "markdownDescription": "Specifies additional environment variables to be passed to all Silicon runs. Remember to restart the Prusti Server after modifying this setting. If `#prusti-assistant.reportBlockMessages#` is set, the default value receives an additional `--numberOfErrorsToReport 0`. May be overruled by `#prusti-assistant.extraPrustiEnv#`. A list of option can be found in the [Silicon wiki](https://github.com/viperproject/silicon/wiki/Command-Line-Options)."
                 }
             }
         }
