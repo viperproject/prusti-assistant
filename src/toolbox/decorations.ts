@@ -137,3 +137,13 @@ function declarationRangeEndlVerificationDecorationType() : vscode.TextEditorDec
     });
 }
 export const _declarationRangeEndlVerificationDecorationType = declarationRangeEndlVerificationDecorationType();
+
+function currentBlockDecorationType() : vscode.TextEditorDecorationType {
+    const basepath = vscode.Uri.parse(__dirname);
+    const icon = vscode.Uri.joinPath(basepath, "..", "resources", "icons", "current-block.svg")
+    return vscode.window.createTextEditorDecorationType({
+        gutterIconPath: icon,
+        gutterIconSize: '100%',
+    });
+}
+export const _currentBlockDecorationType = currentBlockDecorationType();

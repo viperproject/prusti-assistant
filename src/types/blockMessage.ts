@@ -16,6 +16,7 @@ export interface BlockResult {
     range: vscode.Range,
     file: string,
     result: boolean,
+    pathProcessesd: boolean,
 }
 
 /** Parses both blockReachedMessage and pathProcessedMessage. blockReachedMessage results are considered a success. */
@@ -48,5 +49,6 @@ export function parseBlockMessage(msg: Message, token: string) : BlockResult | u
         "range": vscRange,
         "file": span.file_name,
         "result": boolResult,
+        "pathProcessesd": token === "pathProcessedMessage"
     } as BlockResult;
 }

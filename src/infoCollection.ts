@@ -36,8 +36,6 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
     private decoratorMaps: Map<string, Map<vscode.TextEditorDecorationType, vscode.Range[]>>;
     private lastUpdateTime: number;
     private blockUpdateInterval: number;
-    private pathTraversal: Map<number, BlockResult>;
-    // TODO: use these for partial decorator wipes
     private methodStatusChanged: Set<string>;
     private selectedMethods: Set<string> | undefined;
     // for procedureDefs we also have a boolean on whether these values
@@ -61,7 +59,6 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
         this.decoratorMaps = new Map();
         this.lastUpdateTime = Date.now();
         this.blockUpdateInterval = config.blockUpdateInterval();
-        this.pathTraversal = new Map();
         this.methodStatusChanged = new Set();
         this.selectedMethods = selectedMethods
         this.procedureDefs = new Map();
@@ -91,8 +88,6 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
     public clearPreviousRun(programPath: string): void {
         this.crateMethods.set(programPath, []);
         // TODO maybe clean out this.methodMap too?
-        this.pathTraversal = new Map();
-
 
         const editor = vscode.window.activeTextEditor;
         if (editor !== undefined) {
@@ -199,13 +194,13 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
     * the duration for the verification, and whether the result is cached
     * or not
     */
-    private displayVerificationResults(): void {
+    public displayVerificationResults(): void {
+        if (this.methodStatusChanged.size === 0) { return; }
         const activeEditor = vscode.window.activeTextEditor;
         const editorFilePath = activeEditor?.document.uri.fsPath;
         if (editorFilePath !== undefined) {
             const rootPath = util.getRootPath(editorFilePath);
             const decoratorMap: Map<vscode.TextEditorDecorationType, vscode.Range[]> = new Map();
-            this.clearPreviousDecorators(editorFilePath);
             const methods = this.crateMethods.get(rootPath);
             methods?.forEach((methodName) => {
                 const method = this.methodMap.get(pathKey(rootPath, methodName));
@@ -234,6 +229,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
             });
 
             this.decoratorMaps.set(editorFilePath, decoratorMap);
+            this.clearPreviousDecorators(editorFilePath);
             decoratorMap.forEach((ranges, dec) => {
                 activeEditor?.setDecorations(dec, ranges);
             });
@@ -335,15 +331,10 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
         // util.log(`block result: ${JSON.stringify(blockResult)}`);
         // path ids are assumed to be unique across methods
         const key = pathKey(rootPath, blockResult.method);
-        const previousPathResult = this.pathTraversal.get(blockResult.pathId);
-        // util.log(`previous path result: ${JSON.stringify(previousPathResult)}`);
-        if (previousPathResult !== undefined) {
-            this.methodMap
-                .get(key)
-                ?.updatePartialResult(previousPathResult.range, blockResult.result);
-        }
-        // if this is the first block of a path, no need to actually update the results yet
-        this.pathTraversal.set(blockResult.pathId, blockResult);
+        this.methodMap
+            .get(key)
+            ?.updatePartialResult(blockResult);
+        this.methodStatusChanged.add(blockResult.method);
     }
 
     public addCompilerInfo(info: CompilerInfo, selectiveVerification: string | undefined): void {
@@ -445,6 +436,8 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
                 // mark current block of path as verified (mark block as verified overall if there hasn't been a failures yet)
                 // and advance current block of path to blockResult.span (should be span of a label/block)
                 this.updatePath(blockResult, rootPath);
+                // TODO somehow detect if there has not been a message for some time and force an update
+                // currently the current block marker may be misleading due to the interval below.
                 const time = Date.now()
                 if (time - this.lastUpdateTime > this.blockUpdateInterval) {
                     // there should always be an ideVerificationResult at the end which calls displayVerificationResults

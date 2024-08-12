@@ -1,11 +1,12 @@
 
 import { assert } from "console";
-import { _successfulCompleteVerificationStartDecorationType, _declarationRangeDecorationType, _declarationRangeEndlVerificationDecorationType, _declarationRangeStartVerificationDecorationType, _failedPartialVerificationDecorationType, failedVerificationDecorationType, failedVerificationTextDecorationType, _successfulCompleteVerificationDecorationType, _successfulCompleteVerificationEndDecorationType, _successfulPartialVerificationDecorationType, successfulVerificationDecorationType, successfulVerificationTextDecorationType } from "../toolbox/decorations";
+import { _successfulCompleteVerificationStartDecorationType, _declarationRangeDecorationType, _declarationRangeEndlVerificationDecorationType, _declarationRangeStartVerificationDecorationType, _failedPartialVerificationDecorationType, failedVerificationDecorationType, failedVerificationTextDecorationType, _successfulCompleteVerificationDecorationType, _successfulCompleteVerificationEndDecorationType, _successfulPartialVerificationDecorationType, successfulVerificationDecorationType, successfulVerificationTextDecorationType, _currentBlockDecorationType } from "../toolbox/decorations";
 import * as vscode from "vscode";
 import * as util from "../util";
 import * as config from "../config";
 import { VerificationResult } from "./verificationResult";
 import { FunctionRef } from "./compilerInfo";
+import { BlockResult } from "./blockMessage";
 
 type RelativeRange = [number, number];
 
@@ -74,6 +75,11 @@ export class MethodVerificationData {
     filePath: string;
     range: vscode.Range;
     length: number;
+    // there may be several paths being traversed through this method
+    // at a time. this remembers what the current block is for a path id.
+    // it only remembers the range, as the result is carried by the next
+    // block on the path. a mapping will be deleted if the path is processed.
+    pathTraversal: Map<number, RelativeRange>;
     // per line flags
     hasResult: bigint;
     failures: bigint;
@@ -90,6 +96,7 @@ export class MethodVerificationData {
         this.length = this.range.end.line - this.range.start.line;
         this.decorations = new Map();
         this.bitLength = this.end() - this.start();
+        this.pathTraversal = new Map();
         if (!previous) {
             this.failures = BigInt(0);
             this.hasResult = BigInt(0);
@@ -134,24 +141,49 @@ export class MethodVerificationData {
         this.verificationResultDecorator = undefined;
     }
 
+    private relRangeFromRange(range: vscode.Range): RelativeRange {
+        // vscode.Range has 0-based indices, so we add 1 to the end, so the bit shifts
+        // can also map 0
+        return [range.start.line - this.start(), range.end.line - this.start() + 1]
+    }
+
     /**
      * @param range Must be withint the method range. The entire range of the will be marked according to
      * `result`. That is, if a part of it was marked as failure before, it will never be updated to success
      * again.
      * @param result true: Success, false: Failure
      */
-    public updatePartialResult(range: vscode.Range, result: boolean): void {
-        assert(this.range.contains(range));
-        // vscode.Range has 0-based indices, so we add 1 to the end, so the bit shifts
-        // can also map 0
-        const start = range.start.line - this.start();
-        const end = range.end.line - this.start() + 1;
-        let mask = (BigInt(1) << BigInt(end)) - BigInt(1)
-        mask = mask ^ ((BigInt(1) << BigInt(start)) - BigInt(1))
-        if (!result){
-            this.failures = this.failures | mask;
+    public updatePartialResult(block: BlockResult): void {
+        assert(this.range.contains(block.range));
+
+        const previousPathResult = this.pathTraversal.get(block.pathId);
+        // util.log(`previous path result: ${JSON.stringify(previousPathResult)}`);
+        if (previousPathResult !== undefined) {
+            const [prevStart, prevEnd] = previousPathResult;
+            let mask = (BigInt(1) << BigInt(prevEnd)) - BigInt(1)
+            mask = mask ^ ((BigInt(1) << BigInt(prevStart)) - BigInt(1))
+            if (!block.result){
+                this.failures = this.failures | mask;
+            }
+            this.hasResult = this.hasResult | mask;
         }
-        this.hasResult = this.hasResult | mask;
+        if (block.pathProcessesd) {
+            this.pathTraversal.delete(block.pathId)
+        } else {
+            // if this is the first block of a path, no need to actually update the results yet
+            const relRange = this.relRangeFromRange(block.range);
+            this.pathTraversal.set(block.pathId, relRange);
+        }
+    }
+
+    private getInvertedCurrentBlockMask(): bigint {
+        let mask = BigInt(0);
+        this.pathTraversal.forEach(([start, end]) => {
+            let cur = (BigInt(1) << BigInt(end)) - BigInt(1);
+            cur = cur ^ ((BigInt(1) << BigInt(start)) - BigInt(1));
+            mask = cur | mask;
+        })
+        return invertBigint(mask, BigInt(this.bitLength));
     }
 
     private makeOverallVerificationDecorator(): vscode.TextEditorDecorationType {
@@ -219,7 +251,8 @@ export class MethodVerificationData {
                 [_failedPartialVerificationDecorationType, []],
                 [_declarationRangeStartVerificationDecorationType, []],
                 [_declarationRangeDecorationType, []],
-                [_declarationRangeEndlVerificationDecorationType, []]
+                [_declarationRangeEndlVerificationDecorationType, []],
+                [_currentBlockDecorationType, []]
             ]);
 
             const rangeStart = new vscode.Range(this.range.start, this.range.start);
@@ -235,9 +268,10 @@ export class MethodVerificationData {
                 this.decorations.get(_declarationRangeStartVerificationDecorationType)!.push(rangeStart);
                 this.decorations.get(_declarationRangeEndlVerificationDecorationType)!.push(rangeEnd);
 
-                const noResultRanges = maskAsRanges(invertBigint(this.hasResult, BigInt(this.bitLength)), this.bitLength)[0];
-                const failureRanges = maskAsRanges(this.failures, this.bitLength)[1];
-                const successRanges = maskAsRanges(this.hasResult ^ this.failures, this.bitLength)[0];
+                const invCurrentBlockMask = this.getInvertedCurrentBlockMask();
+                const noResultRanges = maskAsRanges(invertBigint(this.hasResult, BigInt(this.bitLength)) & invCurrentBlockMask, this.bitLength)[0];
+                const failureRanges = maskAsRanges(this.failures & invCurrentBlockMask, this.bitLength)[1];
+                const successRanges = maskAsRanges((this.hasResult ^ this.failures) & invCurrentBlockMask, this.bitLength)[0];
 
                 const storeDecoratorRanges = (range: [number, number], dec: vscode.TextEditorDecorationType) => {
                     const vscodeRange = new vscode.Range(range[0] + this.start(), 0, range[1] + this.start(), 0);
@@ -246,6 +280,7 @@ export class MethodVerificationData {
                 noResultRanges.forEach((range) => storeDecoratorRanges(range, _declarationRangeDecorationType));
                 failureRanges.forEach((range) => storeDecoratorRanges(range, _failedPartialVerificationDecorationType));
                 successRanges.forEach((range) => storeDecoratorRanges(range, _successfulPartialVerificationDecorationType));
+                this.pathTraversal.forEach((range) => storeDecoratorRanges(range, _currentBlockDecorationType));
             } else {
                 util.log(`The method ${this.name} has no partial results.`);
             }
