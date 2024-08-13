@@ -1,5 +1,31 @@
 import * as vscode from "vscode";
 
+export enum DecorationType {
+    SUCCESS_TOP,
+    SUCCESS,
+    SUCCESS_BOT,
+    SUCCESS_PARTIAL,
+    FAIL_PARTIAL,
+    DECL_TOP,
+    DECL,
+    DECL_BOT,
+    CURRENT_BLOCK
+}
+
+export function makeDecorator(decTy: DecorationType): vscode.TextEditorDecorationType {
+    switch (decTy) {
+        case DecorationType.SUCCESS_TOP: {return successfulCompleteVerificationStartDecorationType()}
+        case DecorationType.SUCCESS: {return successfulCompleteVerificationDecorationType()}
+        case DecorationType.SUCCESS_BOT: {return successfulCompleteVerificationEndDecorationType()}
+        case DecorationType.SUCCESS_PARTIAL: {return successfulPartialVerificationDecorationType()}
+        case DecorationType.FAIL_PARTIAL: {return failedPartialVerificationDecorationType()}
+        case DecorationType.DECL_TOP: {return declarationRangeStartDecorationType()}
+        case DecorationType.DECL: {return declarationRangeDecorationType()}
+        case DecorationType.DECL_BOT: {return declarationRangeEndDecorationType()}
+        case DecorationType.CURRENT_BLOCK: {return currentBlockDecorationType()}
+    }
+}
+
 export function successfulVerificationDecorationType(time: number, cached: boolean) : vscode.TextEditorDecorationType {
     const basepath = vscode.Uri.parse(__dirname);
     const icon = vscode.Uri.joinPath(basepath, "..", "resources", "icons", "check-circle-fat.svg")
@@ -66,7 +92,6 @@ function successfulCompleteVerificationDecorationType() : vscode.TextEditorDecor
         gutterIconSize: '100%',
     });
 }
-export const _successfulCompleteVerificationDecorationType = successfulCompleteVerificationDecorationType();
 
 function successfulCompleteVerificationStartDecorationType() : vscode.TextEditorDecorationType {
     const basepath = vscode.Uri.parse(__dirname);
@@ -76,7 +101,6 @@ function successfulCompleteVerificationStartDecorationType() : vscode.TextEditor
         gutterIconSize: '100%',
     });
 }
-export const _successfulCompleteVerificationStartDecorationType = successfulCompleteVerificationStartDecorationType();
 
 function successfulCompleteVerificationEndDecorationType() : vscode.TextEditorDecorationType {
     const basepath = vscode.Uri.parse(__dirname);
@@ -86,7 +110,6 @@ function successfulCompleteVerificationEndDecorationType() : vscode.TextEditorDe
         gutterIconSize: '100%',
     });
 }
-export const _successfulCompleteVerificationEndDecorationType = successfulCompleteVerificationEndDecorationType();
 
 function successfulPartialVerificationDecorationType() : vscode.TextEditorDecorationType {
     const basepath = vscode.Uri.parse(__dirname);
@@ -96,7 +119,6 @@ function successfulPartialVerificationDecorationType() : vscode.TextEditorDecora
         gutterIconSize: '100%',
     });
 }
-export const _successfulPartialVerificationDecorationType = successfulPartialVerificationDecorationType();
 
 function failedPartialVerificationDecorationType() : vscode.TextEditorDecorationType {
   const basepath = vscode.Uri.parse(__dirname);
@@ -106,7 +128,6 @@ function failedPartialVerificationDecorationType() : vscode.TextEditorDecoration
     gutterIconSize: '100%',
   });
 }
-export const _failedPartialVerificationDecorationType = failedPartialVerificationDecorationType();
 
 function declarationRangeDecorationType() : vscode.TextEditorDecorationType {
     const basepath = vscode.Uri.parse(__dirname);
@@ -116,9 +137,8 @@ function declarationRangeDecorationType() : vscode.TextEditorDecorationType {
         gutterIconSize: '100%',
     });
 }
-export const _declarationRangeDecorationType = declarationRangeDecorationType();
 
-function declarationRangeStartVerificationDecorationType() : vscode.TextEditorDecorationType {
+function declarationRangeStartDecorationType() : vscode.TextEditorDecorationType {
     const basepath = vscode.Uri.parse(__dirname);
     const icon = vscode.Uri.joinPath(basepath, "..", "resources", "icons", "top-closed-orange-bars.svg")
     return vscode.window.createTextEditorDecorationType({
@@ -126,9 +146,8 @@ function declarationRangeStartVerificationDecorationType() : vscode.TextEditorDe
         gutterIconSize: '100%',
     });
 }
-export const _declarationRangeStartVerificationDecorationType = declarationRangeStartVerificationDecorationType();
 
-function declarationRangeEndlVerificationDecorationType() : vscode.TextEditorDecorationType {
+function declarationRangeEndDecorationType() : vscode.TextEditorDecorationType {
     const basepath = vscode.Uri.parse(__dirname);
     const icon = vscode.Uri.joinPath(basepath, "..", "resources", "icons", "bottom-closed-orange-bars.svg")
     return vscode.window.createTextEditorDecorationType({
@@ -136,7 +155,6 @@ function declarationRangeEndlVerificationDecorationType() : vscode.TextEditorDec
         gutterIconSize: '100%',
     });
 }
-export const _declarationRangeEndlVerificationDecorationType = declarationRangeEndlVerificationDecorationType();
 
 function currentBlockDecorationType() : vscode.TextEditorDecorationType {
     const basepath = vscode.Uri.parse(__dirname);
@@ -146,4 +164,3 @@ function currentBlockDecorationType() : vscode.TextEditorDecorationType {
         gutterIconSize: '100%',
     });
 }
-export const _currentBlockDecorationType = currentBlockDecorationType();

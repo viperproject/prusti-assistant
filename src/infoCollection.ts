@@ -4,12 +4,14 @@ import * as config from "./config";
 import { EventEmitter } from "events";
 import { parseVerificationResult } from "./types/verificationResult";
 import { BlockResult, parseBlockMessage } from "./types/blockMessage";
-import { _successfulCompleteVerificationStartDecorationType, _declarationRangeDecorationType, _declarationRangeEndlVerificationDecorationType, _declarationRangeStartVerificationDecorationType, _failedPartialVerificationDecorationType, _successfulCompleteVerificationDecorationType, _successfulCompleteVerificationEndDecorationType, _successfulPartialVerificationDecorationType } from "./toolbox/decorations";
+import { DecorationType, makeDecorator } from "./toolbox/decorations";
 import { FunctionRef, parseCompilerInfo, CompilerInfo } from "./types/compilerInfo";
 import { CallContract, parseCallContracts } from "./types/encodingInfo"
 import { PrustiMessageConsumer, Message, CargoMessage } from "./types/message"
 import { MethodVerificationData } from "./types/methodVerificationData"
 import { VerificationArgs, VerificationTarget, VerificationManager } from "./verification"
+import * as fs from 'fs';
+import * as crypto from 'crypto';
 
 function pathKey(rootPath: string, methodIdent: string): string {
     return rootPath + ":" + methodIdent;
@@ -201,6 +203,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
         if (editorFilePath !== undefined) {
             const rootPath = util.getRootPath(editorFilePath);
             const decoratorMap: Map<vscode.TextEditorDecorationType, vscode.Range[]> = new Map();
+            const partialDecoratorMap: Map<DecorationType, vscode.Range[]> = new Map();
             const methods = this.crateMethods.get(rootPath);
             methods?.forEach((methodName) => {
                 const method = this.methodMap.get(pathKey(rootPath, methodName));
@@ -215,11 +218,11 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
                             decoratorMap.set(overallDecorator[0], [overallDecorator[1]]);
                         }
                         blockDecorators.forEach((ranges, dec) => {
-                            const prevRanges = decoratorMap.get(dec);
+                            const prevRanges = partialDecoratorMap.get(dec);
                             if (prevRanges) {
-                                decoratorMap.set(dec, prevRanges.concat(ranges));
+                                partialDecoratorMap.set(dec, prevRanges.concat(ranges));
                             } else {
-                                decoratorMap.set(dec, ranges);
+                                partialDecoratorMap.set(dec, ranges);
                             }
                         })
                     }
@@ -227,9 +230,13 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
                     util.log(`Couldn't find method named ${methodName} in ${rootPath}`);
                 }
             });
-
-            this.decoratorMaps.set(editorFilePath, decoratorMap);
+            
             this.clearPreviousDecorators(editorFilePath);
+            partialDecoratorMap.forEach((ranges, decTy) => {
+                const dec = makeDecorator(decTy);
+                decoratorMap.set(dec, ranges)
+            });
+            this.decoratorMaps.set(editorFilePath, decoratorMap);
             decoratorMap.forEach((ranges, dec) => {
                 activeEditor?.setDecorations(dec, ranges);
             });
@@ -288,22 +295,10 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
         const prev = this.decoratorMaps.get(filePath);
         if (prev !== undefined) {
             prev.forEach((_, dec: vscode.TextEditorDecorationType) => {
-                vscode.window.activeTextEditor?.setDecorations(dec, []);
+                dec.dispose();
             });
         }
-        this.decoratorMaps.set(
-            filePath,
-            new Map([
-                [_successfulPartialVerificationDecorationType, []],
-                [_successfulCompleteVerificationStartDecorationType, []],
-                [_successfulCompleteVerificationDecorationType, []],
-                [_successfulCompleteVerificationEndDecorationType, []],
-                [_failedPartialVerificationDecorationType, []],
-                [_declarationRangeStartVerificationDecorationType, []],
-                [_declarationRangeDecorationType, []],
-                [_declarationRangeEndlVerificationDecorationType, []]
-            ])
-        );
+        this.decoratorMaps.set(filePath, new Map());
     }
 
     /** Very primitive way of causing a re-rendering of the Codelenses in the
@@ -369,13 +364,26 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
         info.procedureDefs.forEach((pd: FunctionRef) => {
             const key: string = pathKey(rootPath, pd.identifier);
             let method = this.methodMap.get(key);
+            let data: string | undefined = undefined;
+            try {
+                data = fs.readFileSync(pd.fileName, 'utf8');
+            } catch (err) {
+                util.log(`could not open file ${pd.fileName}: ${err}`);
+            }
+            
+            const fileStr = data?.split('\n');
+            const methodStr = fileStr?.slice(pd.range.start.line, pd.range.end.line + 1).map((line) => line.trim()).join('\n');
+            util.log(`method string for ${pd.identifier}: \n ${methodStr}`);
+            const methodHash = methodStr ? crypto.createHash('sha256').update(methodStr).digest('base64') : undefined;
+            util.log(`hash: ${methodHash}`);
+
             if (this.selectedMethods && !this.selectedMethods.has(pd.identifier)) {
                 // if not selected in a selective verification run, retain results and
                 // immediately regenerate decorations for the current range
-                method = new MethodVerificationData(pd, method);
+                method = new MethodVerificationData(pd, methodHash, method);
                 method.generateDecorators();
             } else {
-                method = new MethodVerificationData(pd);
+                method = new MethodVerificationData(pd, methodHash);
             }
             this.methodMap.set(key, method);
             methodNames.push(pd.identifier);

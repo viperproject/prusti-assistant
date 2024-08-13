@@ -1,6 +1,6 @@
 
 import { assert } from "console";
-import { _successfulCompleteVerificationStartDecorationType, _declarationRangeDecorationType, _declarationRangeEndlVerificationDecorationType, _declarationRangeStartVerificationDecorationType, _failedPartialVerificationDecorationType, failedVerificationDecorationType, failedVerificationTextDecorationType, _successfulCompleteVerificationDecorationType, _successfulCompleteVerificationEndDecorationType, _successfulPartialVerificationDecorationType, successfulVerificationDecorationType, successfulVerificationTextDecorationType, _currentBlockDecorationType } from "../toolbox/decorations";
+import { DecorationType, successfulVerificationDecorationType, successfulVerificationTextDecorationType, failedVerificationDecorationType, failedVerificationTextDecorationType} from "../toolbox/decorations";
 import * as vscode from "vscode";
 import * as util from "../util";
 import * as config from "../config";
@@ -73,6 +73,7 @@ function maskAsRanges(
 export class MethodVerificationData {
     name: string;
     filePath: string;
+    hash: string | undefined;
     range: vscode.Range;
     length: number;
     // there may be several paths being traversed through this method
@@ -86,12 +87,12 @@ export class MethodVerificationData {
     bitLength: number;
     // overall result
     verificationResult: VerificationResult | undefined;
-    verificationResultDecorator: [vscode.TextEditorDecorationType, vscode.Range] | undefined;
-    decorations: Map<vscode.TextEditorDecorationType, vscode.Range[]>;
+    decorations: Map<DecorationType, vscode.Range[]>;
 
-    public constructor(fn: FunctionRef, previous: MethodVerificationData | undefined = undefined) {
+    public constructor(fn: FunctionRef, hash: string | undefined, previous: MethodVerificationData | undefined = undefined) {
         this.name = fn.identifier;
         this.filePath = fn.fileName;
+        this.hash = hash;
         this.range = fn.range;
         this.length = this.range.end.line - this.range.start.line;
         this.decorations = new Map();
@@ -103,9 +104,9 @@ export class MethodVerificationData {
         } else {
             assert(fn.identifier === previous.name, `name mismatch between method structs: ${fn.identifier} - ${previous.name}`);
             assert(fn.fileName === previous.filePath, `file name mismatch between method structs: ${fn.fileName} - ${previous.filePath}`);
-            // if the LoC changes we assume that the prior results are no longer valid.
-            if (this.length !== previous.length) {
-                util.log(`Method LoC changed for ${fn.identifier} (${this.length} -> ${previous.length}). Wiping decorators.`);
+            // if the hash changes we assume that the prior results are no longer valid.
+            if (this.hash === undefined || previous.hash === undefined || this.hash !== previous.hash) {
+                util.log(`Method hash changed for ${fn.identifier}. Wiping results.`);
                 this.failures = BigInt(0);
                 this.hasResult = BigInt(0);
             } else {
@@ -138,7 +139,6 @@ export class MethodVerificationData {
         this.hasResult = BigInt(0);
         this.verificationResult = undefined;
         this.decorations = new Map();
-        this.verificationResultDecorator = undefined;
     }
 
     private relRangeFromRange(range: vscode.Range): RelativeRange {
@@ -215,44 +215,41 @@ export class MethodVerificationData {
     }
 
     /**
-     * Requires that {@link generateDecorators} has been called beforehand (will return `[undefined, {}]` otherwise).
+     * Requires that {@link generateDecorators} has been called beforehand to return block based decorators.
      * @returns The first tuple element is and overall result decorator and it's range, or undefined if no overall
      * result is available. The second element is a map containing ranges for block based decorators. 
      */
     public getDecorators(
     ):  [
         [vscode.TextEditorDecorationType, vscode.Range] | undefined,
-        Map<vscode.TextEditorDecorationType, vscode.Range[]>
+        Map<DecorationType, vscode.Range[]>
         ]
     {
-        return [this.verificationResultDecorator, this.decorations];
+        if (this.verificationResult) {
+            const range_line = util.fullLineRange(this.range);
+            return [[this.makeOverallVerificationDecorator(), range_line], this.decorations];
+        }
+        return [undefined, this.decorations];
     }
 
     /**
-     * Generates and store decorators based on the information already contained in `this`.
+     * Generates and store block based decorators based on the information already contained in `this`.
      * Does not return them. To retrieve them, call {@link getDecorators} instead.
      */
     public generateDecorators(): void {
-        let overallSuccess = false;
-        const range_line = util.fullLineRange(this.range);
-        if (this.verificationResult) {
-            this.verificationResultDecorator = [this.makeOverallVerificationDecorator(), range_line];
-            overallSuccess = this.verificationResult.success;
-        }
-        
-
         // short methods (1-2 lines including braces) just get the regular overall decorators
         if (config.generateBlockMessages() && !this.short()) {
+            const overallSuccess = this.verificationResult?.success ?? false;
             this.decorations = new Map([
-                [_successfulCompleteVerificationStartDecorationType, []],
-                [_successfulCompleteVerificationDecorationType, []],
-                [_successfulCompleteVerificationEndDecorationType, []],
-                [_successfulPartialVerificationDecorationType, []],
-                [_failedPartialVerificationDecorationType, []],
-                [_declarationRangeStartVerificationDecorationType, []],
-                [_declarationRangeDecorationType, []],
-                [_declarationRangeEndlVerificationDecorationType, []],
-                [_currentBlockDecorationType, []]
+                [DecorationType.SUCCESS_TOP, []],
+                [DecorationType.SUCCESS, []],
+                [DecorationType.SUCCESS_BOT, []],
+                [DecorationType.SUCCESS_PARTIAL, []],
+                [DecorationType.FAIL_PARTIAL, []],
+                [DecorationType.DECL_TOP, []],
+                [DecorationType.DECL, []],
+                [DecorationType.DECL_BOT, []],
+                [DecorationType.CURRENT_BLOCK, []]
             ]);
 
             const rangeStart = new vscode.Range(this.range.start, this.range.start);
@@ -260,27 +257,27 @@ export class MethodVerificationData {
             if (overallSuccess) {
                 // green bar over whole span
                 const rangeBody = new vscode.Range(this.range.start.translate(1), this.range.end.translate(-1));
-                this.decorations.get(_successfulCompleteVerificationStartDecorationType)!.push(rangeStart);
-                this.decorations.get(_successfulCompleteVerificationDecorationType)!.push(rangeBody);
-                this.decorations.get(_successfulCompleteVerificationEndDecorationType)!.push(rangeEnd);
+                this.decorations.get(DecorationType.SUCCESS_TOP)!.push(rangeStart);
+                this.decorations.get(DecorationType.SUCCESS)!.push(rangeBody);
+                this.decorations.get(DecorationType.SUCCESS_BOT)!.push(rangeEnd);
             }
             else if (this.hasResult) {
-                this.decorations.get(_declarationRangeStartVerificationDecorationType)!.push(rangeStart);
-                this.decorations.get(_declarationRangeEndlVerificationDecorationType)!.push(rangeEnd);
+                this.decorations.get(DecorationType.DECL_TOP)!.push(rangeStart);
+                this.decorations.get(DecorationType.DECL_BOT)!.push(rangeEnd);
 
                 const invCurrentBlockMask = this.getInvertedCurrentBlockMask();
                 const noResultRanges = maskAsRanges(invertBigint(this.hasResult, BigInt(this.bitLength)) & invCurrentBlockMask, this.bitLength)[0];
                 const failureRanges = maskAsRanges(this.failures & invCurrentBlockMask, this.bitLength)[1];
                 const successRanges = maskAsRanges((this.hasResult ^ this.failures) & invCurrentBlockMask, this.bitLength)[0];
 
-                const storeDecoratorRanges = (range: [number, number], dec: vscode.TextEditorDecorationType) => {
+                const storeDecoratorRanges = (range: [number, number], dec: DecorationType) => {
                     const vscodeRange = new vscode.Range(range[0] + this.start(), 0, range[1] + this.start(), 0);
                     this.decorations.get(dec)!.push(vscodeRange);
                 };
-                noResultRanges.forEach((range) => storeDecoratorRanges(range, _declarationRangeDecorationType));
-                failureRanges.forEach((range) => storeDecoratorRanges(range, _failedPartialVerificationDecorationType));
-                successRanges.forEach((range) => storeDecoratorRanges(range, _successfulPartialVerificationDecorationType));
-                this.pathTraversal.forEach((range) => storeDecoratorRanges(range, _currentBlockDecorationType));
+                noResultRanges.forEach((range) => storeDecoratorRanges(range, DecorationType.DECL));
+                failureRanges.forEach((range) => storeDecoratorRanges(range, DecorationType.FAIL_PARTIAL));
+                successRanges.forEach((range) => storeDecoratorRanges(range, DecorationType.SUCCESS_PARTIAL));
+                this.pathTraversal.forEach((range) => storeDecoratorRanges(range, DecorationType.CURRENT_BLOCK));
             } else {
                 util.log(`The method ${this.name} has no partial results.`);
             }
