@@ -196,8 +196,8 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
     * the duration for the verification, and whether the result is cached
     * or not
     */
-    public displayVerificationResults(): void {
-        if (this.methodStatusChanged.size === 0) { return; }
+    public displayVerificationResults(tabChange = false): void {
+        if (!tabChange && this.methodStatusChanged.size === 0) { return; }
         const activeEditor = vscode.window.activeTextEditor;
         const editorFilePath = activeEditor?.document.uri.fsPath;
         if (editorFilePath !== undefined) {
@@ -281,7 +281,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
         return vscode.window.onDidChangeActiveTextEditor((editor: vscode.TextEditor | undefined) => {
             if (editor && editor.document) {
                 if (editor.document.languageId === "rust") {
-                    this.displayVerificationResults();
+                    this.displayVerificationResults(true);
                 }
             }
         });
@@ -373,9 +373,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
             
             const fileStr = data?.split('\n');
             const methodStr = fileStr?.slice(pd.range.start.line, pd.range.end.line + 1).map((line) => line.trim()).join('\n');
-            util.log(`method string for ${pd.identifier}: \n ${methodStr}`);
             const methodHash = methodStr ? crypto.createHash('sha256').update(methodStr).digest('base64') : undefined;
-            util.log(`hash: ${methodHash}`);
 
             if (this.selectedMethods && !this.selectedMethods.has(pd.identifier)) {
                 // if not selected in a selective verification run, retain results and
