@@ -210,9 +210,9 @@
                     "description": "The frequency in which Z3 should report quantifier instantiations. The lower this value, the slower Z3 becomes. Used to display quantifier information. Only considered when reportViperMessages is set."
                 },
                 "prusti-assistant.extraSiliconArgs": {
-                    "type": "object",
-                    "default": {
-                        "--parallelizeBranches": false
+                    "type": "array",
+                    "items": {
+                        "type": "string"
                     },
                     "markdownDescription": "Specifies additional environment variables to be passed to all Silicon runs. Remember to restart the Prusti Server after modifying this setting. If `#prusti-assistant.reportBlockMessages#` is set, the default value receives an additional `--numberOfErrorsToReport 0`. May be overruled by `#prusti-assistant.extraPrustiEnv#`. A list of option can be found in the [Silicon wiki](https://github.com/viperproject/silicon/wiki/Command-Line-Options)."
                 }

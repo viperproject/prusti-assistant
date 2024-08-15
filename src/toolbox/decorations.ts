@@ -26,22 +26,22 @@ export function makeDecorator(decTy: DecorationType): vscode.TextEditorDecoratio
     }
 }
 
-export function successfulVerificationDecorationType(time: number, cached: boolean) : vscode.TextEditorDecorationType {
+export function successfulVerificationDecorationType(time: number, cached: boolean, stale: boolean) : vscode.TextEditorDecorationType {
     const basepath = vscode.Uri.parse(__dirname);
     const icon = vscode.Uri.joinPath(basepath, "..", "resources", "icons", "check-circle-fat.svg")
     return vscode.window.createTextEditorDecorationType({
         gutterIconPath: icon,
         gutterIconSize: '80%',
-        after: timeAndCacheDecorator(time, cached, true),
+        after: timeAndCacheDecorator(time, cached, true, stale),
     });
 }
-export function failedVerificationDecorationType(time: number, cached: boolean) : vscode.TextEditorDecorationType {
+export function failedVerificationDecorationType(time: number, cached: boolean, stale: boolean) : vscode.TextEditorDecorationType {
     const basepath = vscode.Uri.parse(__dirname);
     const icon = vscode.Uri.joinPath(basepath, "..", "resources", "icons", "x-circle-fat.svg")
     return vscode.window.createTextEditorDecorationType({
         gutterIconPath: icon,
         gutterIconSize: '80%',
-        after: timeAndCacheDecorator(time, cached, false),
+        after: timeAndCacheDecorator(time, cached, false, stale),
     });
 }
 
@@ -57,13 +57,14 @@ export function notVerifiedDecorationType() : vscode.TextEditorDecorationType {
     });
 }
 
-function timeAndCacheDecorator(time: number, cached: boolean, success: boolean) : vscode.ThemableDecorationAttachmentRenderOptions {
-    const cachedStr = cached ? " (cached)":"";
+function timeAndCacheDecorator(time: number, cached: boolean, success: boolean, stale: boolean) : vscode.ThemableDecorationAttachmentRenderOptions {
+    const cachedStr = cached ? " (cached)" : "";
+    const staleStr = stale ? " (stale)" : "";
     let text;
     if (success) {
-        text = `  [Verified in ${time} ms${cachedStr}]`;
+        text = `  [Verified in ${time} ms${cachedStr}${staleStr}]`;
     } else {
-        text = `  [Failed verification in ${time} ms${cachedStr}]`;
+        text = `  [Failed verification in ${time} ms${cachedStr}${staleStr}]`;
     }
     return {
         contentText: text,
@@ -72,14 +73,14 @@ function timeAndCacheDecorator(time: number, cached: boolean, success: boolean) 
     }
 }
 
-export function successfulVerificationTextDecorationType(time: number, cached: boolean) : vscode.TextEditorDecorationType {
+export function successfulVerificationTextDecorationType(time: number, cached: boolean, stale: boolean) : vscode.TextEditorDecorationType {
     return vscode.window.createTextEditorDecorationType({
-        after: timeAndCacheDecorator(time, cached, true),
+        after: timeAndCacheDecorator(time, cached, true, stale),
     });
 }
-export function failedVerificationTextDecorationType(time: number, cached: boolean) : vscode.TextEditorDecorationType {
+export function failedVerificationTextDecorationType(time: number, cached: boolean, stale: boolean) : vscode.TextEditorDecorationType {
     return vscode.window.createTextEditorDecorationType({
-        after: timeAndCacheDecorator(time, cached, false),
+        after: timeAndCacheDecorator(time, cached, false, stale),
     });
 }
 

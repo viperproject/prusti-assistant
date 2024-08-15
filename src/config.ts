@@ -130,22 +130,20 @@ export function forceBlockUpdateInterval(): number {
     return config().get("forceBlockUpdateInterval", 1000)
 }
 
-// TODO actually look up how to do this
 export function extraSiliconArgs(): string {
-    let extraArgs: {[key: string]: any} = config().get("extraSiliconArgs", {});
-    if (!("--numberOfErrorsToReport" in extraArgs) && generateBlockMessages()) {
-        extraArgs = {"--numberOfErrorsToReport": 0, ...extraArgs};
-    }
-    const args = []
-    for (const [key, val] of Object.entries(extraArgs)) {
-        if (typeof val === "boolean" || val === undefined) {
-            if (val || val === undefined) {
-                args.push(key);
+    const extraArgs: string[] = config().get("extraSiliconArgs", []);
+    if (generateBlockMessages()) {
+        let defaultnumberOfErrorsToReport = true;
+        for (const arg of extraArgs) {
+            if (arg.startsWith("--numberOfErrorsToReport")) {
+                defaultnumberOfErrorsToReport = false;
+                break;
             }
-        } else if (typeof val === "number" || typeof val === "string") {
-            args.push(key, val.toString());
+        }
+        if (defaultnumberOfErrorsToReport) {
+            extraArgs.push("--numberOfErrorsToReport 0");
         }
     }
     
-    return args.join(' ');
+    return extraArgs.join(' ');
 }

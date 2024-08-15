@@ -126,8 +126,8 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
 
         if (fileState === undefined) {
             return [];
-        } else if (fileState) {
-            // it has already been read and we should wait for an update
+        } else if (fileState && document.isDirty) {
+            // it has already been read and has unsaved changes, so we should wait for an update
             // otherwise providing this info again will only cause the ranges
             // to be out-of-date, meaning they end up in the wrong places.
             await new Promise(resolve => {
@@ -420,15 +420,15 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
             case "ideVerificationResult": {
                 const verificationResult = parseVerificationResult(msg.message);
                 if (verificationResult !== undefined) {
-                    const key = pathKey(rootPath, verificationResult?.methodName);
+                    const key = pathKey(rootPath, verificationResult?.item_name);
                     const method = this.methodMap.get(key);
                     if (method !== undefined) {
                         method.verificationResult = verificationResult;
                         util.log("Consumed ideVerificationResult");
-                        this.methodStatusChanged.add(verificationResult.methodName);
+                        this.methodStatusChanged.add(verificationResult.item_name);
                         this.displayVerificationResults();
                     } else {
-                        util.log(`Invalid method name of ideVerificationResult (${verificationResult.methodName})`);
+                        util.log(`Invalid method name of ideVerificationResult (${verificationResult.item_name})`);
                     }
                 } else {
                     util.log("Invalid ideVerificationResult");

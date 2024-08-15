@@ -76,6 +76,7 @@ export class MethodVerificationData {
     hash: string | undefined;
     range: vscode.Range;
     length: number;
+    stale: boolean;
     // there may be several paths being traversed through this method
     // at a time. this remembers what the current block is for a path id.
     // it only remembers the range, as the result is carried by the next
@@ -95,6 +96,7 @@ export class MethodVerificationData {
         this.hash = hash;
         this.range = fn.range;
         this.length = this.range.end.line - this.range.start.line;
+        this.stale = false;
         this.decorations = new Map();
         this.bitLength = this.end() - this.start();
         this.pathTraversal = new Map();
@@ -110,6 +112,7 @@ export class MethodVerificationData {
                 this.failures = BigInt(0);
                 this.hasResult = BigInt(0);
             } else {
+                this.stale = true;
                 this.verificationResult = previous.verificationResult;
                 this.failures = previous.failures;
                 this.hasResult = previous.hasResult;
@@ -148,13 +151,13 @@ export class MethodVerificationData {
     }
 
     /**
-     * @param range Must be withint the method range. The entire range of the will be marked according to
+     * @param range Must be withint the method range (or be a `pathProcessedMessage`). The entire range of the will be marked according to
      * `result`. That is, if a part of it was marked as failure before, it will never be updated to success
      * again.
      * @param result true: Success, false: Failure
      */
     public updatePartialResult(block: BlockResult): void {
-        assert(this.range.contains(block.range));
+        assert(block.pathProcessesd || this.range.contains(block.range), `block range not in method (${this.name}) range:\n${JSON.stringify(block.range)} -> ${JSON.stringify(this.range)}`);
 
         const previousPathResult = this.pathTraversal.get(block.pathId);
         // util.log(`previous path result: ${JSON.stringify(previousPathResult)}`);
@@ -191,24 +194,28 @@ export class MethodVerificationData {
             if (this.short() || !config.generateBlockMessages()) {
                 return successfulVerificationDecorationType(
                     this.verificationResult!.time_ms,
-                    this.verificationResult!.cached
+                    this.verificationResult!.cached,
+                    this.stale
                 );
             } else {
                 return successfulVerificationTextDecorationType(
                     this.verificationResult!.time_ms,
-                    this.verificationResult!.cached
+                    this.verificationResult!.cached,
+                    this.stale
                 );
             }
         } else {
             if (this.short() || !config.generateBlockMessages()) {
                 return failedVerificationDecorationType(
                     this.verificationResult!.time_ms,
-                    this.verificationResult!.cached
+                    this.verificationResult!.cached,
+                    this.stale
                 );
             } else {
                 return failedVerificationTextDecorationType(
                     this.verificationResult!.time_ms,
-                    this.verificationResult!.cached
+                    this.verificationResult!.cached,
+                    this.stale
                 );
             }
         }

@@ -108,7 +108,7 @@ export function spawn(
         options?: childProcess.SpawnOptionsWithoutStdio;
         onStdout?: ((data: string) => void);
         onStderr?: ((data: string) => void);
-        onInactivity?: (() => void);
+        onInactivity?: ((tabChange: boolean) => void);
     } = {},
     destructors?: Set<KillFunction>,
 ): Promise<Output> {
@@ -149,12 +149,14 @@ export function spawn(
 
     const interval = config.forceBlockUpdateInterval();
     let lastDataTime = Date.now();
+    let forceUpdate = false;
     const inactivityCheckInterval = setInterval(() => {
         if (onInactivity) {
             const now = Date.now();
-            if (now - lastDataTime > interval) {
+            if (forceUpdate && now - lastDataTime > interval) {
                 log("detected inactivity, forcing update");
-                onInactivity();
+                onInactivity(false);
+                forceUpdate = false;
             }
         }
     }, interval);
@@ -162,6 +164,7 @@ export function spawn(
 
     proc.stdout.on("data", (data) => {
         lastDataTime = Date.now();
+        forceUpdate = true;
         stdout += data;
         try {
             onStdout?.(data);
@@ -172,6 +175,7 @@ export function spawn(
     });
     proc.stderr.on("data", (data) => {
         lastDataTime = Date.now();
+        forceUpdate = true;
         stderr += data;
         try {
             onStderr?.(data);
@@ -196,6 +200,7 @@ export function spawn(
     return new Promise((resolve, reject) => {
         proc.on("close", (code, signal) => {
             clearInterval(inactivityCheckInterval);
+            onInactivity?.(true);
             const duration = process.hrtime(start);
             printOutput(duration, code, signal);
             if (destructors) {
@@ -205,6 +210,7 @@ export function spawn(
         });
         proc.on("error", (err) => {
             clearInterval(inactivityCheckInterval);
+            onInactivity?.(true);
             const duration = process.hrtime(start);
             printOutput(duration, null, null);
             log(`Error: ${err}`);
