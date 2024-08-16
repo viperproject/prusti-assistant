@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#eab219" stroke-width="2">
+  <defs>
+    <clipPath id="cupShape">
+      <!-- The cup shape path -->
+      <path d="M1 0 L1 12 A11 11 0 0 0 23 12 L23 0" />
+    </clipPath>
+  </defs>
+  
+  <g clip-path="url(#cupShape)">
+    <line x1="-13" y1="24" x2="27" y2="-24" stroke="#60b356" stroke-width="7.682212795973759"/>
+    <line x1="-13" y1="48" x2="27" y2="0" stroke="#60b356" stroke-width="7.682212795973759"/>
+  </g>
+
+  <path d="M1 0 L1 12 A11 11 0 0 0 23 12 L23 0"/>
+</svg>
