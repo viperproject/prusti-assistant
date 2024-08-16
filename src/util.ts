@@ -147,38 +147,34 @@ export function spawn(
         destructors.add(killProc);
     }
 
-    const interval = config.forceBlockUpdateInterval();
-    let lastDataTime = Date.now();
-    let forceUpdate = false;
-    const inactivityCheckInterval = setInterval(() => {
-        if (onInactivity) {
-            const now = Date.now();
-            if (forceUpdate && now - lastDataTime > interval) {
-                log("detected inactivity, forcing update");
-                onInactivity(false);
-                forceUpdate = false;
-            }
-        }
-    }, interval);
-    
+    const timeout = config.forceBlockUpdateInterval();
+    let timer: ReturnType<typeof setTimeout>;
+    const timeout_fn = () => {
+        log("detected inactivity, forcing update");
+        onInactivity?.(false);
+    }
 
     proc.stdout.on("data", (data) => {
-        lastDataTime = Date.now();
-        forceUpdate = true;
         stdout += data;
         try {
             onStdout?.(data);
+            if (onInactivity) {
+                clearTimeout(timer);
+                timer = setTimeout(timeout_fn, timeout);
+            }
         } catch (e) {
             log(`error in stdout handler for '${description}': ${e}`);
             log(`data was: '${data}'`);
         }
     });
     proc.stderr.on("data", (data) => {
-        lastDataTime = Date.now();
-        forceUpdate = true;
         stderr += data;
         try {
             onStderr?.(data);
+            if (onInactivity) {
+                clearTimeout(timer);
+                timer = setTimeout(timeout_fn, timeout);
+            }
         } catch (e) {
             log(`error in stderr handler for '${description}': ${e}`);
             log(`data was: '${data}'`);
@@ -199,7 +195,7 @@ export function spawn(
 
     return new Promise((resolve, reject) => {
         proc.on("close", (code, signal) => {
-            clearInterval(inactivityCheckInterval);
+            clearTimeout(timer);
             onInactivity?.(true);
             const duration = process.hrtime(start);
             printOutput(duration, code, signal);
@@ -209,7 +205,7 @@ export function spawn(
             resolve({ stdout, stderr, code, signal, duration });
         });
         proc.on("error", (err) => {
-            clearInterval(inactivityCheckInterval);
+            clearTimeout(timer);
             onInactivity?.(true);
             const duration = process.hrtime(start);
             printOutput(duration, null, null);
