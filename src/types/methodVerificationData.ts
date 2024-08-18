@@ -42,15 +42,15 @@ function maskAsRanges(
     // first and last bits are always skipped because they have special
     // decorators anyway.
     for (let i = 2; i < bitString.length - 1; i++) {
-            if (bitString[i] !== currentBit) {
-                ranges.push([currentRangeStart, i - 1]);
-                currentRangeStart = i;
-                currentBit = bitString[i]
-            }
+        if (bitString[i] !== currentBit) {
+            ranges.push([currentRangeStart, i - 1]);
+            currentRangeStart = i;
+            currentBit = bitString[i]
+        }
     }
     // this access should be safe since this method should only be called when
     // the method LoC is greater than 2
-    ranges.push([currentRangeStart, bitString.length - 1]);
+    ranges.push([currentRangeStart, bitString.length - 2]);
 
     const ranges0 = [];
     const ranges1 = [];
@@ -75,17 +75,18 @@ export class MethodVerificationData {
     filePath: string;
     hash: string | undefined;
     range: vscode.Range;
-    length: number;
     stale: boolean;
     // there may be several paths being traversed through this method
     // at a time. this remembers what the current block is for a path id.
     // it only remembers the range, as the result is carried by the next
     // block on the path. a mapping will be deleted if the path is processed.
     pathTraversal: Map<number, RelativeRange>;
-    // per line flags
+    // per line flags. each bit represents the presence of a result or failure
+    // on the respective line (least significatn bit = first line)
     hasResult: bigint;
     failures: bigint;
-    bitLength: number;
+    // lines of code (including delimiters)
+    loc: number;
     // overall result
     verificationResult: VerificationResult | undefined;
     decorations: Map<DecorationType, vscode.Range[]>;
@@ -95,10 +96,9 @@ export class MethodVerificationData {
         this.filePath = fn.fileName;
         this.hash = hash;
         this.range = fn.range;
-        this.length = this.range.end.line - this.range.start.line;
         this.stale = false;
         this.decorations = new Map();
-        this.bitLength = this.end() - this.start();
+        this.loc = this.end() - this.start() + 1;
         this.pathTraversal = new Map();
         if (!previous) {
             this.failures = BigInt(0);
@@ -129,12 +129,12 @@ export class MethodVerificationData {
     }
 
     /**
-     * We consider methods that span less than 3 lines (including declaration &
+     * We consider methods that span less than 4 lines (including declaration &
      * body-surrounding braces) short. Short methods do not display per-block results,
      * but will have the regular tick or cross instead.
      */
     public short(): boolean {
-        return this.length < 3
+        return this.loc < 4
     }
 
     public resetResults(): void {
@@ -145,9 +145,7 @@ export class MethodVerificationData {
     }
 
     private relRangeFromRange(range: vscode.Range): RelativeRange {
-        // vscode.Range has 0-based indices, so we add 1 to the end, so the bit shifts
-        // can also map 0
-        return [range.start.line - this.start(), range.end.line - this.start() + 1]
+        return [range.start.line - this.start(), range.end.line - this.start()]
     }
 
     /**
@@ -157,15 +155,18 @@ export class MethodVerificationData {
      * @param result true: Success, false: Failure
      */
     public updatePartialResult(block: BlockResult): void {
-        assert(block.pathProcessesd || this.range.contains(block.range), `block range not in method (${this.name}) range:\n${JSON.stringify(block.range)} -> ${JSON.stringify(this.range)}`);
+        assert(
+            block.pathProcessesd || this.range.contains(block.range),
+            `block range not in method (${this.name}) ranges:\n${JSON.stringify(block.range)} </: ${JSON.stringify(this.range)}`
+        );
 
         const previousPathResult = this.pathTraversal.get(block.pathId);
         // util.log(`previous path result: ${JSON.stringify(previousPathResult)}`);
         if (previousPathResult !== undefined) {
             const [prevStart, prevEnd] = previousPathResult;
-            let mask = (BigInt(1) << BigInt(prevEnd)) - BigInt(1)
+            let mask = (BigInt(1) << BigInt(prevEnd + 1)) - BigInt(1)
             mask = mask ^ ((BigInt(1) << BigInt(prevStart)) - BigInt(1))
-            if (!block.result){
+            if (!block.result) {
                 this.failures = this.failures | mask;
             }
             this.hasResult = this.hasResult | mask;
@@ -179,14 +180,17 @@ export class MethodVerificationData {
         }
     }
 
-    private getInvertedCurrentBlockMask(): bigint {
+    /**
+     * @returns a pair of the range mask of current blocks and its inversion
+     */
+    private getCurrentBlockMasks(): [bigint, bigint] {
         let mask = BigInt(0);
         this.pathTraversal.forEach(([start, end]) => {
-            let cur = (BigInt(1) << BigInt(end)) - BigInt(1);
+            let cur = (BigInt(1) << BigInt(end + 1)) - BigInt(1);
             cur = cur ^ ((BigInt(1) << BigInt(start)) - BigInt(1));
             mask = cur | mask;
         })
-        return invertBigint(mask, BigInt(this.bitLength));
+        return [mask, invertBigint(mask, BigInt(this.loc))];
     }
 
     private makeOverallVerificationDecorator(): vscode.TextEditorDecorationType {
@@ -228,8 +232,8 @@ export class MethodVerificationData {
      */
     public getDecorators(
     ):  [
-        [vscode.TextEditorDecorationType, vscode.Range] | undefined,
-        Map<DecorationType, vscode.Range[]>
+            [vscode.TextEditorDecorationType, vscode.Range] | undefined,
+            Map<DecorationType, vscode.Range[]>
         ]
     {
         if (this.verificationResult) {
@@ -244,7 +248,7 @@ export class MethodVerificationData {
      * Does not return them. To retrieve them, call {@link getDecorators} instead.
      */
     public generateDecorators(): void {
-        // short methods (1-2 lines including braces) just get the regular overall decorators
+        // short methods (1-3 lines including braces) just get the regular overall decorators
         if (config.generateBlockMessages() && !this.short()) {
             const overallSuccess = this.verificationResult?.success ?? false;
             this.decorations = new Map([
@@ -269,13 +273,16 @@ export class MethodVerificationData {
                 this.decorations.get(DecorationType.SUCCESS_BOT)!.push(rangeEnd);
             }
             else if (this.hasResult) {
+                // currently the top and bottom of declarations do not support differentiating success or failure
+                // should they? short methods won't have these decorators anyway and longer ones typically would not
+                // have code on these lines. not supporting it might encourage good code style.
                 this.decorations.get(DecorationType.DECL_TOP)!.push(rangeStart);
                 this.decorations.get(DecorationType.DECL_BOT)!.push(rangeEnd);
 
-                const invCurrentBlockMask = this.getInvertedCurrentBlockMask();
-                const noResultRanges = maskAsRanges(invertBigint(this.hasResult, BigInt(this.bitLength)) & invCurrentBlockMask, this.bitLength)[0];
-                const failureRanges = maskAsRanges(this.failures & invCurrentBlockMask, this.bitLength)[1];
-                const successRanges = maskAsRanges((this.hasResult ^ this.failures) & invCurrentBlockMask, this.bitLength)[0];
+                const [currentBlockMask, invCurrentBlockMask] = this.getCurrentBlockMasks();
+                const noResultRanges = maskAsRanges(this.hasResult | currentBlockMask, this.loc)[0];
+                const failureRanges = maskAsRanges(this.failures & invCurrentBlockMask, this.loc)[1];
+                const successRanges = maskAsRanges((this.hasResult ^ this.failures) & invCurrentBlockMask, this.loc)[1];
 
                 const storeDecoratorRanges = (range: [number, number], dec: DecorationType) => {
                     const vscodeRange = new vscode.Range(range[0] + this.start(), 0, range[1] + this.start(), 0);

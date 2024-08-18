@@ -11,7 +11,7 @@ interface BlockResultRaw {
 }
 
 export interface BlockResult {
-    method: string, // TODO: should be consistent with pathKey(rootPath, methodName)
+    method: string,
     pathId: number,
     range: vscode.Range,
     file: string,
@@ -26,7 +26,6 @@ export function parseBlockMessage(msg: Message, token: string) : BlockResult | u
         return undefined;
     }
     
-    // util.log(`\nprocessing block message: ${msg.message}`);
     const rawResult = JSON.parse(msg.message.substring(token.length)) as BlockResultRaw;
     if (rawResult.method === undefined || rawResult.path_id === undefined){
         util.log("ERROR: could not parse method name or path id.");
@@ -38,9 +37,9 @@ export function parseBlockMessage(msg: Message, token: string) : BlockResult | u
         return undefined
     }
     
-    // util.log(`processing spans: ${JSON.stringify(msg.spans)}`)
     const span = msg.spans[0]
-    const boolResult = rawResult.result === undefined || rawResult.result === "Success";
+    // TODO should unreachable results be treated as success? they should never cause errors
+    const boolResult = rawResult.result === undefined || rawResult.result === "Success" || rawResult.result === "Unreachable";
     const vscRange = parseSpanRange(span)
 
     return {
