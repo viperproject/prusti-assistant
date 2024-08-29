@@ -105,6 +105,7 @@ export class VerificationManager {
     private findConsumer(token: string): PrustiMessageConsumer {
         switch (token) {
             case "blockReachedMessage":
+            case "blockFailureMessage":
             case "pathProcessedMessage":
             case "ideVerificationResult":
             case "compilerInfo":

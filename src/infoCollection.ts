@@ -436,6 +436,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
                 break;
             }
             case "pathProcessedMessage":
+            case "blockFailureMessage":
             case "blockReachedMessage": {
               const blockResult = parseBlockMessage(msg, token);
               if (blockResult !== undefined){
