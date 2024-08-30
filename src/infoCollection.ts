@@ -28,7 +28,7 @@ function pathKey(rootPath: string, methodIdent: string): string {
 * - Contracts of calls: for each function call, a user can request the specification
 *   of that method, i.e. contract items of that method.
 */
-export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActionProvider, PrustiMessageConsumer {
+export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActionProvider, PrustiMessageConsumer, vscode.DefinitionProvider {
     private lensRegister: vscode.Disposable;
     private actionRegister: vscode.Disposable;
     private definitionRegister: vscode.Disposable;
@@ -38,10 +38,12 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
     private decoratorMaps: Map<string, Map<vscode.TextEditorDecorationType, vscode.Range[]>>;
     private lastUpdateTime: number;
     private blockUpdateInterval: number;
+    // defpaths
     private methodStatusChanged: Set<string>;
     private selectedMethods: Set<string> | undefined;
     // for procedureDefs we also have a boolean on whether these values
     // were already requested (for codelenses)
+    // key: rootpath
     private procedureDefs: Map<string, FunctionRef[]>;
     private functionCalls: Map<string, FunctionRef[]>;
     // key: pathKey
@@ -377,7 +379,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
 
             if (this.selectedMethods && !this.selectedMethods.has(pd.identifier)) {
                 // if not selected in a selective verification run, retain results and
-                // immediately regenerate decorations for the current range
+                // immediately regenerate decorations for the current range (they will be marked as stale)
                 method = new MethodVerificationData(pd, methodHash, method);
                 method.generateDecorators();
             } else {
@@ -443,12 +445,10 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
                 // mark current block of path as verified (mark block as verified overall if there hasn't been a failures yet)
                 // and advance current block of path to blockResult.span (should be span of a label/block)
                 this.updatePath(blockResult, rootPath);
-                // TODO somehow detect if there has not been a message for some time and force an update
-                // currently the current block marker may be misleading due to the interval below.
                 const time = Date.now()
                 if (time - this.lastUpdateTime > this.blockUpdateInterval) {
-                    // there should always be an ideVerificationResult at the end which calls displayVerificationResults
-                    // unconditionally, so there is no need to make sure the last of these messages is displayed.
+                    // this will always be updated when an ideVerificationResult arrives, or there is enough inactivity, 
+                    // so there is no need to make sure the last of these messages is displayed manually.
                     this.displayVerificationResults();
                 }
                 util.log(`Consumed ${token}`);

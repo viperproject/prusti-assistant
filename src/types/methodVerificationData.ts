@@ -18,6 +18,15 @@ function invertBigint(x: bigint, bitLength: bigint): bigint {
 }
 
 /**
+ * @return a bitmask covering the given range
+ */
+function rangeToMask(range: RelativeRange): bigint {
+    let mask = (BigInt(1) << BigInt(range[1] + 1)) - BigInt(1)
+    mask = mask ^ ((BigInt(1) << BigInt(range[0])) - BigInt(1))
+    return mask;
+}
+
+/**
  * Conversts a bitmask into two arrays of number tuples. Each tuple represents a line range,
  * relative to the start of the method's starting line. The first array is composed of ranges
  * covering the bit indices where the mask is 0, the second one where it is 1.
@@ -149,10 +158,9 @@ export class MethodVerificationData {
     }
 
     /**
-     * @param range Must be withint the method range (or be a `pathProcessedMessage`). The entire range of the will be marked according to
-     * `result`. That is, if a part of it was marked as failure before, it will never be updated to success
-     * again.
-     * @param result true: Success, false: Failure
+     * The range of the block must be within the method range (or be a `pathProcessedMessage`).
+     * The entire range of the method will be marked according to `result`.
+     * That is, if a part of it was marked as failure before, it will never be updated to success again.
      */
     public updatePartialResult(block: BlockResult): void {
         assert(
@@ -161,11 +169,8 @@ export class MethodVerificationData {
         );
 
         const previousPathResult = this.pathTraversal.get(block.pathId);
-        // util.log(`previous path result: ${JSON.stringify(previousPathResult)}`);
         if (previousPathResult !== undefined) {
-            const [prevStart, prevEnd] = previousPathResult;
-            let mask = (BigInt(1) << BigInt(prevEnd + 1)) - BigInt(1)
-            mask = mask ^ ((BigInt(1) << BigInt(prevStart)) - BigInt(1))
+            const mask = rangeToMask(previousPathResult)
             if (!block.result) {
                 this.failures = this.failures | mask;
             }
@@ -185,9 +190,8 @@ export class MethodVerificationData {
      */
     private getCurrentBlockMasks(): [bigint, bigint] {
         let mask = BigInt(0);
-        this.pathTraversal.forEach(([start, end]) => {
-            let cur = (BigInt(1) << BigInt(end + 1)) - BigInt(1);
-            cur = cur ^ ((BigInt(1) << BigInt(start)) - BigInt(1));
+        this.pathTraversal.forEach((range) => {
+            const cur = rangeToMask(range)
             mask = cur | mask;
         })
         return [mask, invertBigint(mask, BigInt(this.loc))];
@@ -273,9 +277,6 @@ export class MethodVerificationData {
                 this.decorations.get(DecorationType.SUCCESS_BOT)!.push(rangeEnd);
             }
             else if (this.hasResult) {
-                // currently the top and bottom of declarations do not support differentiating success or failure
-                // should they? short methods won't have these decorators anyway and longer ones typically would not
-                // have code on these lines. not supporting it might encourage good code style.
                 this.decorations.get(DecorationType.DECL_TOP)!.push(rangeStart);
                 this.decorations.get(DecorationType.DECL_BOT)!.push(rangeEnd);
 
