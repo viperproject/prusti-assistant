@@ -63,7 +63,7 @@ function maskAsRanges(
 
     const ranges0 = [];
     const ranges1 = [];
-    const firstBit = bitString[0] === '0' ? 0 : 1;
+    const firstBit = bitString[1] === '0' ? 0 : 1;
     for (let i = 0; i < ranges.length; i++) {
         if (i % 2 === firstBit) {
             ranges0.push(ranges[i]);
@@ -109,17 +109,14 @@ export class MethodVerificationData {
         this.decorations = new Map();
         this.loc = this.end() - this.start() + 1;
         this.pathTraversal = new Map();
-        if (!previous) {
-            this.failures = BigInt(0);
-            this.hasResult = BigInt(0);
-        } else {
+        this.failures = BigInt(0);
+        this.hasResult = BigInt(0);
+        if (previous != undefined && previous.hasResult != BigInt(0)) {
             assert(fn.identifier === previous.name, `name mismatch between method structs: ${fn.identifier} - ${previous.name}`);
             assert(fn.fileName === previous.filePath, `file name mismatch between method structs: ${fn.fileName} - ${previous.filePath}`);
             // if the hash changes we assume that the prior results are no longer valid.
             if (this.hash === undefined || previous.hash === undefined || this.hash !== previous.hash) {
                 util.log(`Method hash changed for ${fn.identifier}. Wiping results.`);
-                this.failures = BigInt(0);
-                this.hasResult = BigInt(0);
             } else {
                 this.stale = true;
                 this.verificationResult = previous.verificationResult;

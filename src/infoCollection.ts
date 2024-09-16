@@ -334,7 +334,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
         this.methodStatusChanged.add(blockResult.method);
     }
 
-    public addCompilerInfo(info: CompilerInfo, selectiveVerification: string | undefined): void {
+    public addCompilerInfo(info: CompilerInfo, vArgs: VerificationArgs): void {
         // if prusti returns an extern_spec template, we move it to the
         // clipboard. This happens independently of whether it was actually
         // requested, so currently there is no error if this fails.
@@ -358,9 +358,13 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
             // we also call the verification manager so that affected files can be reset
             this.verificationManager.prepareFile(fileName);
         })
+
+        const selectiveVerification = vArgs.defPathArg.selectiveVerification
         util.log(`selective verification: ${selectiveVerification}`);
         if (selectiveVerification) {
             this.selectedMethods = new Set(selectiveVerification.split(" "));
+        } else {
+            this.selectedMethods = undefined;
         }
         const methodNames: string[] = [];
         info.procedureDefs.forEach((pd: FunctionRef) => {
@@ -377,7 +381,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
             const methodStr = fileStr?.slice(pd.range.start.line, pd.range.end.line + 1).map((line) => line.trim()).join('\n');
             const methodHash = methodStr ? crypto.createHash('sha256').update(methodStr).digest('base64') : undefined;
 
-            if (this.selectedMethods && !this.selectedMethods.has(pd.identifier)) {
+            if (vArgs.skipVerify || this.selectedMethods && !this.selectedMethods.has(pd.identifier)) {
                 // if not selected in a selective verification run, retain results and
                 // immediately regenerate decorations for the current range (they will be marked as stale)
                 method = new MethodVerificationData(pd, methodHash, method);
@@ -413,7 +417,7 @@ export class InfoCollection implements vscode.CodeLensProvider, vscode.CodeActio
                 const compilerInfo = parseCompilerInfo(msg.message, isCrate, rootPath);
                 if (compilerInfo !== undefined) {
                     util.log("Consumed compilerInfo");
-                    this.addCompilerInfo(compilerInfo, vArgs.defPathArg.selectiveVerification);
+                    this.addCompilerInfo(compilerInfo, vArgs);
                 } else {
                     util.log("Invalid compilerInfo");
                 }
