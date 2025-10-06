@@ -25,6 +25,17 @@
         "import/no-cycle": "error",
         "@typescript-eslint/restrict-template-expressions": "off",
         "@typescript-eslint/explicit-module-boundary-types": "error",
-        "@typescript-eslint/no-non-null-assertion": "off"
+        "@typescript-eslint/no-non-null-assertion": "off",
+        // Report unused variables only if they don't start with "_".
+        // Source: https://stackoverflow.com/a/64067915/2491528
+        "no-unused-vars": "off",
+        "@typescript-eslint/no-unused-vars": [
+            "error",
+            {
+                "argsIgnorePattern": "^_",
+                "varsIgnorePattern": "^_",
+                "caughtErrorsIgnorePattern": "^_"
+            }
+        ]
     }
 }

@@ -10,13 +10,20 @@ export class StateMachineError extends Error {
 
 type ResolveReject = { resolve: () => void, reject: (err: Error) => void };
 
-export class StateMachine<State extends string> {
+interface WaitingForState {
+    [details: string]: ResolveReject[];
+}
+
+export class StateMachine {
     private readonly name: string;
     private currentState: State;
     private waitingForState: Map<State, ResolveReject[]> = new Map();
 
     /**
      * Construct a new state machine.
+     *
+     * @throw Will throw an error if `currentState` is not among the \
+     *        `validStates`.
      */
     public constructor(
         name: string,
@@ -51,7 +58,7 @@ export class StateMachine<State extends string> {
     public setState(newState: State): void {
         this.currentState = newState;
 
-        const callbacks: ResolveReject[] = this.getWaitingForState(newState);
+        const callbacks: ResolveReject[] = this.waitingForState[newState]
 
         let badCallback = undefined;
         while (callbacks.length) {
@@ -80,6 +87,8 @@ export class StateMachine<State extends string> {
      * Return a promise that will resolve when the state becomes `targetState`.
      * Only one promise - the last one - is allowed to modify the state.
      * If a promise modifies the state any further promise will be rejected.
+     *
+     * @throw Will throw an error if `targetState` is not a valid state.
      */
     public waitForState(targetState: State): Promise<void> {
         return new Promise((resolve, reject) => {

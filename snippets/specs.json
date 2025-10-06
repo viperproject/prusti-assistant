@@ -19,5 +19,40 @@
             "body_invariant!(${1:true});"
         ],
         "description": "Insert body_invariant!(...);"
+    },
+    "pure": {
+        "prefix": "pure",
+        "body": [
+            "#[pure]"
+        ],
+        "description": "Insert #[pure]"
+    },
+    "trusted": {
+        "prefix": "trusted",
+        "body": [
+            "#[trusted]"
+        ],
+        "description": "Insert #[trusted]"
+    },
+    "externSpec": {
+        "prefix": "extern_spec",
+        "body": [
+            "#[extern_spec($1)]"
+        ],
+        "description": "Insert #[extern_spec(...)]"
+    },
+    "beforeExpiry": {
+        "prefix": "before_expiry",
+        "body": [
+            "#[before_expiry($1)]"
+        ],
+        "description": "Insert #[before_expiry(...)]"
+    },
+    "afterExpiry": {
+        "prefix": "after_expiry",
+        "body": [
+            "#[after_expiry($1)]"
+        ],
+        "description": "Insert #[after_expiry(...)]"
     }
 }

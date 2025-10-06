@@ -93,7 +93,12 @@ export function serverAddress(): string {
 }
 
 export function extraPrustiEnv(): Record<string, string> {
-    return config().get("extraPrustiEnv", {});
+    const extraVerifierArgs = extraSiliconArgs();
+    if (extraVerifierArgs.length > 0) {
+        return {"PRUSTI_EXTRA_VERIFIER_ARGS": extraVerifierArgs, ...config().get("extraPrustiEnv", {})};
+    } else {
+        return config().get("extraPrustiEnv", {});
+    }
 }
 
 export function extraPrustiRustcArgs(): string[] {
@@ -106,4 +111,46 @@ export function extraCargoPrustiArgs(): string[] {
 
 export function extraPrustiServerArgs(): string[] {
     return config().get("extraPrustiServerArgs", []);
+}
+
+export function contractsAsDefinitions(): boolean {
+    return config().get("contractsAsDefinitions", false);
+}
+
+export function reportViperMessages(): boolean {
+    return config().get("reportViperMessages", true);
+}
+
+export function z3QiProfileFreq(): number {
+    return config().get("z3QiProfileFreq", 100);
+}
+
+export function generateBlockMessages(): boolean {
+  return config().get("generateBlockMessages", true)
+}
+
+export function blockUpdateInterval(): number {
+  return config().get("blockUpdateInterval", 200)
+}
+
+export function forceBlockUpdateInterval(): number {
+    return config().get("forceBlockUpdateInterval", 1000)
+}
+
+export function extraSiliconArgs(): string {
+    const extraArgs: string[] = config().get("extraSiliconArgs", []);
+    if (generateBlockMessages()) {
+        let defaultnumberOfErrorsToReport = true;
+        for (const arg of extraArgs) {
+            if (arg.startsWith("--numberOfErrorsToReport")) {
+                defaultnumberOfErrorsToReport = false;
+                break;
+            }
+        }
+        if (defaultnumberOfErrorsToReport) {
+            extraArgs.push("--numberOfErrorsToReport 0");
+        }
+    }
+    
+    return extraArgs.join(' ');
 }
