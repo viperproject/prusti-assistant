@@ -200,13 +200,7 @@ describe("Extension", () => {
         it(`scenario ${SCENARIO} reports expected diagnostics on ${program}`, async () => {
             // Verify the program
             const programPath = path.join(workspacePath(), program);
-<<<<<<< HEAD
-            await openFile(programPath);
-            await vscode.commands.executeCommand("prusti-assistant.clear-diagnostics");
-=======
             const document = await openFile(programPath);
-            // await new Promise(f => setTimeout(f, 1000));
->>>>>>> trktby/quantifiers_and_selective
             await vscode.commands.executeCommand("prusti-assistant.verify");
 
             // Collect and normalize the diagnostics
@@ -249,13 +243,8 @@ describe("Extension", () => {
                     "diagnostics": [] as unknown as Diagnostic[]
                 };
             }
-<<<<<<< HEAD
-
-            // Compare the actual with the expected diagnostics
-=======
             console.log("Expected: " + JSON.stringify(expectedDiagnostics.diagnostics, null, 4));
             console.log("Actual: " + JSON.stringify(plainDiagnostics, null, 4));
->>>>>>> trktby/quantifiers_and_selective
             expect(plainDiagnostics).to.deep.equal(expectedDiagnostics.diagnostics);
         });
     });

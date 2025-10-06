@@ -126,6 +126,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     prustiButton.show();
     context.subscriptions.push(prustiButton);
 
+    // Kill all button
+    const killAllButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 9);
+    killAllButton.command = killAllCommand;
+    killAllButton.text = "$(x) Kill All";
+    killAllButton.tooltip = "Kill all running Prusti processes";
+    context.subscriptions.push(killAllButton);
+
     // Restart the server on command
     context.subscriptions.push(
         vscode.commands.registerCommand(restartServerCommand, async () => {

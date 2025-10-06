@@ -102,6 +102,11 @@ export class VerificationManager {
         this.procDestructors.forEach((kill) => kill());
     }
 
+    public clearDiagnostics(): void {
+        util.log("Clearing diagnostics");
+        this.verificationDiagnostics.reset();
+    }
+
     private findConsumer(token: string): PrustiMessageConsumer {
         switch (token) {
             case "blockReachedMessage":

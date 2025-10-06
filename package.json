@@ -264,6 +264,7 @@
         "@types/glob": "^8.1.0",
         "@types/mocha": "^10.0.6",
         "@types/node": "^20.12.2",
+        "@types/semver": "^7.7.1",
         "@types/tmp": "^0.2.6",
         "@types/vscode": "^1.60.0",
         "@typescript-eslint/eslint-plugin": "^7.4.0",
@@ -287,9 +288,8 @@
         "webpack-cli": "^5.1.4"
     },
     "dependencies": {
-        "@viperproject/locate-java-home": "git+https://github.com/viperproject/locate-java-home.git",
+        "find-java-home": "^2.0.0",
         "fs-extra": "^11.2.0",
-        "locate-java-home": "git+https://github.com/viperproject/locate-java-home.git",
         "tmp": "^0.2.3",
         "tree-kill": "^1.2.2",
         "vs-verification-toolbox": "git+https://github.com/viperproject/vs-verification-toolbox.git"

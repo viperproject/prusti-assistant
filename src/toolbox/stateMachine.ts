@@ -14,7 +14,7 @@ interface WaitingForState {
     [details: string]: ResolveReject[];
 }
 
-export class StateMachine {
+export class StateMachine<State> {
     private readonly name: string;
     private currentState: State;
     private waitingForState: Map<State, ResolveReject[]> = new Map();
@@ -58,7 +58,7 @@ export class StateMachine {
     public setState(newState: State): void {
         this.currentState = newState;
 
-        const callbacks: ResolveReject[] = this.waitingForState[newState]
+        const callbacks: ResolveReject[] = this.getWaitingForState(newState);
 
         let badCallback = undefined;
         while (callbacks.length) {

@@ -154,9 +154,6 @@ export function spawn(
         destructors.add(killProc);
     }
 
-<<<<<<< HEAD
-    proc.stdout.on("data", (data: string) => {
-=======
     const timeout = config.forceBlockUpdateInterval();
     let timer: ReturnType<typeof setTimeout>;
     const timeout_fn = () => {
@@ -165,7 +162,6 @@ export function spawn(
     }
 
     proc.stdout.on("data", (data) => {
->>>>>>> trktby/quantifiers_and_selective
         stdout += data;
         try {
             onStdout?.(data);
