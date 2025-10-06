@@ -191,12 +191,12 @@
                 },
                 "prusti-assistant.reportViperMessages": {
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "description": "If enabled more information about quantifiers is available. This feature has to be enabled also server-side (done by this extension)."
                 },
                 "prusti-assistant.reportBlockMessages": {
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "markdownDescription": "If viper messages and this option are enabled more small-grained verification. This feature has to be enabled also server-side (done by this extension). This requires `#prusti-assistant.reportViperMessages#` to be set too."
                 },
                 "prusti-assistant.blockUpdateInterval": {
