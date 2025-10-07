@@ -161,7 +161,7 @@ export function spawn(
         onInactivity?.(false);
     }
 
-    proc.stdout.on("data", (data) => {
+    proc.stdout.on("data", (data: string) => {
         stdout += data;
         try {
             onStdout?.(data);

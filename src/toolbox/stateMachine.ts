@@ -10,10 +10,6 @@ export class StateMachineError extends Error {
 
 type ResolveReject = { resolve: () => void, reject: (err: Error) => void };
 
-interface WaitingForState {
-    [details: string]: ResolveReject[];
-}
-
 export class StateMachine<State> {
     private readonly name: string;
     private currentState: State;

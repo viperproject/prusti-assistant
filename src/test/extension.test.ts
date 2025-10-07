@@ -200,7 +200,7 @@ describe("Extension", () => {
         it(`scenario ${SCENARIO} reports expected diagnostics on ${program}`, async () => {
             // Verify the program
             const programPath = path.join(workspacePath(), program);
-            const document = await openFile(programPath);
+            await openFile(programPath);
             await vscode.commands.executeCommand("prusti-assistant.verify");
 
             // Collect and normalize the diagnostics
