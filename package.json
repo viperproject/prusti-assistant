@@ -16,7 +16,7 @@
     "main": "./out/extension",
     "engines": {
         "vscode": "^1.60.0",
-        "node": "*"
+        "node": ">=20.0.0"
     },
     "categories": [
         "Programming Languages"
