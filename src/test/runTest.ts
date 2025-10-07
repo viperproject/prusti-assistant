@@ -56,7 +56,12 @@ async function main() {
                 extensionTestsPath,
                 extensionTestsEnv: { SCENARIO: scenario, ...process.env },
                 // Disable any other extension
-                launchArgs: ["--disable-extensions", tmpWorkspace.name],
+                launchArgs: [
+                    "--disable-extensions",
+                    "--disable-gpu",
+                    "--disable-dev-shm-usage",
+                    tmpWorkspace.name
+                ],
             });
         } finally {
             // Delete folder even in case of errors
