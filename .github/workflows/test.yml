@@ -40,7 +40,7 @@ jobs:
         run: npm run package
 
       - name: Run tests (headless)
-        uses: coactions/setup-xvfb@v1
+        uses: coactions/setup-xvfb@b6b4fcfb9f5a895edadc3bc76318fae0ac17c8b3 # v1
         id: runTests
         env:
           GITHUB_TOKEN: ${{ secrets.VIPER_ADMIN_TOKEN }}
@@ -52,7 +52,7 @@ jobs:
         run: npx nyc report --reporter=lcov
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
         if: ${{ steps.runTests.outcome == 'success' }}
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -88,7 +88,7 @@ jobs:
         run: npm run package
 
       - name: Publish the extension to Visual Studio Marketplace
-        uses: HaaLeo/publish-vscode-extension@v0
+        uses: HaaLeo/publish-vscode-extension@f4ece70b4398e42c5d98de5a14ff6f3b3eb74b10 # v1.7.0
         if: env.CURRENT_VERSION != env.LAST_PUBLISHED_VERSION
         with:
           pat: ${{ secrets.VSCE_TOKEN }}
@@ -97,7 +97,7 @@ jobs:
           packagePath: ''
 
       - name: Publish the extension to Open VSX Registry
-        uses: HaaLeo/publish-vscode-extension@v0
+        uses: HaaLeo/publish-vscode-extension@f4ece70b4398e42c5d98de5a14ff6f3b3eb74b10 # v1.7.0
         if: env.CURRENT_VERSION != env.LAST_PUBLISHED_VERSION
         with:
           pat: ${{ secrets.OPEN_VSX_TOKEN }}
@@ -106,7 +106,7 @@ jobs:
           packagePath: ''
 
       - name: Create a release for the published version
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
         if: env.CURRENT_VERSION != env.LAST_PUBLISHED_VERSION
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
