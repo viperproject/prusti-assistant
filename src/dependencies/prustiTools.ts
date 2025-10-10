@@ -5,6 +5,8 @@ import * as process from "process";
 import * as fs from "fs-extra";
 import * as config from "../config";
 
+const PRUSTI_ORG = "zgrannan"; // TODO: Change to prusti
+
 export async function prustiTools(
     platform: vvt.Platform,
     context: vscode.ExtensionContext
@@ -21,14 +23,14 @@ export async function prustiTools(
     // Get the latest among releases and pre-releases
     const getLatestReleaseUrl = (): Promise<string> => {
         return vvt.GitHubReleaseAsset.getLatestAssetUrl(
-            "viperproject", "prusti-dev", `prusti-release-${id}.zip`, true, authorization_token,
+            PRUSTI_ORG, "prusti-dev", `prusti-release-${id}.zip`, true, authorization_token,
         );
     }
 
     const getTaggedReleaseUrl = (): Promise<string> => {
         const tag = config.prustiTag();
         return vvt.GitHubReleaseAsset.getTaggedAssetUrl(
-            "viperproject", "prusti-dev", `prusti-release-${id}.zip`, tag, authorization_token,
+            PRUSTI_ORG, "prusti-dev", `prusti-release-${id}.zip`, tag, authorization_token,
         );
     }
 
