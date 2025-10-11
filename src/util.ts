@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import * as treeKill from "tree-kill";
 import { projects } from "./projects";
 import * as config from "./config";
+import { PrustiLocation } from "./dependencies/PrustiLocation";
 
 export function userInfo(message: string, statusBar?: vscode.StatusBarItem): void {
     log(message);
@@ -254,4 +255,81 @@ export function getRootPath(filePath: string): string {
         res = filePath;
     }
     return res;
+}
+
+/**
+ * Configures the environment to include the Rust toolchain's library path.
+ * This is needed for the dynamic linker to find librustc_driver and other Rust libraries.
+ *
+ * @param env The base environment to modify
+ * @param prusti The Prusti location containing the rust-toolchain file
+ * @returns The modified environment with platform-specific library paths configured
+ */
+export async function configureRustLibraryPath(
+    env: NodeJS.ProcessEnv,
+    prusti: PrustiLocation
+): Promise<NodeJS.ProcessEnv> {
+    const modifiedEnv = { ...env };
+
+    if (process.platform === 'darwin') {
+        delete modifiedEnv.DYLD_FALLBACK_LIBRARY_PATH;
+
+        const sysrootOutput = await spawn(
+            "rustc",
+            ["--print", "sysroot"],
+            { options: { cwd: prusti.rustToolchainFile.enclosingFolder.path() }}
+        );
+
+        if (sysrootOutput.code === 0) {
+            const sysroot = sysrootOutput.stdout.trim();
+            const rustLibPath = `${sysroot}/lib`;
+            modifiedEnv.DYLD_LIBRARY_PATH = rustLibPath;
+            log(`Set DYLD_LIBRARY_PATH to: ${rustLibPath}`);
+        } else {
+            log(`Warning: Could not determine Rust sysroot. exit code: ${sysrootOutput.code}`);
+        }
+    }
+
+    if (process.platform === 'linux') {
+        const sysrootOutput = await spawn(
+            "rustc",
+            ["--print", "sysroot"],
+            { options: { cwd: prusti.rustToolchainFile.enclosingFolder.path() }}
+        );
+
+        if (sysrootOutput.code === 0) {
+            const sysroot = sysrootOutput.stdout.trim();
+            const rustLibPath = `${sysroot}/lib`;
+            const existingLdPath = modifiedEnv.LD_LIBRARY_PATH || '';
+            modifiedEnv.LD_LIBRARY_PATH = existingLdPath ? `${rustLibPath}:${existingLdPath}` : rustLibPath;
+            log(`Set LD_LIBRARY_PATH to: ${modifiedEnv.LD_LIBRARY_PATH}`);
+        } else {
+            log(`Warning: Could not determine Rust sysroot. exit code: ${sysrootOutput.code}`);
+        }
+    }
+
+    if (process.platform === 'win32') {
+        const prustiPath: string = prusti.basePath;
+
+        const sysrootOutput = await spawn(
+            "rustc",
+            ["--print", "sysroot"],
+            { options: { cwd: prusti.rustToolchainFile.enclosingFolder.path() }}
+        );
+
+        let existingPath = modifiedEnv.PATH || '';
+
+        if (sysrootOutput.code === 0) {
+            const sysroot = sysrootOutput.stdout.trim();
+            const rustBinPath = `${sysroot}\\bin`;
+            existingPath = `${rustBinPath};${existingPath}`;
+            log(`Added Rust bin directory to PATH: ${rustBinPath}`);
+        } else {
+            log(`Warning: Could not determine Rust sysroot. exit code: ${sysrootOutput.code}`);
+        }
+
+        modifiedEnv.PATH = `${prustiPath};${existingPath}`;
+    }
+
+    return modifiedEnv;
 }
