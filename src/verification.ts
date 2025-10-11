@@ -229,11 +229,47 @@ export class VerificationManager {
 
         if (process.platform === 'darwin') {
             delete prustiEnv.DYLD_FALLBACK_LIBRARY_PATH;
+
+            // Set DYLD_LIBRARY_PATH to include the Rust toolchain's lib directory
+            // This is needed for the dynamic linker to find librustc_driver
+            const sysrootOutput = await util.spawn(
+                "rustc",
+                ["--print", "sysroot"],
+                { options: { cwd: vArgs.prusti.rustToolchainFile.enclosingFolder.path() }}
+            );
+
+            if (sysrootOutput.code === 0) {
+                const sysroot = sysrootOutput.stdout.trim();
+                const rustLibPath = `${sysroot}/lib`;
+                prustiEnv.DYLD_LIBRARY_PATH = rustLibPath;
+                util.log(`Set DYLD_LIBRARY_PATH to: ${rustLibPath}`);
+            } else {
+                util.log(`Warning: Could not determine Rust sysroot. exit code: ${sysrootOutput.code}`);
+            }
         }
 
         if (process.platform === 'win32') {
             const prustiPath = vArgs.prusti.basePath;
-            prustiEnv.PATH = `${prustiPath};${prustiEnv.PATH || ''}`;
+
+            // Add Rust sysroot bin directory to PATH to find rustc_driver DLL
+            const sysrootOutput = await util.spawn(
+                "rustc",
+                ["--print", "sysroot"],
+                { options: { cwd: vArgs.prusti.rustToolchainFile.enclosingFolder.path() }}
+            );
+
+            let existingPath = prustiEnv.PATH || '';
+
+            if (sysrootOutput.code === 0) {
+                const sysroot = sysrootOutput.stdout.trim();
+                const rustBinPath = `${sysroot}\\bin`;
+                existingPath = `${rustBinPath};${existingPath}`;
+                util.log(`Added Rust bin directory to PATH: ${rustBinPath}`);
+            } else {
+                util.log(`Warning: Could not determine Rust sysroot. exit code: ${sysrootOutput.code}`);
+            }
+
+            prustiEnv.PATH = `${prustiPath};${existingPath}`;
         }
 
         util.log("Prusti client environment: " + JSON.stringify({...versionDependentArgs, ...config.extraPrustiEnv}, null, 4));
