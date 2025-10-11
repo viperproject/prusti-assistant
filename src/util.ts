@@ -126,6 +126,10 @@ export function spawn(
     const status: { killed: boolean } = { killed: false };
     log(`Spawned PID: ${proc.pid}`);
 
+    // Set encoding to ensure we get strings instead of Buffers
+    proc.stdout.setEncoding('utf8');
+    proc.stderr.setEncoding('utf8');
+
     // Register destructor
     function killProc() {
         if (!status.killed) {
