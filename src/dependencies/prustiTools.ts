@@ -64,6 +64,6 @@ function identifier(platform: vvt.Platform): string {
         case vvt.Platform.Windows:
             return "windows";
         case vvt.Platform.Linux:
-            return "ubuntu";
+            return "ubuntu-22.04";
     }
 }

@@ -283,7 +283,7 @@
         "rimraf": "^5.0.5",
         "ts-loader": "^9.5.1",
         "typescript": "^5.4.3",
-        "vsce": "^2.15.0",
+        "@vscode/vsce": "^3.6.2",
         "webpack": "^5.91.0",
         "webpack-cli": "^5.1.4"
     },
