@@ -144,6 +144,12 @@ export async function restart(_context: vscode.ExtensionContext, verificationSta
         delete prustiServerEnv.DYLD_FALLBACK_LIBRARY_PATH;
     }
 
+    if (process.platform === 'win32' && prusti) {
+        const prustiPath: string = prusti.basePath;
+        const existingPath = prustiServerEnv.PATH || '';
+        prustiServerEnv.PATH = `${prustiPath};${existingPath}`;
+    }
+
     util.log("Prusti server environment: " + JSON.stringify(prustiServerEnv));
 
     server.initiateStart(

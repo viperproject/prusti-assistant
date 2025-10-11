@@ -46,4 +46,8 @@ export class PrustiLocation {
         return this.viperToolsLocation.child("boogie")
             .child("Binaries").executable("Boogie");
     }
+
+    public get basePath(): string {
+        return this.prustiLocation.basePath;
+    }
 }

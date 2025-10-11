@@ -231,6 +231,11 @@ export class VerificationManager {
             delete prustiEnv.DYLD_FALLBACK_LIBRARY_PATH;
         }
 
+        if (process.platform === 'win32') {
+            const prustiPath = vArgs.prusti.basePath;
+            prustiEnv.PATH = `${prustiPath};${prustiEnv.PATH || ''}`;
+        }
+
         util.log("Prusti client environment: " + JSON.stringify({...versionDependentArgs, ...config.extraPrustiEnv}, null, 4));
         const cwd = isCrate ? vArgs.targetPath : path.dirname(vArgs.targetPath);
         const onOutput= this.buildOutputClosure(vArgs);
