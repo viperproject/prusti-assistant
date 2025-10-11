@@ -215,7 +215,7 @@ export class VerificationManager {
             return [VerificationStatus.SkippedVerification, [0,0]];
         }
         util.log("Prusti client args: " + prustiArgs.toString());
-        const prustiEnv = {
+        const prustiEnv: NodeJS.ProcessEnv = {
             ...process.env,  // Needed to run Rustup
             ...versionDependentArgs,
             ...{
@@ -226,6 +226,11 @@ export class VerificationManager {
             },
             ...config.extraPrustiEnv(),
         };
+
+        if (process.platform === 'darwin') {
+            delete prustiEnv.DYLD_FALLBACK_LIBRARY_PATH;
+        }
+
         util.log("Prusti client environment: " + JSON.stringify({...versionDependentArgs, ...config.extraPrustiEnv}, null, 4));
         const cwd = isCrate ? vArgs.targetPath : path.dirname(vArgs.targetPath);
         const onOutput= this.buildOutputClosure(vArgs);

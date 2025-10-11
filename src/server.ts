@@ -131,7 +131,7 @@ export async function restart(_context: vscode.ExtensionContext, verificationSta
             PRUSTI_REPORT_BLOCK_MESSAGES: config.reportViperMessages() ? config.generateBlockMessages().toString() : "false",
         };
 
-    const prustiServerEnv = {
+    const prustiServerEnv: NodeJS.ProcessEnv = {
         ...process.env,  // Needed to run Rustup
         ...versionDependentArgs,
         ...{
@@ -139,6 +139,11 @@ export async function restart(_context: vscode.ExtensionContext, verificationSta
         },
         ...config.extraPrustiEnv(),
     };
+
+    if (process.platform === 'darwin') {
+        delete prustiServerEnv.DYLD_FALLBACK_LIBRARY_PATH;
+    }
+
     util.log("Prusti server environment: " + JSON.stringify(prustiServerEnv));
 
     server.initiateStart(
