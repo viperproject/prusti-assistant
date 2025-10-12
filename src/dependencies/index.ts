@@ -131,7 +131,18 @@ async function searchForChildInEnclosingFolders(initialLocation: Location, child
 export async function updatePrustiSemVersion(): Promise<void> {
     const version = await prustiVersion();
     // version will have the form Prusti version: 0.x.x, commit 234..hash..
-    const result = version.split(" ")[2].slice(0, -1);
+    const parts = version.split(" ");
+    if (parts.length < 3 || parts[2] === undefined) {
+        util.log("Could not parse Prusti version, defaulting to 0.0.0");
+        prustiSemanticVersion = "0.0.0";
+        return;
+    }
+    const result = parts[2].slice(0, -1);
+    if (result.includes("<") || result.includes(">") || !/^\d+\.\d+\.\d+/.test(result)) {
+        util.log(`Could not parse Prusti version from "${version}", defaulting to 0.0.0`);
+        prustiSemanticVersion = "0.0.0";
+        return;
+    }
     util.log("Setting prustiVersion to " + result);
     prustiSemanticVersion = result;
 }
