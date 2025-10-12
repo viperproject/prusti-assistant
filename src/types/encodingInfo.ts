@@ -55,10 +55,11 @@ export function parseCallContracts(output: string, isCrate: boolean, root: strin
     let result;
     const token = "encodingInfo";
     for (const line of output.split("\n")) {
-        if (!line.startsWith(token)) {
+        const trimmedLine = line.trim();
+        if (!trimmedLine.startsWith(token)) {
             continue;
         }
-        result = JSON.parse(line.substring(token.length)) as EncodingInfoRaw;
+        result = JSON.parse(trimmedLine.substring(token.length)) as EncodingInfoRaw;
         if (result.call_contract_spans !== undefined) {
             return transformEncodingInfo(result, root, isCrate);
         }

@@ -143,8 +143,9 @@ export class VerificationManager {
             const parsable = buffer.substring(0, ind);
             buffer = buffer.substring(ind+1);
             for (const line of parsable.split("\n")) {
+                const trimmedLine = line.trim();
                 if (isCrate) {
-                    const cargoMsg = getCargoMessage(line);
+                    const cargoMsg = getCargoMessage(trimmedLine);
                     if (cargoMsg === undefined) {
                         continue;
                     }
@@ -154,7 +155,7 @@ export class VerificationManager {
                     const part = this.findConsumer(token);
                     part.processCargoMessage(cargoMsg, vArgs);
                 } else {
-                    const msg = getRustcMessage(line);
+                    const msg = getRustcMessage(trimmedLine);
                     if (msg === undefined) {
                         continue;
                     }
