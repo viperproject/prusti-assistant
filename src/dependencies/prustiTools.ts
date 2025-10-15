@@ -61,8 +61,10 @@ function identifier(platform: vvt.Platform): string {
     switch (platform) {
         case vvt.Platform.Mac:
             return "macos";
-        case vvt.Platform.Windows:
-            return "windows";
+        case vvt.Platform.Windows: {
+            const arch = process.arch === "arm64" ? "-arm64" : "-x64";
+            return `windows${arch}`;
+        }
         case vvt.Platform.Linux:
             return "ubuntu-22.04";
     }
