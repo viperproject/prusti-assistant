@@ -131,7 +131,7 @@ export async function restart(_context: vscode.ExtensionContext, verificationSta
             PRUSTI_REPORT_BLOCK_MESSAGES: config.reportViperMessages() ? config.generateBlockMessages().toString() : "false",
         };
 
-    const baseEnv: NodeJS.ProcessEnv = {
+    const env: NodeJS.ProcessEnv = {
         ...process.env,  // Needed to run Rustup
         ...versionDependentArgs,
         ...{
@@ -140,16 +140,14 @@ export async function restart(_context: vscode.ExtensionContext, verificationSta
         ...config.extraPrustiEnv(),
     };
 
-    const prustiServerEnv = await util.configureRustLibraryPath(baseEnv, prusti!);
-
-    util.log("Prusti server environment: " + JSON.stringify(prustiServerEnv));
+    util.log("Prusti server environment: " + JSON.stringify(env));
 
     server.initiateStart(
         prusti!.prustiServer,
         prustiServerArgs,
         {
             cwd: prustiServerCwd,
-            env: prustiServerEnv,
+            env,
             onStdout: data => {
                 serverChannel.append(`[stdout] ${data}`);
                 console.log(`[Prusti Server][stdout] ${data}`);

@@ -219,7 +219,7 @@ export class VerificationManager {
             return [VerificationStatus.SkippedVerification, [0,0]];
         }
         util.log("Prusti client args: " + prustiArgs.toString());
-        let prustiEnv: NodeJS.ProcessEnv = {
+        const prustiEnv: NodeJS.ProcessEnv = {
             ...process.env,  // Needed to run Rustup
             ...versionDependentArgs,
             ...{
@@ -230,8 +230,6 @@ export class VerificationManager {
             },
             ...config.extraPrustiEnv(),
         };
-
-        prustiEnv = await util.configureRustLibraryPath(prustiEnv, vArgs.prusti);
 
         util.log("Prusti environment: " + JSON.stringify(prustiEnv, null, 4));
         const cwd = isCrate ? vArgs.targetPath : path.dirname(vArgs.targetPath);
