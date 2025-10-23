@@ -172,5 +172,92 @@
                 ]
             }
         ]
+    },
+    {
+        "filter": { "os": "win32" },
+        "diagnostics": [
+            {
+                "uri": "programs/assert_false.rs",
+                "range": {
+                    "start": {
+                        "line": 0,
+                        "character": 4
+                    },
+                    "end": {
+                        "line": 0,
+                        "character": 23
+                    }
+                },
+                "severity": 1,
+                "message": "[unused_imports] unused import: `prusti_contracts::*`.",
+                "relatedInformation": [
+                    {
+                        "location": {
+                            "uri": "programs/assert_false.rs",
+                            "range": {
+                                "start": {
+                                    "line": 0,
+                                    "character": 4
+                                },
+                                "end": {
+                                    "line": 0,
+                                    "character": 23
+                                }
+                            }
+                        },
+                        "message": "`#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default"
+                    },
+                    {
+                        "location": {
+                            "uri": "programs/assert_false.rs",
+                            "range": {
+                                "start": {
+                                    "line": 0,
+                                    "character": 0
+                                },
+                                "end": {
+                                    "line": 1,
+                                    "character": 0
+                                }
+                            }
+                        },
+                        "message": "remove the whole `use` item"
+                    }
+                ]
+            },
+            {
+                "uri": "programs/assert_false.rs",
+                "range": {
+                    "start": {
+                        "line": 4,
+                        "character": 4
+                    },
+                    "end": {
+                        "line": 4,
+                        "character": 18
+                    }
+                },
+                "severity": 0,
+                "message": "[Prusti: verification error] precondition might not hold",
+                "relatedInformation": [
+                    {
+                        "location": {
+                            "uri": "../../../../../../a/prusti-dev/prusti-dev/prusti-contracts/prusti-contracts/src/core_spec/mod.rs",
+                            "range": {
+                                "start": {
+                                    "line": 17,
+                                    "character": 11
+                                },
+                                "end": {
+                                    "line": 17,
+                                    "character": 16
+                                }
+                            }
+                        },
+                        "message": "the failing precondition is here"
+                    }
+                ]
+            }
+        ]
     }
 ]
