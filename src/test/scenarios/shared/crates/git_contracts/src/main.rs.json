@@ -1,59 +1,5 @@
 [
     {
-        "filter": { "os": "win32" },
-        "diagnostics": [
-            {
-                "uri": "crates/git_contracts/src/main.rs",
-                "range": {
-                    "start": {
-                        "line": 3,
-                        "character": 16
-                    },
-                    "end": {
-                        "line": 3,
-                        "character": 22
-                    }
-                },
-                "severity": 1,
-                "message": "[unused_variables] unused variable: `unused`.",
-                "relatedInformation": [
-                    {
-                        "location": {
-                            "uri": "crates/git_contracts/src/main.rs",
-                            "range": {
-                                "start": {
-                                    "line": 3,
-                                    "character": 16
-                                },
-                                "end": {
-                                    "line": 3,
-                                    "character": 22
-                                }
-                            }
-                        },
-                        "message": "`#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default"
-                    },
-                    {
-                        "location": {
-                            "uri": "crates/git_contracts/src/main.rs",
-                            "range": {
-                                "start": {
-                                    "line": 3,
-                                    "character": 16
-                                },
-                                "end": {
-                                    "line": 3,
-                                    "character": 22
-                                }
-                            }
-                        },
-                        "message": "if this is intentional, prefix it with an underscore"
-                    }
-                ]
-            }
-        ]
-    },
-    {
         "diagnostics": [
             {
                 "uri": "crates/git_contracts/src/main.rs",
