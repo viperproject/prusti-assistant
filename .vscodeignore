@@ -1,12 +1,8 @@
-.vscode
-.vscode-test
-.github
-.nyc_output
+.*
+.*/
 src/
 typings/
 node_modules/
-.eslintrc
-.gitignore
 codecov.yml
 tsconfig.json
 webpack.config.js

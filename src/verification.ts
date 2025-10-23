@@ -133,9 +133,11 @@ export class VerificationManager {
         let buffer = "";
         const isCrate = vArgs.target === VerificationTarget.Crate;
         const onOutput = (data: string) => {
+            util.log(`Received message: ${data}`);
             if (vArgs.currentRun !== this.runCount) {
                 // there could be race conditions where messages are consumed after
                 // this check. If this becomes a problem, a more sophisticated check is needed
+                console.log(`Skipping message ${data} because currentRun is not equal to runCount: ${vArgs.currentRun} !== ${this.runCount}`);
                 return;
             }
             buffer = buffer.concat(data);
@@ -157,6 +159,7 @@ export class VerificationManager {
                 } else {
                     const msg = getRustcMessage(trimmedLine);
                     if (msg === undefined) {
+                        console.log(`Skipping message ${trimmedLine} because it is not a valid rustc message`);
                         continue;
                     }
                     const ind = msg.message.indexOf("{");
@@ -230,7 +233,7 @@ export class VerificationManager {
 
         prustiEnv = await util.configureRustLibraryPath(prustiEnv, vArgs.prusti);
 
-        util.log("Prusti client environment: " + JSON.stringify({...versionDependentArgs, ...config.extraPrustiEnv}, null, 4));
+        util.log("Prusti environment: " + JSON.stringify(prustiEnv, null, 4));
         const cwd = isCrate ? vArgs.targetPath : path.dirname(vArgs.targetPath);
         const onOutput= this.buildOutputClosure(vArgs);
         const output = await util.spawn(

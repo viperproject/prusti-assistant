@@ -317,7 +317,7 @@ export async function configureRustLibraryPath(
             { options: { cwd: prusti.rustToolchainFile.enclosingFolder.path() }}
         );
 
-        let existingPath = modifiedEnv.PATH || '';
+        let existingPath = modifiedEnv.Path || '';
 
         if (sysrootOutput.code === 0) {
             const sysroot = sysrootOutput.stdout.trim();
@@ -328,7 +328,7 @@ export async function configureRustLibraryPath(
             log(`Warning: Could not determine Rust sysroot. exit code: ${sysrootOutput.code}`);
         }
 
-        modifiedEnv.PATH = `${prustiPath};${existingPath}`;
+        modifiedEnv.Path = `${prustiPath};${existingPath}`;
     }
 
     return modifiedEnv;
