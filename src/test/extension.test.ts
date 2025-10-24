@@ -47,6 +47,48 @@ function asRelativeWorkspacePath(target: vscode.Uri): string {
 }
 
 /**
+ * Normalize a path for flexible comparison by extracting the last N components.
+ * This allows comparing paths that may have different prefixes (absolute vs relative)
+ * but refer to the same file.
+ *
+ * @param uri The URI to normalize.
+ * @param componentCount Number of path components to extract from the end.
+ * @returns The normalized path suffix.
+ */
+function normalizePathForComparison(uri: string, componentCount: number = 5): string {
+    const normalizedPath = uri.replace(/\\/g, "/");
+    const parts = normalizedPath.split("/").filter(p => p.length > 0);
+    return parts.slice(-componentCount).join("/");
+}
+
+/**
+ * Normalize diagnostic URIs for cross-platform comparison.
+ * This normalizes all URI paths to use only the last N components,
+ * allowing comparison of diagnostics that may have different absolute/relative paths.
+ *
+ * @param diagnostic The diagnostic to normalize.
+ * @returns A new diagnostic with normalized URIs.
+ */
+function normalizeDiagnostic(diagnostic: Diagnostic): Diagnostic {
+    const normalized: Diagnostic = {
+        ...diagnostic,
+        uri: normalizePathForComparison(diagnostic.uri),
+    };
+
+    if (diagnostic.relatedInformation) {
+        normalized.relatedInformation = diagnostic.relatedInformation.map(info => ({
+            ...info,
+            location: {
+                ...info.location,
+                uri: normalizePathForComparison(info.location.uri),
+            },
+        }));
+    }
+
+    return normalized;
+}
+
+/**
  * Open a file in the IDE
  * @param filePath The file to open.
  * @returns A promise with the opened document.
@@ -277,9 +319,14 @@ describe("Extension", () => {
                         "diagnostics": [] as unknown as Diagnostic[]
                     };
                 }
-                console.log("Expected: " + JSON.stringify(expectedDiagnostics.diagnostics, null, 4));
-                console.log("Actual: " + JSON.stringify(plainDiagnostics, null, 4));
-                expect(plainDiagnostics).to.deep.equal(expectedDiagnostics.diagnostics);
+                // Normalize URIs in both actual and expected diagnostics for cross-platform comparison
+                const normalizedActual = plainDiagnostics.map(normalizeDiagnostic);
+                const normalizedExpected = expectedDiagnostics.diagnostics.map(normalizeDiagnostic);
+
+                console.log("Expected: " + JSON.stringify(normalizedExpected, null, 4));
+                console.log("Actual: " + JSON.stringify(normalizedActual, null, 4));
+
+                expect(normalizedActual).to.deep.equal(normalizedExpected);
             }
         });
     });
