@@ -173,6 +173,7 @@ function rangeToPlainObject(range: vscode.Range): Range {
 
 /**
  * Normalize a diagnostic, converting it to a plain object.
+ * URIs are normalized for cross-platform comparison by extracting the last N components.
  *
  * @param uri The URI of the file containing the diagnostic.
  * @param diagnostic The diagnostic to convert.
@@ -180,7 +181,7 @@ function rangeToPlainObject(range: vscode.Range): Range {
  */
 function diagnosticToPlainObject(uri: vscode.Uri, diagnostic: vscode.Diagnostic): Diagnostic {
     const plainDiagnostic: Diagnostic = {
-        uri: asRelativeWorkspacePath(uri),
+        uri: normalizePathForComparison(asRelativeWorkspacePath(uri)),
         range: rangeToPlainObject(diagnostic.range),
         severity: diagnostic.severity,
         message: diagnostic.message,
@@ -189,7 +190,7 @@ function diagnosticToPlainObject(uri: vscode.Uri, diagnostic: vscode.Diagnostic)
         plainDiagnostic.relatedInformation = diagnostic.relatedInformation.map((relatedInfo) => {
             return {
                 location: {
-                    uri: asRelativeWorkspacePath(relatedInfo.location.uri),
+                    uri: normalizePathForComparison(asRelativeWorkspacePath(relatedInfo.location.uri)),
                     range: rangeToPlainObject(relatedInfo.location.range)
                 },
                 message: relatedInfo.message,
@@ -246,20 +247,11 @@ describe("Extension", () => {
     });
 
     // Generate a test for every Rust program with expected diagnostics in the test suite.
-    // Track both the program path and its source directory
-    type ProgramInfo = { program: string; sourceDir: string };
-    const programs: Array<ProgramInfo> = [
-        SCENARIO_PATH,
-        SHARED_SCENARIO_PATH
-    ].flatMap(dir =>
-        glob.sync("**/*.rs.json", { cwd: dir }).map(filePath => ({
-            program: filePath.replace(/\.json$/, ""),
-            sourceDir: dir
-        }))
-    );
-    console.log(`Creating tests for ${programs.length} programs: ${programs.map(p => p.program)}`);
+    const programs: Array<string> = [SCENARIO_PATH, SHARED_SCENARIO_PATH].flatMap(cwd =>
+        glob.sync("**/*.rs.json", { cwd: cwd }).map(filePath => filePath.replace(/\.json$/, "")));
+    console.log(`Creating tests for ${programs.length} programs: ${programs}`);
     assert.ok(programs.length >= 3, `There are not enough programs to test (${programs.length})`);
-    programs.forEach(({ program, sourceDir }) => {
+    programs.forEach(program => {
         it(`scenario ${SCENARIO} reports expected diagnostics on ${program}`, async () => {
             // Verify the program
             const programPath = path.join(workspacePath(), program);
@@ -272,62 +264,47 @@ describe("Extension", () => {
                 return diagnostics.map(diagnostic => diagnosticToPlainObject(uri, diagnostic));
             });
 
-            // Check if we should update snapshots instead of comparing
-            const updateSnapshots = process.env.UPDATE_SNAPSHOTS === "true";
-            // For reading, use the temp workspace path
-            const tempJsonPath = programPath + ".json";
-            // For writing snapshots, use the original source directory
-            const sourceJsonPath = path.join(sourceDir, program + ".json");
-
-            if (updateSnapshots) {
-                console.log(`Updating snapshot: ${sourceJsonPath}`);
-                console.log("Actual: " + JSON.stringify(plainDiagnostics, null, 4));
-                await fs.writeFile(sourceJsonPath, JSON.stringify(plainDiagnostics, null, 4) + "\n", "utf-8");
-                console.log(`Snapshot updated successfully.`);
-            } else {
-                // Load the expected diagnostics. A single JSON file can contain multiple alternatives.
-                const expectedData = await fs.readFile(tempJsonPath, "utf-8");
-                type MultiDiagnostics = [
-                    { filter?: [string: string], diagnostics: Diagnostic[] }
+            // Load the expected diagnostics. A single JSON file can contain multiple alternatives.
+            const expectedData = await fs.readFile(programPath + ".json", "utf-8");
+            type MultiDiagnostics = [
+                { filter?: [string: string], diagnostics: Diagnostic[] }
+            ];
+            const expected = JSON.parse(expectedData) as Diagnostic[] | MultiDiagnostics;
+            let expectedMultiDiagnostics: MultiDiagnostics;
+            if (!expected.length || !("diagnostics" in expected[0])) {
+                expectedMultiDiagnostics = [
+                    { "diagnostics": expected as Diagnostic[] }
                 ];
-                const expected = JSON.parse(expectedData) as Diagnostic[] | MultiDiagnostics;
-                let expectedMultiDiagnostics: MultiDiagnostics;
-                if (!expected.length || !("diagnostics" in expected[0])) {
-                    expectedMultiDiagnostics = [
-                        { "diagnostics": expected as Diagnostic[] }
-                    ];
-                } else {
-                    expectedMultiDiagnostics = expected as MultiDiagnostics;
-                }
-
-                // Select the expected diagnostics to be used for the current environment
-                let expectedDiagnostics = expectedMultiDiagnostics.find((alternative, index) => {
-                    if (!alternative.filter) {
-                        console.log(
-                            `Find expected diagnostics: using default ` +
-                            `alternative ${index}.`
-                        );
-                        return true;
-                    }
-                    return evaluateFilter(alternative.filter, index.toString());
-                });
-                if (!expectedDiagnostics) {
-                    console.log(
-                        "Find expected diagnostics: found no matching alternative."
-                    );
-                    expectedDiagnostics = {
-                        "diagnostics": [] as unknown as Diagnostic[]
-                    };
-                }
-                // Normalize URIs in both actual and expected diagnostics for cross-platform comparison
-                const normalizedActual = plainDiagnostics.map(normalizeDiagnostic);
-                const normalizedExpected = expectedDiagnostics.diagnostics.map(normalizeDiagnostic);
-
-                console.log("Expected: " + JSON.stringify(normalizedExpected, null, 4));
-                console.log("Actual: " + JSON.stringify(normalizedActual, null, 4));
-
-                expect(normalizedActual).to.deep.equal(normalizedExpected);
+            } else {
+                expectedMultiDiagnostics = expected as MultiDiagnostics;
             }
+
+            // Select the expected diagnostics to be used for the current environment
+            let expectedDiagnostics = expectedMultiDiagnostics.find((alternative, index) => {
+                if (!alternative.filter) {
+                    console.log(
+                        `Find expected diagnostics: using default ` +
+                        `alternative ${index}.`
+                    );
+                    return true;
+                }
+                return evaluateFilter(alternative.filter, index.toString());
+            });
+            if (!expectedDiagnostics) {
+                console.log(
+                    "Find expected diagnostics: found no matching alternative."
+                );
+                expectedDiagnostics = {
+                    "diagnostics": [] as unknown as Diagnostic[]
+                };
+            }
+            // Normalize expected diagnostics URIs for cross-platform comparison
+            const normalizedExpected = expectedDiagnostics.diagnostics.map(normalizeDiagnostic);
+
+            console.log("Expected: " + JSON.stringify(normalizedExpected, null, 4));
+            console.log("Actual: " + JSON.stringify(plainDiagnostics, null, 4));
+
+            expect(plainDiagnostics).to.deep.equal(normalizedExpected);
         });
     });
 });

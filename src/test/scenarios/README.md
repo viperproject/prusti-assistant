@@ -22,22 +22,3 @@ The content of the `.rs.json` expected diagnostics can be either:
 * A list of alternatives, each as a dictionary with an `"filter"` and a `"diagnostics"` key. The the first alternative whose filter is satisfied is used as expected diagnostics.
     * `"filter"` is a dictionary with a "os" key. This key is optional.
     * `"diagnostics"` is a list of diagnostics. This key is mandatory.
-
-## Updating expected diagnostics (snapshots)
-
-To automatically regenerate all `.rs.json` files based on the current test output, run the tests with the `UPDATE_SNAPSHOTS` environment variable set to `"true"`:
-
-```bash
-UPDATE_SNAPSHOTS=true npm test
-```
-
-This will:
-- Run all tests normally
-- Instead of comparing actual vs expected diagnostics, write the actual diagnostics to the `.rs.json` files
-- Overwrite existing expected diagnostics files
-
-**Use this when:**
-- You've made intentional changes that affect test output and want to accept the new output as correct
-- You're confident that the current Prusti output is correct and want to use it as the baseline going forward
-
-**Warning:** This will overwrite all `.rs.json` files. Make sure to review the changes with `git diff` before committing.
