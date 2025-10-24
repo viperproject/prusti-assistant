@@ -1,141 +1,83 @@
 [
     {
-        "filter": { "os": "win32" },
-        "diagnostics": [
+        "uri": "crates/latest_contracts/src/main.rs",
+        "range": {
+            "start": {
+                "line": 3,
+                "character": 16
+            },
+            "end": {
+                "line": 3,
+                "character": 22
+            }
+        },
+        "severity": 1,
+        "message": "[unused_variables] unused variable: `unused`.",
+        "relatedInformation": [
             {
-                "uri": "crates/latest_contracts/src/main.rs",
-                "range": {
-                    "start": {
-                        "line": 3,
-                        "character": 16
-                    },
-                    "end": {
-                        "line": 3,
-                        "character": 22
+                "location": {
+                    "uri": "crates/latest_contracts/src/main.rs",
+                    "range": {
+                        "start": {
+                            "line": 3,
+                            "character": 16
+                        },
+                        "end": {
+                            "line": 3,
+                            "character": 22
+                        }
                     }
                 },
-                "severity": 1,
-                "message": "[unused_variables] unused variable: `unused`.",
-                "relatedInformation": [
-                    {
-                        "location": {
-                            "uri": "crates/latest_contracts/src/main.rs",
-                            "range": {
-                                "start": {
-                                    "line": 3,
-                                    "character": 16
-                                },
-                                "end": {
-                                    "line": 3,
-                                    "character": 22
-                                }
-                            }
+                "message": "`#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default"
+            },
+            {
+                "location": {
+                    "uri": "crates/latest_contracts/src/main.rs",
+                    "range": {
+                        "start": {
+                            "line": 3,
+                            "character": 16
                         },
-                        "message": "`#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default"
-                    },
-                    {
-                        "location": {
-                            "uri": "crates/latest_contracts/src/main.rs",
-                            "range": {
-                                "start": {
-                                    "line": 3,
-                                    "character": 16
-                                },
-                                "end": {
-                                    "line": 3,
-                                    "character": 22
-                                }
-                            }
-                        },
-                        "message": "if this is intentional, prefix it with an underscore"
+                        "end": {
+                            "line": 3,
+                            "character": 22
+                        }
                     }
-                ]
+                },
+                "message": "if this is intentional, prefix it with an underscore"
             }
         ]
     },
     {
-        "diagnostics": [
-            {
-                "uri": "crates/latest_contracts/src/main.rs",
-                "range": {
-                    "start": {
-                        "line": 3,
-                        "character": 16
-                    },
-                    "end": {
-                        "line": 3,
-                        "character": 22
-                    }
-                },
-                "severity": 1,
-                "message": "[unused_variables] unused variable: `unused`.",
-                "relatedInformation": [
-                    {
-                        "location": {
-                            "uri": "crates/latest_contracts/src/main.rs",
-                            "range": {
-                                "start": {
-                                    "line": 3,
-                                    "character": 16
-                                },
-                                "end": {
-                                    "line": 3,
-                                    "character": 22
-                                }
-                            }
-                        },
-                        "message": "`#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default"
-                    },
-                    {
-                        "location": {
-                            "uri": "crates/latest_contracts/src/main.rs",
-                            "range": {
-                                "start": {
-                                    "line": 3,
-                                    "character": 16
-                                },
-                                "end": {
-                                    "line": 3,
-                                    "character": 22
-                                }
-                            }
-                        },
-                        "message": "if this is intentional, prefix it with an underscore"
-                    }
-                ]
+        "uri": "crates/latest_contracts/src/main.rs",
+        "range": {
+            "start": {
+                "line": 8,
+                "character": 4
             },
+            "end": {
+                "line": 8,
+                "character": 14
+            }
+        },
+        "severity": 0,
+        "message": "[Prusti: verification error] precondition might not hold",
+        "relatedInformation": [
             {
-                "uri": "crates/latest_contracts/src/main.rs",
-                "range": {
-                    "start": {
-                        "line": 8,
-                        "character": 4
-                    },
-                    "end": {
-                        "line": 8,
-                        "character": 14
+                "location": {
+                    "uri": "crates/latest_contracts/src/main.rs",
+                    "range": {
+                        "start": {
+                            "line": 2,
+                            "character": 11
+                        },
+                        "end": {
+                            "line": 2,
+                            "character": 18
+                        }
                     }
                 },
-                "severity": 0,
-                "message": "[Prusti: verification error] precondition might not hold",
-                "relatedInformation": [
-                    {
-                        "location": {
-                            "uri": "crates/latest_contracts/src/main.rs",
-                            "range": {
-                                "start": {
-                                    "line": 2,
-                                    "character": 11
-                                },
-                                "end": {
-                                    "line": 2,
-                                    "character": 18
-                                }
-                            }
-                        },
-                        "message": "the failing precondition is here"
-                    }
-                ]
+                "message": "the failing precondition is here"
             }
         ]
     }
