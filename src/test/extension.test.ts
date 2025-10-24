@@ -47,9 +47,9 @@ function asRelativeWorkspacePath(target: vscode.Uri): string {
 }
 
 /**
- * Normalize a path for flexible comparison by extracting the last N components.
- * This allows comparing paths that may have different prefixes (absolute vs relative)
- * but refer to the same file.
+ * Normalize a path by extracting the last N components.
+ * This handles annoying an annoying bug on the windows CI where relative paths
+ * aren't computed.
  *
  * @param uri The URI to normalize.
  * @param componentCount Number of path components to extract from the end.
@@ -173,7 +173,6 @@ function rangeToPlainObject(range: vscode.Range): Range {
 
 /**
  * Normalize a diagnostic, converting it to a plain object.
- * URIs are normalized for cross-platform comparison by extracting the last N components.
  *
  * @param uri The URI of the file containing the diagnostic.
  * @param diagnostic The diagnostic to convert.
@@ -300,9 +299,6 @@ describe("Extension", () => {
             }
             // Normalize expected diagnostics URIs for cross-platform comparison
             const normalizedExpected = expectedDiagnostics.diagnostics.map(normalizeDiagnostic);
-
-            console.log("Expected: " + JSON.stringify(normalizedExpected, null, 4));
-            console.log("Actual: " + JSON.stringify(plainDiagnostics, null, 4));
 
             expect(plainDiagnostics).to.deep.equal(normalizedExpected);
         });
