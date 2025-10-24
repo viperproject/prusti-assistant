@@ -36,7 +36,13 @@ function asRelativeWorkspacePath(target: vscode.Uri): string {
         // If realpathSync fails (e.g., file doesn't exist or is outside workspace),
         // fall back to using paths as-is
         console.log(`Warning: Could not resolve path ${target.fsPath}, using as-is`);
-        return path.relative(workspacePath(), target.fsPath).replace(/\\/g, "/");
+        // On Windows, URIs may have forward slashes. Convert to native path format first.
+        let targetPath = target.fsPath;
+        // Replace forward slashes with the path separator for the platform
+        if (path.sep === '\\') {
+            targetPath = targetPath.replace(/\//g, '\\');
+        }
+        return path.relative(workspacePath(), targetPath).replace(/\\/g, "/");
     }
 }
 
