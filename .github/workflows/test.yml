@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   pull_request:
   push:
-    branches: "master"
+    branches: ["master", "pre-release"]
 
 jobs:
   # Test the extension on multiple OSs.
@@ -59,10 +59,10 @@ jobs:
         with:
           file: ./coverage/lcov.info
 
-  # Publish the extension when we are on master and the version specified in
-  # package.json is not the latest published version of the extension.
+  # Publish the extension when we are on master or pre-release and the version
+  # specified in package.json is not the latest published version.
   publish:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/pre-release')
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -95,6 +95,7 @@ jobs:
           registryUrl: https://marketplace.visualstudio.com
           extensionFile: prusti-assistant-${{ env.CURRENT_VERSION }}.vsix
           packagePath: ''
+          preRelease: ${{ github.ref == 'refs/heads/pre-release' }}
 
       - name: Publish the extension to Open VSX Registry
         uses: HaaLeo/publish-vscode-extension@f4ece70b4398e42c5d98de5a14ff6f3b3eb74b10 # v1.7.0
@@ -104,10 +105,11 @@ jobs:
           registryUrl: https://open-vsx.org
           extensionFile: prusti-assistant-${{ env.CURRENT_VERSION }}.vsix
           packagePath: ''
+          preRelease: ${{ github.ref == 'refs/heads/pre-release' }}
 
       - name: Create a release for the published version
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
-        if: env.CURRENT_VERSION != env.LAST_PUBLISHED_VERSION
+        if: env.CURRENT_VERSION != env.LAST_PUBLISHED_VERSION && github.ref == 'refs/heads/master'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
