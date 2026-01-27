@@ -256,7 +256,7 @@
         "test": "node ./out/test/runTest.js",
         "report-coverage": "nyc report --reporter=html",
         "clean": "rimraf out",
-        "package": "vsce package --no-dependencies"
+        "package": "vsce package --no-dependencies --pre-release"
     },
     "devDependencies": {
         "@types/chai": "^4.3.11",
