@@ -5,7 +5,9 @@ import * as process from "process";
 import * as fs from "fs-extra";
 import * as config from "../config";
 
-const PRUSTI_ORG = "zgrannan"; // TODO: Change to prusti
+const PRUSTI_ORG = "prusti";
+const PRUSTI_REPO = "prusti-prerelease";
+const PRUSTI_RELEASE_PREFIX = "prusti-prerelease";
 
 export async function prustiTools(
     platform: vvt.Platform,
@@ -23,14 +25,14 @@ export async function prustiTools(
     // Get the latest among releases and pre-releases
     const getLatestReleaseUrl = (): Promise<string> => {
         return vvt.GitHubReleaseAsset.getLatestAssetUrl(
-            PRUSTI_ORG, "prusti-dev", `prusti-release-${id}.zip`, true, authorization_token,
+            PRUSTI_ORG, PRUSTI_REPO, `${PRUSTI_RELEASE_PREFIX}-${id}.zip`, true, authorization_token,
         );
     }
 
     const getTaggedReleaseUrl = (): Promise<string> => {
         const tag = config.prustiTag();
         return vvt.GitHubReleaseAsset.getTaggedAssetUrl(
-            PRUSTI_ORG, "prusti-dev", `prusti-release-${id}.zip`, tag, authorization_token,
+            PRUSTI_ORG, PRUSTI_REPO, `${PRUSTI_RELEASE_PREFIX}-${id}.zip`, tag, authorization_token,
         );
     }
 
