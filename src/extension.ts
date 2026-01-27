@@ -1,16 +1,21 @@
 import * as vscode from "vscode";
 import * as config from "./config";
 import * as util from "./util";
-import * as diagnostics from "./diagnostics";
 import * as checks from "./checks";
-import { prusti, installDependencies, prustiVersion } from "./dependencies";
+import * as path from "path";
+import { prusti, installDependencies, updatePrustiSemVersion, prustiSemanticVersion } from "./dependencies";
 import * as server from "./server";
 import * as state from "./state";
+import * as verification from "./verification";
+import { projects } from "./projects";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     util.log("Activate Prusti Assistant");
     const showVersionCommand = "prusti-assistant.show-version";
     const verifyProgramCommand = "prusti-assistant.verify";
+    const verifySelectiveCommand = "prusti-assistant.verify-selective";
+    const queryMethodSignatureCommand = "prusti-assistant.query-method-signature";
+    const getInfoCommand = "prusti-assistant.getinfo";
     const killAllCommand = "prusti-assistant.killAll";
     const openLogsCommand = "prusti-assistant.openLogs";
     const openServerLogsCommand = "prusti-assistant.openServerLogs";
@@ -25,6 +30,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     context.subscriptions.push(
         vscode.commands.registerCommand(openServerLogsCommand, () => server.showLogs())
     );
+
 
     // Verification status
     const verificationStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
@@ -49,7 +55,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Catch server crashes
     server.registerCrashHandler(context, verificationStatus);
 
-    // Download dependencies and start the server
+    // Download dependencies, set prusti version and start the server
     util.log("Checking Prusti dependencies...");
     verificationStatus.text = "$(sync~spin) Checking Prusti dependencies...";
     await installDependencies(context, false, verificationStatus);
@@ -94,9 +100,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Show version on command
     context.subscriptions.push(
         vscode.commands.registerCommand(showVersionCommand, async () => {
-            util.userInfo(await prustiVersion());
+            // take also the semantic version here to avoid confusion on debugging
+            await updatePrustiSemVersion();
+            util.userInfo(prustiSemanticVersion);
         })
     );
+
 
     // Verify on click
     const prustiButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 11);
@@ -117,12 +126,26 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     prustiButton.show();
     context.subscriptions.push(prustiButton);
 
+    // Kill all button
+    const killAllButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 9);
+    killAllButton.command = killAllCommand;
+    killAllButton.text = "$(x) Kill All";
+    killAllButton.tooltip = "Kill all running Prusti processes";
+    context.subscriptions.push(killAllButton);
+
     // Restart the server on command
     context.subscriptions.push(
         vscode.commands.registerCommand(restartServerCommand, async () => {
             await server.restart(context, verificationStatus);
         })
     );
+
+    // Verification manager
+    const verificationManager = new verification.VerificationManager(
+        verificationStatus,
+        killAllButton,
+    );
+    context.subscriptions.push(verificationManager);
 
     // Update dependencies on config change
     context.subscriptions.push(
@@ -146,20 +169,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 util.log("Restart the server because the configuration has changed...");
                 await server.restart(context, verificationStatus);
             }
+            // update version
+            await updatePrustiSemVersion();
+
             // Let the test suite know that the new configuration has been
             // processed
             state.notifyConfigUpdate();
         })
     );
 
-    // Diagnostics manager
-    const verificationDiagnostics = vscode.languages.createDiagnosticCollection("prusti");
-    context.subscriptions.push(verificationDiagnostics);
-    const verificationManager = new diagnostics.DiagnosticsManager(
-        verificationDiagnostics,
-        verificationStatus,
-    );
-    context.subscriptions.push(verificationManager);
 
     // Clear all diagnostics on command
     context.subscriptions.push(
@@ -172,9 +190,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     );
 
     // Define verification function
-    async function verify(document: vscode.TextDocument) {
+    async function verify(
+        document: vscode.TextDocument,
+        skipVerify: boolean,
+        defPathArg: {
+            selectiveVerification?: string,
+            externalSpecRequest?: string,
+        },
+        isOnOpen = false,
+    ) {
         util.log(`Run verification on ${document.uri.fsPath}...`);
-        const projects = await util.findProjects();
+        await projects.update();
         const cratePath = projects.getParent(document.uri.fsPath);
 
         if (server.address === undefined) {
@@ -193,17 +219,29 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             }
 
             await verificationManager.verify(
-                prusti!,
-                server.address ?? "",
-                document.uri.fsPath,
-                diagnostics.VerificationTarget.StandaloneFile
+                new verification.VerificationArgs(
+                    prusti!,
+                    server.address || "",
+                    document.uri.fsPath,
+                    verification.VerificationTarget.StandaloneFile,
+                    skipVerify,
+                    defPathArg,
+                    isOnOpen,
+                    0,
+                )
             );
         } else {
             await verificationManager.verify(
-                prusti!,
-                server.address ?? "",
-                cratePath.path,
-                diagnostics.VerificationTarget.Crate
+                new verification.VerificationArgs(
+                    prusti!,
+                    server.address || "",
+                    cratePath.path,
+                    verification.VerificationTarget.Crate,
+                    skipVerify,
+                    defPathArg,
+                    isOnOpen,
+                    0,
+                )
             );
         }
     }
@@ -214,7 +252,50 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             const activeTextEditor = vscode.window.activeTextEditor;
             if (activeTextEditor !== undefined) {
                 await activeTextEditor.document.save().then(
-                    () => verify(activeTextEditor.document)
+                    () => verify(activeTextEditor.document, false, {})
+                );
+            } else {
+                util.log("vscode.window.activeTextEditor is not ready yet.");
+            }
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand(verifySelectiveCommand, async (names: string[]) => {
+            const activeTextEditor = vscode.window.activeTextEditor;
+            util.log("Verify selective received arg: " + names.join(", "));
+            const defPathArg = {
+                selectiveVerification: names.join(" "),
+            }
+            if (activeTextEditor !== undefined) {
+                await activeTextEditor.document.save().then(
+                    () => verify(activeTextEditor.document, false, defPathArg)
+                );
+            }
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand(queryMethodSignatureCommand, async (name: string) => {
+            const activeTextEditor = vscode.window.activeTextEditor;
+            const defPathArg = {
+                externalSpecRequest: name,
+            }
+            if (activeTextEditor !== undefined) {
+                await activeTextEditor.document.save().then(
+                    () => verify(activeTextEditor.document, true, defPathArg)
+                );
+            }
+        })
+    );
+
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand(getInfoCommand, async () => {
+            const activeTextEditor = vscode.window.activeTextEditor;
+            if (activeTextEditor !== undefined) {
+                await activeTextEditor.document.save().then(
+                    () => verify(activeTextEditor.document, true, {})
                 );
             } else {
                 util.log("vscode.window.activeTextEditor is not ready yet.");
@@ -225,8 +306,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Verify on save
     context.subscriptions.push(
         vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {
-            if (document.languageId === "rust" && config.verifyOnSave()) {
-                await verify(document);
+            const is_prusti_toml = path.basename(document.fileName) === "Prusti.toml";
+            if ((is_prusti_toml || document.languageId === "rust") && config.verifyOnSave()) {
+                await verify(document, false, {});
+            } else {
+                await verify(document, true, {});
             }
         })
     );
@@ -234,21 +318,32 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Verify on open
     context.subscriptions.push(
         vscode.workspace.onDidOpenTextDocument(async (document: vscode.TextDocument) => {
-            if (document.languageId === "rust" && config.verifyOnOpen()) {
-                await verify(document);
+            if (document.languageId === "rust") {
+                // the only two cases where we pass the onOpen boolean as true
+                if (config.verifyOnOpen()) {
+                    await verify(document, false, {}, true);
+                } else {
+                    if (!verificationManager.wasVerifiedBefore(document.uri.fsPath)) {
+                        util.log("Running analysis on a file on open");
+                        await verify(document, true, {}, true);
+                    }
+                }
             }
         })
     );
 
-    if (config.verifyOnOpen()) {
-        // Verify on activation
-        if (vscode.window.activeTextEditor !== undefined) {
+    // Verify on activation, if verifyOnOpen is set, otherwise still call prusti
+    // but just collect IDE info.
+    if (vscode.window.activeTextEditor !== undefined) {
+        if (vscode.window.activeTextEditor.document.languageId === "rust") {
             await verify(
-                vscode.window.activeTextEditor.document
+                vscode.window.activeTextEditor.document,
+                !config.verifyOnOpen(),
+                {}
             );
-        } else {
-            util.log("vscode.window.activeTextEditor is not ready yet.");
         }
+    } else {
+        util.log("vscode.window.activeTextEditor is not ready yet.");
     }
 
     // Stand ready to deactivate the extension

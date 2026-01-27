@@ -1,51 +1,51 @@
 [
     {
-        "message": "[unused_variables] unused variable: `unused`.",
+        "uri": "programs/notes.rs",
         "range": {
-            "end": {
-                "character": 14,
-                "line": 1
-            },
             "start": {
-                "character": 8,
-                "line": 1
+                "line": 1,
+                "character": 8
+            },
+            "end": {
+                "line": 1,
+                "character": 14
             }
         },
+        "severity": 1,
+        "message": "[unused_variables] unused variable: `unused`.",
         "relatedInformation": [
             {
                 "location": {
+                    "uri": "programs/notes.rs",
                     "range": {
-                        "end": {
-                            "character": 14,
-                            "line": 1
-                        },
                         "start": {
-                            "character": 8,
-                            "line": 1
+                            "line": 1,
+                            "character": 8
+                        },
+                        "end": {
+                            "line": 1,
+                            "character": 14
                         }
-                    },
-                    "uri": "programs/notes.rs"
+                    }
                 },
-                "message": "`#[warn(unused_variables)]` on by default"
+                "message": "`#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default"
             },
             {
                 "location": {
+                    "uri": "programs/notes.rs",
                     "range": {
-                        "end": {
-                            "character": 14,
-                            "line": 1
-                        },
                         "start": {
-                            "character": 8,
-                            "line": 1
+                            "line": 1,
+                            "character": 8
+                        },
+                        "end": {
+                            "line": 1,
+                            "character": 14
                         }
-                    },
-                    "uri": "programs/notes.rs"
+                    }
                 },
                 "message": "if this is intentional, prefix it with an underscore"
             }
-        ],
-        "severity": 1,
-        "uri": "programs/notes.rs"
+        ]
     }
 ]

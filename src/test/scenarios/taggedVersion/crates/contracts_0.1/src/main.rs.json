@@ -1,84 +1,84 @@
 [
     {
-        "message": "[unused_variables] unused variable: `unused`.",
+        "uri": "crates/contracts_0.1/src/main.rs",
         "range": {
-            "end": {
-                "character": 22,
-                "line": 3
-            },
             "start": {
-                "character": 16,
-                "line": 3
+                "line": 3,
+                "character": 16
+            },
+            "end": {
+                "line": 3,
+                "character": 22
             }
         },
+        "severity": 1,
+        "message": "[unused_variables] unused variable: `unused`.",
         "relatedInformation": [
             {
                 "location": {
+                    "uri": "crates/contracts_0.1/src/main.rs",
                     "range": {
-                        "end": {
-                            "character": 22,
-                            "line": 3
-                        },
                         "start": {
-                            "character": 16,
-                            "line": 3
+                            "line": 3,
+                            "character": 16
+                        },
+                        "end": {
+                            "line": 3,
+                            "character": 22
                         }
-                    },
-                    "uri": "crates/contracts_0.1/src/main.rs"
+                    }
                 },
-                "message": "`#[warn(unused_variables)]` on by default"
+                "message": "`#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default"
             },
             {
                 "location": {
+                    "uri": "crates/contracts_0.1/src/main.rs",
                     "range": {
-                        "end": {
-                            "character": 22,
-                            "line": 3
-                        },
                         "start": {
-                            "character": 16,
-                            "line": 3
+                            "line": 3,
+                            "character": 16
+                        },
+                        "end": {
+                            "line": 3,
+                            "character": 22
                         }
-                    },
-                    "uri": "crates/contracts_0.1/src/main.rs"
+                    }
                 },
                 "message": "if this is intentional, prefix it with an underscore"
             }
-        ],
-        "severity": 1,
-        "uri": "crates/contracts_0.1/src/main.rs"
+        ]
     },
     {
-        "message": "[Prusti: verification error] precondition might not hold.",
+        "uri": "crates/contracts_0.1/src/main.rs",
         "range": {
-            "end": {
-                "character": 14,
-                "line": 8
-            },
             "start": {
-                "character": 4,
-                "line": 8
+                "line": 8,
+                "character": 4
+            },
+            "end": {
+                "line": 8,
+                "character": 14
             }
         },
+        "severity": 0,
+        "message": "[Prusti: verification error] precondition might not hold",
         "relatedInformation": [
             {
                 "location": {
+                    "uri": "crates/contracts_0.1/src/main.rs",
                     "range": {
-                        "end": {
-                            "character": 18,
-                            "line": 2
-                        },
                         "start": {
-                            "character": 11,
-                            "line": 2
+                            "line": 2,
+                            "character": 11
+                        },
+                        "end": {
+                            "line": 2,
+                            "character": 18
                         }
-                    },
-                    "uri": "crates/contracts_0.1/src/main.rs"
+                    }
                 },
-                "message": "the failing assertion is here"
+                "message": "the failing precondition is here"
             }
-        ],
-        "severity": 0,
-        "uri": "crates/contracts_0.1/src/main.rs"
+        ]
     }
 ]

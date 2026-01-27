@@ -10,6 +10,7 @@ import { prustiTools } from "./prustiTools";
 import { Location } from "vs-verification-toolbox";
 
 export let prusti: PrustiLocation | undefined;
+export let prustiSemanticVersion = "0.0.0";
 export async function installDependencies(context: vscode.ExtensionContext, shouldUpdate: boolean, verificationStatus: vscode.StatusBarItem): Promise<void> {
     try {
         util.log(`${shouldUpdate ? "Updating" : "Installing"} Prusti dependencies...`);
@@ -20,9 +21,11 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
         // TODO: Stop prusti-rustc and cargo-prusti
 
         const deps = await prustiTools(tools.currentPlatform!, context);
+        const prustiVersion = config.prustiVersion();
+        util.log(`Installing Prusti version: ${prustiVersion}`);
         const { result, didReportProgress } = await tools.withProgressInWindow(
             `${shouldUpdate ? "Updating" : "Installing"} Prusti`,
-            listener => deps.install(config.prustiVersion(), shouldUpdate, listener)
+            listener => deps.install(prustiVersion, shouldUpdate, listener)
         );
         if (!(result instanceof tools.Success)) {
             util.userError(
@@ -52,12 +55,10 @@ export async function installDependencies(context: vscode.ExtensionContext, shou
             rustToolchainLocation
         );
     } catch (err) {
-        util.userError(
-            `Error installing Prusti. Please restart the IDE to retry. Details: ${err}`,
-            true, verificationStatus
-        );
+        util.userError(`Error installing Prusti: ${err}`, true, verificationStatus);
         throw err;
     } finally {
+        await updatePrustiSemVersion();
         await server.restart(context, verificationStatus);
     }
 }
@@ -129,3 +130,22 @@ async function searchForChildInEnclosingFolders(initialLocation: Location, child
         location = location.enclosingFolder;
     }
 }
+export async function updatePrustiSemVersion(): Promise<void> {
+    const version = await prustiVersion();
+    // version will have the form Prusti version: 0.x.x, commit 234..hash..
+    const parts = version.split(" ");
+    if (parts.length < 3 || parts[2] === undefined) {
+        util.log("Could not parse Prusti version, defaulting to 0.0.0");
+        prustiSemanticVersion = "0.0.0";
+        return;
+    }
+    const result = parts[2].slice(0, -1);
+    if (result.includes("<") || result.includes(">") || !/^\d+\.\d+\.\d+/.test(result)) {
+        util.log(`Could not parse Prusti version from "${version}", defaulting to 0.0.0`);
+        prustiSemanticVersion = "0.0.0";
+        return;
+    }
+    util.log("Setting prustiVersion to " + result);
+    prustiSemanticVersion = result;
+}
+

@@ -28,9 +28,64 @@ function workspacePath(): string {
 function asRelativeWorkspacePath(target: vscode.Uri): string {
     // Resolve symlinks (e.g., in MacOS, `/var` is a symlink to `/private/var`).
     // We do this manually becase `vscode.workspace.asRelativePath` does not resolve symlinks.
-    const normalizedTarget = fs.realpathSync(target.fsPath);
-    const normalizedWorkspace = fs.realpathSync(workspacePath());
-    return path.relative(normalizedWorkspace, normalizedTarget).replace(/\\/g, "/");
+    try {
+        const normalizedTarget = fs.realpathSync(target.fsPath);
+        const normalizedWorkspace = fs.realpathSync(workspacePath());
+        return path.relative(normalizedWorkspace, normalizedTarget).replace(/\\/g, "/");
+    } catch (error) {
+        // If realpathSync fails (e.g., file doesn't exist or is outside workspace),
+        // fall back to using paths as-is
+        console.log(`Warning: Could not resolve path ${target.fsPath}, using as-is`);
+        // On Windows, URIs may have forward slashes. Convert to native path format first.
+        let targetPath = target.fsPath;
+        // Replace forward slashes with the path separator for the platform
+        if (path.sep === '\\') {
+            targetPath = targetPath.replace(/\//g, '\\');
+        }
+        return path.relative(workspacePath(), targetPath).replace(/\\/g, "/");
+    }
+}
+
+/**
+ * Normalize a path by extracting the last N components.
+ * This handles annoying an annoying bug on the windows CI where relative paths
+ * aren't computed.
+ *
+ * @param uri The URI to normalize.
+ * @param componentCount Number of path components to extract from the end.
+ * @returns The normalized path suffix.
+ */
+function normalizePathForComparison(uri: string, componentCount: number = 5): string {
+    const normalizedPath = uri.replace(/\\/g, "/");
+    const parts = normalizedPath.split("/").filter(p => p.length > 0);
+    return parts.slice(-componentCount).join("/");
+}
+
+/**
+ * Normalize diagnostic URIs for cross-platform comparison.
+ * This normalizes all URI paths to use only the last N components,
+ * allowing comparison of diagnostics that may have different absolute/relative paths.
+ *
+ * @param diagnostic The diagnostic to normalize.
+ * @returns A new diagnostic with normalized URIs.
+ */
+function normalizeDiagnostic(diagnostic: Diagnostic): Diagnostic {
+    const normalized: Diagnostic = {
+        ...diagnostic,
+        uri: normalizePathForComparison(diagnostic.uri),
+    };
+
+    if (diagnostic.relatedInformation) {
+        normalized.relatedInformation = diagnostic.relatedInformation.map(info => ({
+            ...info,
+            location: {
+                ...info.location,
+                uri: normalizePathForComparison(info.location.uri),
+            },
+        }));
+    }
+
+    return normalized;
 }
 
 /**
@@ -50,7 +105,7 @@ function openFile(filePath: string): Promise<vscode.TextDocument> {
 }
 
 /**
- * Evaluate one of the filters contained in the `.rs.json` expected diagnostics.
+ * Evaluate the filter used in the `.rs.json` expected diagnostics.
  * @param filter The filter dictionary.
  * @param name The name of the filter.
  * @returns True if the filter is fully satisfied, otherwise false.
@@ -125,7 +180,7 @@ function rangeToPlainObject(range: vscode.Range): Range {
  */
 function diagnosticToPlainObject(uri: vscode.Uri, diagnostic: vscode.Diagnostic): Diagnostic {
     const plainDiagnostic: Diagnostic = {
-        uri: asRelativeWorkspacePath(uri),
+        uri: normalizePathForComparison(asRelativeWorkspacePath(uri)),
         range: rangeToPlainObject(diagnostic.range),
         severity: diagnostic.severity,
         message: diagnostic.message,
@@ -134,7 +189,7 @@ function diagnosticToPlainObject(uri: vscode.Uri, diagnostic: vscode.Diagnostic)
         plainDiagnostic.relatedInformation = diagnostic.relatedInformation.map((relatedInfo) => {
             return {
                 location: {
-                    uri: asRelativeWorkspacePath(relatedInfo.location.uri),
+                    uri: normalizePathForComparison(asRelativeWorkspacePath(relatedInfo.location.uri)),
                     range: rangeToPlainObject(relatedInfo.location.range)
                 },
                 message: relatedInfo.message,
@@ -192,8 +247,7 @@ describe("Extension", () => {
 
     // Generate a test for every Rust program with expected diagnostics in the test suite.
     const programs: Array<string> = [SCENARIO_PATH, SHARED_SCENARIO_PATH].flatMap(cwd =>
-        glob.sync("**/*.rs.json", { cwd: cwd }).map(filePath => filePath.replace(/\.json$/, ""))
-    );
+        glob.sync("**/*.rs.json", { cwd: cwd }).map(filePath => filePath.replace(/\.json$/, "")));
     console.log(`Creating tests for ${programs.length} programs: ${programs}`);
     assert.ok(programs.length >= 3, `There are not enough programs to test (${programs.length})`);
     programs.forEach(program => {
@@ -201,7 +255,6 @@ describe("Extension", () => {
             // Verify the program
             const programPath = path.join(workspacePath(), program);
             await openFile(programPath);
-            await vscode.commands.executeCommand("prusti-assistant.clear-diagnostics");
             await vscode.commands.executeCommand("prusti-assistant.verify");
 
             // Collect and normalize the diagnostics
@@ -244,9 +297,10 @@ describe("Extension", () => {
                     "diagnostics": [] as unknown as Diagnostic[]
                 };
             }
+            // Normalize expected diagnostics URIs for cross-platform comparison
+            const normalizedExpected = expectedDiagnostics.diagnostics.map(normalizeDiagnostic);
 
-            // Compare the actual with the expected diagnostics
-            expect(plainDiagnostics).to.deep.equal(expectedDiagnostics.diagnostics);
+            expect(plainDiagnostics).to.deep.equal(normalizedExpected);
         });
     });
 });
