@@ -87,15 +87,15 @@ jobs:
       - name: Package the extension
         run: npm run package
 
-      - name: Publish the extension to Visual Studio Marketplace
-        uses: HaaLeo/publish-vscode-extension@v2
-        if: env.CURRENT_VERSION != env.LAST_PUBLISHED_VERSION
-        with:
-          pat: ${{ secrets.VSCE_TOKEN }}
-          registryUrl: https://marketplace.visualstudio.com
-          extensionFile: prusti-assistant-${{ env.CURRENT_VERSION }}.vsix
-          packagePath: ''
-          preRelease: ${{ github.ref == 'refs/heads/pre-release' }}
+      # - name: Publish the extension to Visual Studio Marketplace
+      #   uses: HaaLeo/publish-vscode-extension@v2
+      #   if: env.CURRENT_VERSION != env.LAST_PUBLISHED_VERSION
+      #   with:
+      #     pat: ${{ secrets.VSCE_TOKEN }}
+      #     registryUrl: https://marketplace.visualstudio.com
+      #     extensionFile: prusti-assistant-${{ env.CURRENT_VERSION }}.vsix
+      #     packagePath: ''
+      #     preRelease: ${{ github.ref == 'refs/heads/pre-release' }}
 
       - name: Publish the extension to Open VSX Registry
         uses: HaaLeo/publish-vscode-extension@v2
