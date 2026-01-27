@@ -52,7 +52,7 @@ export async function prustiTools(
     }
 
     return new vvt.Dependency(
-        path.join(context.globalStoragePath, "prustiTools"),
+        path.join(context.globalStoragePath, "prustiTools2"),
         [version.Latest, new vvt.GitHubZipExtractor(getLatestReleaseUrl, "prusti", authorization_token)],
         [version.Tag, new vvt.GitHubZipExtractor(getTaggedReleaseUrl, "prusti", authorization_token)],
         [version.Local, new vvt.LocalReference(config.localPrustiPath())],
