@@ -71,11 +71,11 @@
                             "uri": "../../../../../../../Users/runner/work/prusti-dev/prusti-dev/prusti-contracts/prusti-contracts/src/core_spec/mod.rs",
                             "range": {
                                 "start": {
-                                    "line": 17,
+                                    "line": 19,
                                     "character": 11
                                 },
                                 "end": {
-                                    "line": 17,
+                                    "line": 19,
                                     "character": 16
                                 }
                             }
@@ -158,11 +158,11 @@
                             "uri": "../../home/runner/work/prusti-dev/prusti-dev/prusti-contracts/prusti-contracts/src/core_spec/mod.rs",
                             "range": {
                                 "start": {
-                                    "line": 17,
+                                    "line": 19,
                                     "character": 11
                                 },
                                 "end": {
-                                    "line": 17,
+                                    "line": 19,
                                     "character": 16
                                 }
                             }
@@ -245,11 +245,11 @@
                             "uri": "../../../../../../a/prusti-dev/prusti-dev/prusti-contracts/prusti-contracts/src/core_spec/mod.rs",
                             "range": {
                                 "start": {
-                                    "line": 17,
+                                    "line": 19,
                                     "character": 11
                                 },
                                 "end": {
-                                    "line": 17,
+                                    "line": 19,
                                     "character": 16
                                 }
                             }
